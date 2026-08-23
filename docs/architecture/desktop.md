@@ -23,7 +23,7 @@ interface CommandErrorDto {
 
 ## 2. Commands 与 DTO
 
-App 与项目：`get_app_state`、`add_project`、`remove_project`、`set_last_selected_project`。
+App 与项目：`get_app_state`、`add_project`、`remove_project`、`relocate_project`、`set_last_selected_project`、`set_panel_preferences`、`save_main_window_geometry`。
 
 Workspace 与 Quest：`load_workspace`、`create_quest`、`update_quest_content`、`set_quest_status`、`delete_quest`、`search_quests`、`set_watched_project`。
 
@@ -53,6 +53,8 @@ interface WorkspaceSnapshotDto {
 
 Desktop 始终以精确项目路径调用 Core 的 `open_workspace`。目录选择使用 Tauri 官方 Dialog Plugin。所有写 command 返回落盘后的 DTO；Delete 返回被删除的 ID。
 
+`relocate_project` 只精确打开已有 Workspace，不初始化所选目录。项目与损坏 Quest 文件的 Finder 定位统一使用 Tauri Opener Plugin，React feature 不直接调用 native plugin。
+
 `remove_project` 接收 `deleteSidequestData`。默认只移除 app-local 项目记录；值为 `true` 时必须先由 Core 安全删除 `.sidequest/`，删除失败则保留项目记录。
 
 ## 3. App-local state
@@ -66,9 +68,17 @@ Tauri backend 将 Desktop-only 数据保存到 app-local `app.json`，例如 mac
   "schemaVersion": 1,
   "projectPaths": [],
   "lastSelectedProject": null,
-  "recentProjectPaths": []
+  "recentProjectPaths": [],
+  "panelPreferences": {
+    "sidebarWidth": 224,
+    "sidebarCollapsed": false,
+    "drawerWidth": 480
+  },
+  "mainWindow": null
 }
 ```
+
+阶段 4 新增字段使用 Serde default，缺少字段的既有 schema version 1 文件继续有效。`mainWindow` 保存位置、尺寸与 maximized 状态；若原显示器失效或标题栏不可见，启动时回退到主显示器安全区域。
 
 写入必须使用同目录临时文件与 atomic rename。损坏或不支持的 schema 改名保留为 `app.corrupt-<timestamp>[-n].json` 后恢复为空状态，并向当前会话返回 recovery warning；不得静默覆盖损坏文件。
 

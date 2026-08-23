@@ -1,33 +1,54 @@
+import { Warning, X } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 
 import {
   useAddProjectMutation,
   useAppStateQuery,
+  usePanelPreferencesMutation,
+  useRelocateProjectMutation,
   useRemoveProjectMutation,
   useSelectProjectMutation,
-  useWorkspaceQuery,
 } from "./features/data/queries";
 import { useWorkspaceWatcher } from "./features/data/use-workspace-watcher";
-import { selectProjectDirectory } from "./shared/tauri/commands";
+import { ProjectSidebar } from "./features/main-window/project-sidebar";
+import { WorkspaceView } from "./features/main-window/workspace-view";
+import { useWindowGeometryPersistence } from "./features/window/use-window-geometry";
+import {
+  revealPath,
+  selectProjectDirectory,
+  selectReplacementDirectory,
+} from "./shared/tauri/commands";
 import type { ProjectDto } from "./shared/tauri/types";
-import { useMainWindowStore } from "./store/main-window";
+import { IconButton } from "./shared/ui/icon-button";
+import {
+  currentPanelPreferences,
+  useMainWindowStore,
+} from "./store/main-window";
 import "./App.css";
 
 function App() {
+  useWindowGeometryPersistence();
   const appState = useAppStateQuery();
   const addProject = useAddProjectMutation();
   const removeProject = useRemoveProjectMutation();
+  const relocateProject = useRelocateProjectMutation();
   const selectProjectMutation = useSelectProjectMutation();
+  const panelPreferences = usePanelPreferencesMutation();
   const route = useMainWindowStore((state) => state.route);
   const selectedProjectPath = useMainWindowStore(
     (state) => state.selectedProjectPath,
+  );
+  const recoveryDismissed = useMainWindowStore(
+    (state) => state.recoveryDismissed,
   );
   const synchronizeAppState = useMainWindowStore(
     (state) => state.synchronizeAppState,
   );
   const selectProject = useMainWindowStore((state) => state.selectProject);
-  const workspace = useWorkspaceQuery(selectedProjectPath);
-  const watcherError = useWorkspaceWatcher(selectedProjectPath);
+  const dismissRecovery = useMainWindowStore((state) => state.dismissRecovery);
+  const setProjectMenuPath = useMainWindowStore(
+    (state) => state.setProjectMenuPath,
+  );
   const [actionError, setActionError] = useState<Error | null>(null);
 
   useEffect(() => {
@@ -35,6 +56,15 @@ function App() {
       synchronizeAppState(appState.data);
     }
   }, [appState.data, synchronizeAppState]);
+
+  const selectedProject = appState.data?.projects.find(
+    (project) => project.path === selectedProjectPath,
+  );
+  const watchedPath =
+    selectedProject?.state === "unavailable"
+      ? null
+      : (selectedProject?.path ?? null);
+  const watcherError = useWorkspaceWatcher(watchedPath);
 
   async function handleAddProject(): Promise<void> {
     setActionError(null);
@@ -53,6 +83,9 @@ function App() {
   }
 
   async function handleSelectProject(project: ProjectDto): Promise<void> {
+    if (project.path === selectedProjectPath) {
+      return;
+    }
     setActionError(null);
     try {
       await selectProjectMutation.mutateAsync(project.path);
@@ -62,166 +95,158 @@ function App() {
     }
   }
 
-  async function handleRemoveProject(): Promise<void> {
-    if (selectedProjectPath === null) {
-      return;
-    }
+  async function handleRemoveProject(project: ProjectDto): Promise<void> {
     setActionError(null);
     try {
-      await removeProject.mutateAsync(selectedProjectPath);
+      const nextState = await removeProject.mutateAsync(project.path);
+      synchronizeAppState(nextState);
     } catch (error) {
       setActionError(toError(error));
     }
   }
 
+  async function handleLocateProject(project: ProjectDto): Promise<void> {
+    setActionError(null);
+    try {
+      const replacementPath = await selectReplacementDirectory();
+      if (replacementPath === null) {
+        return;
+      }
+      const nextState = await relocateProject.mutateAsync({
+        projectPath: project.path,
+        replacementPath,
+      });
+      synchronizeAppState(nextState);
+      if (nextState.lastSelectedProject !== null) {
+        selectProject(nextState.lastSelectedProject);
+      }
+    } catch (error) {
+      setActionError(toError(error));
+    }
+  }
+
+  async function handleReveal(path: string): Promise<void> {
+    setActionError(null);
+    try {
+      await revealPath(path);
+    } catch (error) {
+      setActionError(toError(error));
+    }
+  }
+
+  function persistPanelPreferences(): void {
+    const preferences = currentPanelPreferences(useMainWindowStore.getState());
+    panelPreferences.mutate(preferences, {
+      onError: (error) => setActionError(toError(error)),
+    });
+  }
+
   if (appState.isPending || route === "restoring") {
-    return <main className="validation-page">Restoring Sidequest…</main>;
+    return (
+      <main className="startup-state">
+        <div className="standalone-drag-region" data-tauri-drag-region />
+        <span className="progress-spinner" /> Restoring Sidequest…
+      </main>
+    );
   }
 
   if (appState.isError) {
     return (
-      <main className="validation-page">
+      <main className="startup-state startup-error">
+        <div className="standalone-drag-region" data-tauri-drag-region />
+        <Warning aria-hidden="true" size={22} weight="regular" />
         <h1>Sidequest could not start</h1>
-        <p className="error-message">{toError(appState.error).message}</p>
-        <button type="button" onClick={() => void appState.refetch()}>
+        <p>{toError(appState.error).message}</p>
+        <button onClick={() => void appState.refetch()} type="button">
           Retry
         </button>
       </main>
     );
   }
 
-  const state = appState.data;
   if (route === "onboarding") {
     return (
-      <main className="validation-page onboarding" aria-label="Sidequest">
-        <p className="eyebrow">Sidequest Desktop data foundation</p>
-        <h1>Add your first project</h1>
-        <p>Selecting a folder initializes its local .sidequest directory.</p>
-        <button
-          type="button"
-          onClick={() => void handleAddProject()}
-          disabled={addProject.isPending}
-        >
-          {addProject.isPending ? "Adding…" : "Add Project"}
-        </button>
-        {actionError !== null && (
-          <p className="error-message">{actionError.message}</p>
-        )}
+      <main className="onboarding-shell">
+        <div className="standalone-drag-region" data-tauri-drag-region />
+        <section className="onboarding-content">
+          <span className="app-mark">S</span>
+          <h1>Add your first project</h1>
+          <p>
+            Choose a folder to keep its quests in a local{" "}
+            <code>.sidequest</code>
+            directory.
+          </p>
+          <button
+            className="primary-button"
+            disabled={addProject.isPending}
+            onClick={() => void handleAddProject()}
+            type="button"
+          >
+            {addProject.isPending ? "Adding…" : "Choose Folder…"}
+          </button>
+          {actionError !== null && (
+            <p className="onboarding-error" role="alert">
+              {actionError.message}
+            </p>
+          )}
+        </section>
       </main>
     );
   }
 
+  const state = appState.data;
   return (
-    <main className="validation-shell" aria-label="Sidequest">
-      <aside className="project-panel">
-        <header>
+    <main
+      className="application-shell"
+      onPointerDown={() => setProjectMenuPath(null)}
+    >
+      <ProjectSidebar
+        addPending={addProject.isPending}
+        onAdd={() => void handleAddProject()}
+        onLocate={(project) => void handleLocateProject(project)}
+        onPersistPreferences={persistPanelPreferences}
+        onRemove={(project) => void handleRemoveProject(project)}
+        onReveal={(path) => void handleReveal(path)}
+        onSelect={(project) => void handleSelectProject(project)}
+        projects={state.projects}
+        selectedProjectPath={selectedProjectPath}
+      />
+      {selectedProject !== undefined && (
+        <WorkspaceView
+          onLocate={(project) => void handleLocateProject(project)}
+          onPersistPreferences={persistPanelPreferences}
+          onRetryAppState={() => void appState.refetch()}
+          onReveal={(path) => void handleReveal(path)}
+          project={selectedProject}
+          watcherError={watcherError}
+        />
+      )}
+      {state.recoveryWarning !== null && !recoveryDismissed && (
+        <div className="recovery-banner" role="status">
+          <Warning aria-hidden="true" size={15} weight="regular" />
           <div>
-            <p className="eyebrow">Stage 3 validation</p>
-            <h1>Projects</h1>
-          </div>
-          <button
-            type="button"
-            onClick={() => void handleAddProject()}
-            disabled={addProject.isPending}
-          >
-            Add
-          </button>
-        </header>
-        <nav aria-label="Projects">
-          {state.projects.map((project) => (
-            <button
-              className={
-                project.path === selectedProjectPath
-                  ? "project-row selected"
-                  : "project-row"
-              }
-              type="button"
-              key={project.path}
-              onClick={() => void handleSelectProject(project)}
-            >
-              <span>{project.name}</span>
-              <small>{project.state}</small>
-            </button>
-          ))}
-        </nav>
-        <button
-          className="remove-project"
-          type="button"
-          onClick={() => void handleRemoveProject()}
-          disabled={removeProject.isPending || selectedProjectPath === null}
-        >
-          {removeProject.isPending ? "Removing…" : "Remove from Sidequest"}
-        </button>
-      </aside>
-
-      <section className="workspace-panel">
-        {state.recoveryWarning !== null && (
-          <div className="warning" role="status">
             <strong>Desktop state recovered</strong>
             <span>{state.recoveryWarning.message}</span>
             <code>{state.recoveryWarning.backupPath}</code>
           </div>
-        )}
-        {actionError !== null && (
-          <p className="error-message">{actionError.message}</p>
-        )}
-        {watcherError !== null && (
-          <p className="warning">Watcher: {watcherError.message}</p>
-        )}
-        {workspace.isPending && <p>Loading workspace…</p>}
-        {workspace.isError && (
-          <div className="workspace-error">
-            <h2>Workspace unavailable</h2>
-            <p>{toError(workspace.error).message}</p>
-            <button type="button" onClick={() => void workspace.refetch()}>
-              Retry
-            </button>
-          </div>
-        )}
-        {workspace.isSuccess && (
-          <>
-            <header className="workspace-heading">
-              <div>
-                <p className="eyebrow">{workspace.data.access}</p>
-                <h2>{selectedProjectPath}</h2>
-              </div>
-              <button type="button" onClick={() => void workspace.refetch()}>
-                Reload
-              </button>
-            </header>
-            {workspace.data.issues.length > 0 && (
-              <div className="warning" role="status">
-                <strong>{workspace.data.issues.length} unreadable files</strong>
-                {workspace.data.issues.map((issue) => (
-                  <code key={issue.path}>{issue.path}</code>
-                ))}
-              </div>
-            )}
-            <p className="quest-count">
-              {workspace.data.quests.length} quest
-              {workspace.data.quests.length === 1 ? "" : "s"}
-            </p>
-            {workspace.data.quests.length === 0 ? (
-              <p className="empty-state">
-                No quests yet. Add one with the sq CLI to validate file
-                watching.
-              </p>
-            ) : (
-              <ul className="quest-list">
-                {workspace.data.quests.map((quest) => (
-                  <li key={quest.id}>
-                    <div>
-                      <strong>{quest.status}</strong>
-                      <time dateTime={quest.createdAt}>{quest.createdAt}</time>
-                    </div>
-                    <pre>{quest.content}</pre>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </>
-        )}
-      </section>
+          <IconButton
+            icon={X}
+            label="Dismiss recovery warning"
+            onClick={dismissRecovery}
+          />
+        </div>
+      )}
+      {actionError !== null && (
+        <div className="action-error" role="alert">
+          <Warning aria-hidden="true" size={15} weight="regular" />
+          <span>{actionError.message}</span>
+          <IconButton
+            icon={X}
+            label="Dismiss error"
+            onClick={() => setActionError(null)}
+          />
+        </div>
+      )}
     </main>
   );
 }

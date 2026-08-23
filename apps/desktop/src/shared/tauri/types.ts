@@ -17,7 +17,14 @@ export interface ProjectDto {
 export interface AppStateDto {
   projects: ProjectDto[];
   lastSelectedProject: string | null;
+  panelPreferences: PanelPreferencesDto;
   recoveryWarning: RecoveryWarningDto | null;
+}
+
+export interface PanelPreferencesDto {
+  sidebarWidth: number;
+  sidebarCollapsed: boolean;
+  drawerWidth: number;
 }
 
 export interface QuestDto {

@@ -1,7 +1,7 @@
 use std::io;
 use std::path::{Path, PathBuf};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sidequest_core::{
     Error as CoreError, Quest, QuestCollection, QuestFileIssue, QuestId, Workspace, WorkspaceAccess,
 };
@@ -13,7 +13,16 @@ use crate::error::DesktopError;
 pub(crate) struct AppStateDto {
     pub(crate) projects: Vec<ProjectDto>,
     pub(crate) last_selected_project: Option<String>,
+    pub(crate) panel_preferences: PanelPreferencesDto,
     pub(crate) recovery_warning: Option<RecoveryWarningDto>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct PanelPreferencesDto {
+    pub(crate) sidebar_width: u16,
+    pub(crate) sidebar_collapsed: bool,
+    pub(crate) drawer_width: u16,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
@@ -166,6 +175,7 @@ impl From<DesktopError> for CommandErrorDto {
             }
             DesktopError::Io { path, .. } => Self::new("io_error", message, Some(path)),
             DesktopError::Watcher { path, .. } => Self::new("io_error", message, Some(path)),
+            DesktopError::Window { .. } => Self::new("internal_error", message, None),
             DesktopError::StateLock => Self::new("internal_error", message, None),
             DesktopError::Core(core) => from_core_error(core, message),
         }

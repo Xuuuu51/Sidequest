@@ -23,6 +23,12 @@ pub(crate) enum DesktopError {
     #[error("filesystem watcher failed for {path}: {message}")]
     Watcher { path: PathBuf, message: String },
 
+    #[error("{operation} failed: {message}")]
+    Window {
+        operation: &'static str,
+        message: String,
+    },
+
     #[error("Desktop state lock is unavailable")]
     StateLock,
 

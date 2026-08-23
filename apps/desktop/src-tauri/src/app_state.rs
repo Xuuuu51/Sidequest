@@ -7,12 +7,24 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
 use sidequest_core::{WorkspaceAccess, init_workspace, open_workspace};
 
-use crate::dto::{AppStateDto, ProjectDto, ProjectStateDto, RecoveryWarningDto, display_path};
+use crate::dto::{
+    AppStateDto, PanelPreferencesDto, ProjectDto, ProjectStateDto, RecoveryWarningDto, display_path,
+};
 use crate::error::{DesktopError, Result};
 use crate::watcher::ProjectWatcher;
 
 const APP_STATE_FILENAME: &str = "app.json";
 const APP_STATE_SCHEMA_VERSION: u8 = 1;
+pub(crate) const DEFAULT_SIDEBAR_WIDTH: u16 = 224;
+pub(crate) const MIN_SIDEBAR_WIDTH: u16 = 180;
+pub(crate) const MAX_SIDEBAR_WIDTH: u16 = 320;
+pub(crate) const DEFAULT_DRAWER_WIDTH: u16 = 480;
+pub(crate) const MIN_DRAWER_WIDTH: u16 = 420;
+pub(crate) const MAX_DRAWER_WIDTH: u16 = 560;
+pub(crate) const DEFAULT_WINDOW_WIDTH: u32 = 1280;
+pub(crate) const DEFAULT_WINDOW_HEIGHT: u32 = 800;
+pub(crate) const MIN_WINDOW_WIDTH: u32 = 1024;
+pub(crate) const MIN_WINDOW_HEIGHT: u32 = 640;
 
 pub(crate) struct DesktopState {
     pub(crate) app_state: Mutex<AppStateStore>,
@@ -35,6 +47,38 @@ struct PersistentAppState {
     project_paths: Vec<PathBuf>,
     last_selected_project: Option<PathBuf>,
     recent_project_paths: Vec<PathBuf>,
+    #[serde(default)]
+    panel_preferences: PanelPreferences,
+    #[serde(default)]
+    main_window: Option<MainWindowGeometry>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PanelPreferences {
+    sidebar_width: u16,
+    sidebar_collapsed: bool,
+    drawer_width: u16,
+}
+
+impl Default for PanelPreferences {
+    fn default() -> Self {
+        Self {
+            sidebar_width: DEFAULT_SIDEBAR_WIDTH,
+            sidebar_collapsed: false,
+            drawer_width: DEFAULT_DRAWER_WIDTH,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct MainWindowGeometry {
+    pub(crate) x: i32,
+    pub(crate) y: i32,
+    pub(crate) width: u32,
+    pub(crate) height: u32,
+    pub(crate) maximized: bool,
 }
 
 impl Default for PersistentAppState {
@@ -44,6 +88,8 @@ impl Default for PersistentAppState {
             project_paths: Vec::new(),
             last_selected_project: None,
             recent_project_paths: Vec::new(),
+            panel_preferences: PanelPreferences::default(),
+            main_window: None,
         }
     }
 }
@@ -135,6 +181,7 @@ impl AppStateStore {
                 .last_selected_project
                 .as_deref()
                 .map(display_path),
+            panel_preferences: self.state.panel_preferences.into(),
             recovery_warning: self.recovery_warning.clone(),
         }
     }
@@ -169,6 +216,89 @@ impl AppStateStore {
         next.last_selected_project = Some(path.to_path_buf());
         self.persist(next)?;
         Ok(self.snapshot())
+    }
+
+    pub(crate) fn relocate_project(
+        &mut self,
+        current_path: &Path,
+        replacement_path: &Path,
+    ) -> Result<AppStateDto> {
+        let current_index = self
+            .state
+            .project_paths
+            .iter()
+            .position(|project| project == current_path)
+            .ok_or_else(|| DesktopError::ProjectNotFound {
+                path: current_path.to_path_buf(),
+            })?;
+        let workspace = open_workspace(replacement_path)?;
+        let replacement = workspace.root().as_path().to_path_buf();
+        let mut next = self.state.clone();
+
+        if replacement == current_path {
+            mark_recent(&mut next, &replacement);
+            next.last_selected_project = Some(replacement);
+            self.persist(next)?;
+            return Ok(self.snapshot());
+        }
+        next.recent_project_paths
+            .retain(|recent| recent != current_path);
+
+        if let Some(existing_index) = next
+            .project_paths
+            .iter()
+            .position(|project| project == &replacement)
+        {
+            next.project_paths.remove(current_index);
+            let adjusted_index = if current_index < existing_index {
+                existing_index - 1
+            } else {
+                existing_index
+            };
+            let selected = next.project_paths[adjusted_index].clone();
+            mark_recent(&mut next, &selected);
+            next.last_selected_project = Some(selected);
+        } else {
+            next.project_paths[current_index] = replacement.clone();
+            mark_recent(&mut next, &replacement);
+            next.last_selected_project = Some(replacement);
+        }
+
+        self.persist(next)?;
+        Ok(self.snapshot())
+    }
+
+    pub(crate) fn set_panel_preferences(
+        &mut self,
+        preferences: PanelPreferencesDto,
+    ) -> Result<PanelPreferencesDto> {
+        let mut next = self.state.clone();
+        next.panel_preferences = PanelPreferences {
+            sidebar_width: preferences
+                .sidebar_width
+                .clamp(MIN_SIDEBAR_WIDTH, MAX_SIDEBAR_WIDTH),
+            sidebar_collapsed: preferences.sidebar_collapsed,
+            drawer_width: preferences
+                .drawer_width
+                .clamp(MIN_DRAWER_WIDTH, MAX_DRAWER_WIDTH),
+        };
+        let persisted = next.panel_preferences;
+        self.persist(next)?;
+        Ok(persisted.into())
+    }
+
+    pub(crate) fn main_window_geometry(&self) -> Option<MainWindowGeometry> {
+        self.state.main_window
+    }
+
+    pub(crate) fn set_main_window_geometry(&mut self, geometry: MainWindowGeometry) -> Result<()> {
+        let mut next = self.state.clone();
+        next.main_window = Some(MainWindowGeometry {
+            width: geometry.width.max(MIN_WINDOW_WIDTH),
+            height: geometry.height.max(MIN_WINDOW_HEIGHT),
+            ..geometry
+        });
+        self.persist(next)
     }
 
     pub(crate) fn remove_project(
@@ -213,6 +343,18 @@ impl AppStateStore {
 }
 
 fn normalize_state(mut state: PersistentAppState) -> PersistentAppState {
+    state.panel_preferences.sidebar_width = state
+        .panel_preferences
+        .sidebar_width
+        .clamp(MIN_SIDEBAR_WIDTH, MAX_SIDEBAR_WIDTH);
+    state.panel_preferences.drawer_width = state
+        .panel_preferences
+        .drawer_width
+        .clamp(MIN_DRAWER_WIDTH, MAX_DRAWER_WIDTH);
+    if let Some(geometry) = &mut state.main_window {
+        geometry.width = geometry.width.max(MIN_WINDOW_WIDTH);
+        geometry.height = geometry.height.max(MIN_WINDOW_HEIGHT);
+    }
     let mut unique_projects = Vec::with_capacity(state.project_paths.len());
     for path in state.project_paths {
         if !unique_projects.contains(&path) {
@@ -235,6 +377,16 @@ fn normalize_state(mut state: PersistentAppState) -> PersistentAppState {
         state.last_selected_project = None;
     }
     state
+}
+
+impl From<PanelPreferences> for PanelPreferencesDto {
+    fn from(preferences: PanelPreferences) -> Self {
+        Self {
+            sidebar_width: preferences.sidebar_width,
+            sidebar_collapsed: preferences.sidebar_collapsed,
+            drawer_width: preferences.drawer_width,
+        }
+    }
 }
 
 fn mark_recent(state: &mut PersistentAppState, path: &Path) {
@@ -359,11 +511,16 @@ fn sync_directory(path: &Path) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use std::fs;
+    use std::path::PathBuf;
 
     use sidequest_core::open_workspace;
     use tempfile::TempDir;
 
-    use super::{AppStateStore, PersistentAppState};
+    use super::{
+        AppStateStore, DEFAULT_DRAWER_WIDTH, DEFAULT_SIDEBAR_WIDTH, MAX_DRAWER_WIDTH,
+        MAX_SIDEBAR_WIDTH, MainWindowGeometry, PersistentAppState,
+    };
+    use crate::dto::PanelPreferencesDto;
 
     type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
 
@@ -377,6 +534,72 @@ mod tests {
         assert!(temporary.path().join("app.json").is_file());
         assert!(first.snapshot().projects.is_empty());
         assert!(second.snapshot().projects.is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn legacy_state_without_stage_four_fields_should_use_defaults() -> TestResult {
+        let temporary = TempDir::new()?;
+        fs::write(
+            temporary.path().join("app.json"),
+            r#"{
+  "schemaVersion": 1,
+  "projectPaths": [],
+  "lastSelectedProject": null,
+  "recentProjectPaths": []
+}"#,
+        )?;
+
+        let store = AppStateStore::load(temporary.path())?;
+        let state = store.snapshot();
+
+        assert!(state.recovery_warning.is_none());
+        assert_eq!(state.panel_preferences.sidebar_width, DEFAULT_SIDEBAR_WIDTH);
+        assert_eq!(state.panel_preferences.drawer_width, DEFAULT_DRAWER_WIDTH);
+        assert!(store.main_window_geometry().is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn panel_preferences_should_clamp_and_restore() -> TestResult {
+        let temporary = TempDir::new()?;
+        let mut store = AppStateStore::load(temporary.path())?;
+
+        let preferences = store.set_panel_preferences(PanelPreferencesDto {
+            sidebar_width: u16::MAX,
+            sidebar_collapsed: true,
+            drawer_width: u16::MAX,
+        })?;
+        let restored = AppStateStore::load(temporary.path())?.snapshot();
+
+        assert_eq!(preferences.sidebar_width, MAX_SIDEBAR_WIDTH);
+        assert_eq!(preferences.drawer_width, MAX_DRAWER_WIDTH);
+        assert!(restored.panel_preferences.sidebar_collapsed);
+        assert_eq!(restored.panel_preferences, preferences);
+        Ok(())
+    }
+
+    #[test]
+    fn main_window_geometry_should_persist_with_minimum_size() -> TestResult {
+        let temporary = TempDir::new()?;
+        let mut store = AppStateStore::load(temporary.path())?;
+
+        store.set_main_window_geometry(MainWindowGeometry {
+            x: 50,
+            y: 60,
+            width: 100,
+            height: 100,
+            maximized: true,
+        })?;
+        let geometry = AppStateStore::load(temporary.path())?
+            .main_window_geometry()
+            .ok_or("missing Main Window geometry")?;
+
+        assert_eq!(geometry.x, 50);
+        assert_eq!(geometry.y, 60);
+        assert_eq!(geometry.width, super::MIN_WINDOW_WIDTH);
+        assert_eq!(geometry.height, super::MIN_WINDOW_HEIGHT);
+        assert!(geometry.maximized);
         Ok(())
     }
 
@@ -535,6 +758,77 @@ mod tests {
 
         assert_eq!(state.projects[0].state, super::ProjectStateDto::Unavailable);
         fs::rename(&moved, project.path())?;
+        Ok(())
+    }
+
+    #[test]
+    fn relocate_should_replace_the_missing_project_and_preserve_its_position() -> TestResult {
+        let data = TempDir::new()?;
+        let first = TempDir::new()?;
+        let moving = TempDir::new()?;
+        let replacement = moving.path().with_extension("relocated");
+        let mut store = AppStateStore::load(data.path())?;
+        store.add_project(first.path())?;
+        let state = store.add_project(moving.path())?;
+        let old_path = PathBuf::from(&state.projects[1].path);
+        fs::rename(moving.path(), &replacement)?;
+
+        let relocated = store.relocate_project(&old_path, &replacement)?;
+
+        assert_eq!(relocated.projects.len(), 2);
+        assert_eq!(
+            relocated.projects[0].path,
+            fs::canonicalize(first.path())?.to_string_lossy()
+        );
+        assert_eq!(
+            relocated.projects[1].path,
+            fs::canonicalize(&replacement)?.to_string_lossy()
+        );
+        assert_eq!(
+            relocated.last_selected_project,
+            Some(relocated.projects[1].path.clone())
+        );
+        fs::rename(&replacement, moving.path())?;
+        Ok(())
+    }
+
+    #[test]
+    fn relocate_to_an_existing_project_should_remove_the_stale_record() -> TestResult {
+        let data = TempDir::new()?;
+        let stale = TempDir::new()?;
+        let existing = TempDir::new()?;
+        let mut store = AppStateStore::load(data.path())?;
+        let stale_state = store.add_project(stale.path())?;
+        let stale_path = PathBuf::from(&stale_state.projects[0].path);
+        let existing_state = store.add_project(existing.path())?;
+        let existing_path = PathBuf::from(&existing_state.projects[1].path);
+
+        let relocated = store.relocate_project(&stale_path, &existing_path)?;
+
+        assert_eq!(relocated.projects.len(), 1);
+        assert_eq!(relocated.projects[0].path, existing_path.to_string_lossy());
+        assert_eq!(
+            relocated.last_selected_project,
+            Some(relocated.projects[0].path.clone())
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn failed_relocate_should_not_change_desktop_state() -> TestResult {
+        let data = TempDir::new()?;
+        let project = TempDir::new()?;
+        let invalid_replacement = TempDir::new()?;
+        let mut store = AppStateStore::load(data.path())?;
+        let original = store.add_project(project.path())?;
+        let path = PathBuf::from(&original.projects[0].path);
+
+        assert!(
+            store
+                .relocate_project(&path, invalid_replacement.path())
+                .is_err()
+        );
+        assert_eq!(store.snapshot().projects, original.projects);
         Ok(())
     }
 

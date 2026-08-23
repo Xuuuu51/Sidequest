@@ -3,12 +3,16 @@ use std::str::FromStr;
 use std::sync::{Mutex, MutexGuard};
 
 use sidequest_core::{CreateQuest, QuestId, QuestStatus, Workspace, open_workspace};
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, State, WebviewWindow};
 
 use crate::app_state::{AppStateStore, DesktopState};
-use crate::dto::{AppStateDto, CommandErrorDto, DeletedQuestDto, QuestDto, WorkspaceSnapshotDto};
+use crate::dto::{
+    AppStateDto, CommandErrorDto, DeletedQuestDto, PanelPreferencesDto, QuestDto,
+    WorkspaceSnapshotDto,
+};
 use crate::error::{DesktopError, Result};
 use crate::watcher::ProjectWatcher;
+use crate::window_state::capture_main_window;
 
 type CommandResult<T> = std::result::Result<T, CommandErrorDto>;
 
@@ -47,6 +51,43 @@ pub(crate) fn set_last_selected_project(
 ) -> CommandResult<AppStateDto> {
     app_state_lock(&state)
         .and_then(|mut store| store.set_last_selected_project(Path::new(&project_path)))
+        .map_err(CommandErrorDto::from)
+}
+
+#[tauri::command]
+pub(crate) fn relocate_project(
+    state: State<'_, DesktopState>,
+    project_path: String,
+    replacement_path: String,
+) -> CommandResult<AppStateDto> {
+    app_state_lock(&state)
+        .and_then(|mut store| {
+            store.relocate_project(Path::new(&project_path), Path::new(&replacement_path))
+        })
+        .map_err(CommandErrorDto::from)
+}
+
+#[tauri::command]
+pub(crate) fn set_panel_preferences(
+    state: State<'_, DesktopState>,
+    preferences: PanelPreferencesDto,
+) -> CommandResult<PanelPreferencesDto> {
+    app_state_lock(&state)
+        .and_then(|mut store| store.set_panel_preferences(preferences))
+        .map_err(CommandErrorDto::from)
+}
+
+#[tauri::command]
+pub(crate) fn save_main_window_geometry(
+    window: WebviewWindow,
+    state: State<'_, DesktopState>,
+) -> CommandResult<()> {
+    capture_main_window(&window)
+        .map_err(|error| DesktopError::Window {
+            operation: "capture Main Window geometry",
+            message: error.to_string(),
+        })
+        .and_then(|geometry| app_state_lock(&state)?.set_main_window_geometry(geometry))
         .map_err(CommandErrorDto::from)
 }
 

@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import type { AppStateDto } from "../shared/tauri/types";
-import { useMainWindowStore } from "./main-window";
+import {
+  currentPanelPreferences,
+  laneScrollKey,
+  useMainWindowStore,
+} from "./main-window";
 
 const appState: AppStateDto = {
   projects: [
@@ -9,6 +13,11 @@ const appState: AppStateDto = {
     { path: "/second", name: "second", state: "readOnly" },
   ],
   lastSelectedProject: "/second",
+  panelPreferences: {
+    sidebarWidth: 224,
+    sidebarCollapsed: false,
+    drawerWidth: 480,
+  },
   recoveryWarning: null,
 };
 
@@ -17,6 +26,18 @@ describe("useMainWindowStore", () => {
     useMainWindowStore.setState({
       route: "restoring",
       selectedProjectPath: null,
+      searchQuery: "",
+      selectedQuestId: null,
+      drawerOpen: false,
+      sidebarWidth: 224,
+      sidebarCollapsed: false,
+      drawerWidth: 480,
+      preferencesHydrated: false,
+      laneScrollPositions: {},
+      issuesExpanded: false,
+      projectMenuPath: null,
+      recoveryDismissed: false,
+      toast: null,
     });
   });
 
@@ -35,10 +56,60 @@ describe("useMainWindowStore", () => {
     useMainWindowStore.getState().synchronizeAppState({
       projects: [],
       lastSelectedProject: null,
+      panelPreferences: appState.panelPreferences,
       recoveryWarning: null,
     });
 
     expect(useMainWindowStore.getState().route).toBe("onboarding");
     expect(useMainWindowStore.getState().selectedProjectPath).toBeNull();
+  });
+
+  it("clears_project_specific_presentation_when_switching_projects", () => {
+    const store = useMainWindowStore.getState();
+    store.synchronizeAppState(appState);
+    store.setSearchQuery("query");
+    store.selectQuest("sq_selected");
+
+    store.selectProject("/first");
+
+    const state = useMainWindowStore.getState();
+    expect(state.selectedProjectPath).toBe("/first");
+    expect(state.searchQuery).toBe("");
+    expect(state.selectedQuestId).toBeNull();
+    expect(state.drawerOpen).toBe(false);
+  });
+
+  it("closes_the_drawer_without_clearing_selection", () => {
+    const store = useMainWindowStore.getState();
+    store.selectQuest("sq_selected");
+    store.closeDrawer();
+
+    expect(useMainWindowStore.getState().selectedQuestId).toBe("sq_selected");
+    expect(useMainWindowStore.getState().drawerOpen).toBe(false);
+
+    useMainWindowStore.getState().openSelectedQuest();
+    expect(useMainWindowStore.getState().drawerOpen).toBe(true);
+  });
+
+  it("clamps_panels_and_keeps_lane_scroll_positions_per_project", () => {
+    const store = useMainWindowStore.getState();
+    store.setSidebarWidth(999);
+    store.setDrawerWidth(20);
+    store.setSidebarCollapsed(true);
+    store.setLaneScrollPosition("/first", "inbox", 120);
+    store.setLaneScrollPosition("/second", "inbox", 360);
+
+    const state = useMainWindowStore.getState();
+    expect(currentPanelPreferences(state)).toEqual({
+      sidebarWidth: 320,
+      sidebarCollapsed: true,
+      drawerWidth: 420,
+    });
+    expect(state.laneScrollPositions[laneScrollKey("/first", "inbox")]).toBe(
+      120,
+    );
+    expect(state.laneScrollPositions[laneScrollKey("/second", "inbox")]).toBe(
+      360,
+    );
   });
 });

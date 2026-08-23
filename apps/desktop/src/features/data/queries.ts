@@ -12,14 +12,17 @@ import {
   deleteQuest,
   getAppState,
   loadWorkspace,
+  relocateProject,
   removeProject,
   searchQuests,
   setLastSelectedProject,
+  setPanelPreferences,
   setQuestStatus,
   updateQuestContent,
 } from "../../shared/tauri/commands";
 import type {
   AppStateDto,
+  PanelPreferencesDto,
   QuestDto,
   QuestStatus,
   WorkspaceSnapshotDto,
@@ -41,10 +44,12 @@ export function useWorkspaceQuery(projectPath: string | null) {
 }
 
 export function useSearchQuery(projectPath: string | null, query: string) {
+  const normalizedQuery = query.trim();
   return useQuery({
-    queryKey: queryKeys.search(projectPath ?? "", query),
-    queryFn: () => searchQuests(requiredProjectPath(projectPath), query),
-    enabled: projectPath !== null && query.length > 0,
+    queryKey: queryKeys.search(projectPath ?? "", normalizedQuery),
+    queryFn: () =>
+      searchQuests(requiredProjectPath(projectPath), normalizedQuery),
+    enabled: projectPath !== null && normalizedQuery.length > 0,
   });
 }
 
@@ -73,6 +78,31 @@ export function useSelectProjectMutation() {
   return useMutation({
     mutationFn: setLastSelectedProject,
     onSuccess: (appState) => setAppState(queryClient, appState),
+  });
+}
+
+export function useRelocateProjectMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      projectPath,
+      replacementPath,
+    }: {
+      projectPath: string;
+      replacementPath: string;
+    }) => relocateProject(projectPath, replacementPath),
+    onSuccess: (appState, { projectPath }) => {
+      setAppState(queryClient, appState);
+      queryClient.removeQueries({ queryKey: queryKeys.workspace(projectPath) });
+      queryClient.removeQueries({ queryKey: ["search", projectPath] });
+    },
+  });
+}
+
+export function usePanelPreferencesMutation() {
+  return useMutation({
+    mutationFn: (preferences: PanelPreferencesDto) =>
+      setPanelPreferences(preferences),
   });
 }
 
