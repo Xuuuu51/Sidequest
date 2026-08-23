@@ -1,11 +1,29 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect } from "react";
 
-import { saveMainWindowGeometry } from "../../shared/tauri/commands";
+import {
+  completeAppQuit,
+  hideMainWindow,
+  saveMainWindowGeometry,
+} from "../../shared/tauri/commands";
+import { listenForAppQuitRequest } from "../../shared/tauri/events";
+import type { NavigationIntent } from "../../store/main-window";
 
 const SAVE_DELAY_MS = 300;
 
-export function useWindowGeometryPersistence(): void {
+type NavigationGuard = (
+  action: () => void | Promise<void>,
+  intent?: NavigationIntent,
+) => Promise<boolean>;
+
+const immediateGuard: NavigationGuard = async (action) => {
+  await action();
+  return true;
+};
+
+export function useWindowGeometryPersistence(
+  guard: NavigationGuard = immediateGuard,
+): void {
   useEffect(() => {
     const window = getCurrentWindow();
     let timeout: ReturnType<typeof setTimeout> | null = null;
@@ -29,11 +47,13 @@ export function useWindowGeometryPersistence(): void {
           clearTimeout(timeout);
           timeout = null;
         }
-        try {
+        await guard(async () => {
           await saveMainWindowGeometry();
-        } finally {
-          await window.destroy();
-        }
+          await hideMainWindow();
+        }, "hide");
+      }),
+      listenForAppQuitRequest(() => {
+        void guard(completeAppQuit, "quit");
       }),
     ]);
 
@@ -48,5 +68,5 @@ export function useWindowGeometryPersistence(): void {
         }
       });
     };
-  }, []);
+  }, [guard]);
 }

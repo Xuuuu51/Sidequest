@@ -23,7 +23,7 @@ interface CommandErrorDto {
 
 ## 2. Commands 与 DTO
 
-App 与项目：`get_app_state`、`add_project`、`remove_project`、`relocate_project`、`set_last_selected_project`、`set_panel_preferences`、`save_main_window_geometry`。
+App 与项目：`get_app_state`、`add_project`、`remove_project`、`relocate_project`、`set_last_selected_project`、`set_panel_preferences`、`save_main_window_geometry`、`hide_main_window`、`complete_app_quit`。
 
 Workspace 与 Quest：`load_workspace`、`create_quest`、`update_quest_content`、`set_quest_status`、`delete_quest`、`search_quests`、`set_watched_project`。
 
@@ -107,6 +107,8 @@ Zustand 管理 route、当前项目、搜索 presentation、选中 Quest/Drawer�
 
 同一 Quest 的 mutation 使用相同 scope 串行执行。状态变更不做提前 optimistic update；成功后以 command 返回值更新 cache。自动保存与离开规则由 [Main Window 状态机](../desktop/main-window-state.md)定义，store 内不得调用 React Query hooks。
 
+Content editor 以最后一次输入后 `500ms` 自动保存。当前 Quest 的 draft、落盘基准、保存/冲突阶段可以作为 workflow state 保存在 Zustand，但不得把 Workspace collection 复制进去。旧写入响应只推进落盘基准，不覆盖更新的本地 draft。
+
 ## 5. File watcher
 
 MVP 同时只监听 Main Window 当前项目的 `.sidequest/quests/`。文件事件仅作为 invalidation signal：
@@ -119,6 +121,13 @@ filesystem event → debounce → workspace-invalidated → query reload
 
 不从事件推导增量数据，不实现 sync engine。refetch 不能直接覆盖未落盘的编辑内容；冲突进入状态机定义的恢复流程。
 
-## 6. 多窗口
+## 6. Main Window 生命周期
+
+- 红色关闭按钮由 React 拦截：先 flush pending content 与窗口几何，再隐藏而不是销毁 Main Window。
+- macOS Dock Reopen 由 native `RunEvent::Reopen` 重新显示并聚焦 Main Window。
+- native 退出请求先被阻止并发送 `app-quit-requested`；React 完成 flush 或用户明确放弃本地草稿后调用 `complete_app_quit` 进行一次性退出审批。
+- `app-quit-requested` 与其他 native event 一样，只能通过集中式 typed wrapper 订阅。
+
+## 7. 多窗口
 
 Main Window 与 Quick Capture Window 是独立原生窗口，分别拥有 QueryClient 和 Zustand store，不共享 JavaScript memory。Quick Capture 写入后，Main Window 通过 watcher 重新加载。

@@ -7,7 +7,7 @@ mod error;
 mod watcher;
 mod window_state;
 
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 use crate::app_state::{AppStateStore, DesktopState};
 use crate::window_state::restore_main_window;
@@ -18,7 +18,7 @@ use crate::window_state::restore_main_window;
 ///
 /// Returns a Tauri error when application setup or the native event loop fails.
 pub fn run() -> tauri::Result<()> {
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
@@ -40,6 +40,8 @@ pub fn run() -> tauri::Result<()> {
             commands::relocate_project,
             commands::set_panel_preferences,
             commands::save_main_window_geometry,
+            commands::hide_main_window,
+            commands::complete_app_quit,
             commands::load_workspace,
             commands::create_quest,
             commands::update_quest_content,
@@ -48,5 +50,39 @@ pub fn run() -> tauri::Result<()> {
             commands::search_quests,
             commands::set_watched_project,
         ])
-        .run(tauri::generate_context!())
+        .build(tauri::generate_context!())?;
+
+    let exit_code = app.run_return(|app_handle, event| match event {
+        tauri::RunEvent::ExitRequested { api, .. } => {
+            let approved = app_handle
+                .try_state::<DesktopState>()
+                .is_some_and(|state| state.consume_quit_approval());
+            if !approved {
+                api.prevent_exit();
+                if let Some(window) = app_handle.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.unminimize();
+                    let _ = window.set_focus();
+                }
+                let _ = app_handle.emit("app-quit-requested", ());
+            }
+        }
+        #[cfg(target_os = "macos")]
+        tauri::RunEvent::Reopen {
+            has_visible_windows,
+            ..
+        } => {
+            if !has_visible_windows && let Some(window) = app_handle.get_webview_window("main") {
+                let _ = window.show();
+                let _ = window.unminimize();
+                let _ = window.set_focus();
+            }
+        }
+        _ => {}
+    });
+    if exit_code == 0 {
+        Ok(())
+    } else {
+        std::process::exit(exit_code)
+    }
 }

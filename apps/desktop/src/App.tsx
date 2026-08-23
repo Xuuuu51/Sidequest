@@ -11,6 +11,10 @@ import {
 } from "./features/data/queries";
 import { useWorkspaceWatcher } from "./features/data/use-workspace-watcher";
 import { ProjectSidebar } from "./features/main-window/project-sidebar";
+import {
+  QuestWriteCoordinatorProvider,
+  useQuestWriteCoordinator,
+} from "./features/main-window/quest-write-coordinator";
 import { WorkspaceView } from "./features/main-window/workspace-view";
 import { useWindowGeometryPersistence } from "./features/window/use-window-geometry";
 import {
@@ -27,7 +31,16 @@ import {
 import "./App.css";
 
 function App() {
-  useWindowGeometryPersistence();
+  return (
+    <QuestWriteCoordinatorProvider>
+      <AppContent />
+    </QuestWriteCoordinatorProvider>
+  );
+}
+
+function AppContent() {
+  const coordinator = useQuestWriteCoordinator();
+  useWindowGeometryPersistence(coordinator.guard);
   const appState = useAppStateQuery();
   const addProject = useAddProjectMutation();
   const removeProject = useRemoveProjectMutation();
@@ -73,10 +86,12 @@ function App() {
       if (projectPath === null) {
         return;
       }
-      const nextState = await addProject.mutateAsync(projectPath);
-      if (nextState.lastSelectedProject !== null) {
-        selectProject(nextState.lastSelectedProject);
-      }
+      await coordinator.guard(async () => {
+        const nextState = await addProject.mutateAsync(projectPath);
+        if (nextState.lastSelectedProject !== null) {
+          selectProject(nextState.lastSelectedProject);
+        }
+      });
     } catch (error) {
       setActionError(toError(error));
     }
@@ -88,8 +103,10 @@ function App() {
     }
     setActionError(null);
     try {
-      await selectProjectMutation.mutateAsync(project.path);
-      selectProject(project.path);
+      await coordinator.guard(async () => {
+        await selectProjectMutation.mutateAsync(project.path);
+        selectProject(project.path);
+      });
     } catch (error) {
       setActionError(toError(error));
     }
@@ -98,8 +115,15 @@ function App() {
   async function handleRemoveProject(project: ProjectDto): Promise<void> {
     setActionError(null);
     try {
-      const nextState = await removeProject.mutateAsync(project.path);
-      synchronizeAppState(nextState);
+      const remove = async () => {
+        const nextState = await removeProject.mutateAsync(project.path);
+        synchronizeAppState(nextState);
+      };
+      if (project.path === selectedProjectPath) {
+        await coordinator.guard(remove);
+      } else {
+        await remove();
+      }
     } catch (error) {
       setActionError(toError(error));
     }

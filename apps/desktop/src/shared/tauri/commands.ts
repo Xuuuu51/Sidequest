@@ -50,6 +50,14 @@ export function saveMainWindowGeometry(): Promise<void> {
   return invokeCommand("save_main_window_geometry");
 }
 
+export function hideMainWindow(): Promise<void> {
+  return invokeCommand("hide_main_window");
+}
+
+export function completeAppQuit(): Promise<void> {
+  return invokeCommand("complete_app_quit");
+}
+
 export function loadWorkspace(
   projectPath: string,
 ): Promise<WorkspaceSnapshotDto> {

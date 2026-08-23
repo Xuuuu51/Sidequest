@@ -92,6 +92,27 @@ pub(crate) fn save_main_window_geometry(
 }
 
 #[tauri::command]
+pub(crate) fn hide_main_window(window: WebviewWindow) -> CommandResult<()> {
+    window
+        .hide()
+        .map_err(|error| DesktopError::Window {
+            operation: "hide Main Window",
+            message: error.to_string(),
+        })
+        .map_err(CommandErrorDto::from)
+}
+
+#[tauri::command]
+pub(crate) fn complete_app_quit(
+    app_handle: AppHandle,
+    state: State<'_, DesktopState>,
+) -> CommandResult<()> {
+    state.approve_quit();
+    app_handle.exit(0);
+    Ok(())
+}
+
+#[tauri::command]
 pub(crate) fn load_workspace(project_path: String) -> CommandResult<WorkspaceSnapshotDto> {
     load_workspace_impl(Path::new(&project_path)).map_err(CommandErrorDto::from)
 }

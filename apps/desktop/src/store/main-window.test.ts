@@ -38,6 +38,13 @@ describe("useMainWindowStore", () => {
       projectMenuPath: null,
       recoveryDismissed: false,
       toast: null,
+      editor: null,
+      drag: null,
+      statusMenuOpen: false,
+      deleteConfirming: false,
+      deleteError: null,
+      navigationPending: false,
+      navigationIntent: null,
     });
   });
 
@@ -111,5 +118,48 @@ describe("useMainWindowStore", () => {
     expect(state.laneScrollPositions[laneScrollKey("/second", "inbox")]).toBe(
       360,
     );
+  });
+
+  it("keeps_newer_draft_content_when_an_older_save_completes", () => {
+    const store = useMainWindowStore.getState();
+    store.initializeEditor(
+      "/first",
+      "sq_quest",
+      "Original",
+      "2026-08-23T10:00:00Z",
+      "inbox",
+    );
+    store.startEditing();
+    store.changeDraft("First edit");
+    store.beginSaving();
+    store.changeDraft("Newest edit");
+
+    store.completeSaving("First edit");
+
+    const editor = useMainWindowStore.getState().editor;
+    expect(editor?.baseContent).toBe("First edit");
+    expect(editor?.draftContent).toBe("Newest edit");
+    expect(editor?.phase).toBe("pending");
+  });
+
+  it("records_external_conflicts_without_copying_workspace_data", () => {
+    const store = useMainWindowStore.getState();
+    store.initializeEditor(
+      "/first",
+      "sq_quest",
+      "Disk",
+      "2026-08-23T10:00:00Z",
+      "inbox",
+    );
+    store.startEditing();
+    store.changeDraft("Local draft");
+    store.setExternalConflict("modified");
+
+    expect(useMainWindowStore.getState().editor).toMatchObject({
+      draftContent: "Local draft",
+      phase: "externalConflict",
+      conflict: "modified",
+    });
+    expect(useMainWindowStore.getState()).not.toHaveProperty("quests");
   });
 });

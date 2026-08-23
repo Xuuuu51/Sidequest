@@ -1,7 +1,10 @@
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{
+    Mutex,
+    atomic::{AtomicBool, Ordering},
+};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
@@ -29,6 +32,7 @@ pub(crate) const MIN_WINDOW_HEIGHT: u32 = 640;
 pub(crate) struct DesktopState {
     pub(crate) app_state: Mutex<AppStateStore>,
     pub(crate) watcher: Mutex<ProjectWatcher>,
+    quit_approved: AtomicBool,
 }
 
 impl DesktopState {
@@ -36,7 +40,16 @@ impl DesktopState {
         Self {
             app_state: Mutex::new(app_state),
             watcher: Mutex::new(ProjectWatcher::default()),
+            quit_approved: AtomicBool::new(false),
         }
+    }
+
+    pub(crate) fn approve_quit(&self) {
+        self.quit_approved.store(true, Ordering::SeqCst);
+    }
+
+    pub(crate) fn consume_quit_approval(&self) -> bool {
+        self.quit_approved.swap(false, Ordering::SeqCst)
     }
 }
 
@@ -517,12 +530,24 @@ mod tests {
     use tempfile::TempDir;
 
     use super::{
-        AppStateStore, DEFAULT_DRAWER_WIDTH, DEFAULT_SIDEBAR_WIDTH, MAX_DRAWER_WIDTH,
+        AppStateStore, DEFAULT_DRAWER_WIDTH, DEFAULT_SIDEBAR_WIDTH, DesktopState, MAX_DRAWER_WIDTH,
         MAX_SIDEBAR_WIDTH, MainWindowGeometry, PersistentAppState,
     };
     use crate::dto::PanelPreferencesDto;
 
     type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
+
+    #[test]
+    fn quit_approval_should_be_consumed_once() -> TestResult {
+        let temporary = TempDir::new()?;
+        let state = DesktopState::new(AppStateStore::load(temporary.path())?);
+
+        assert!(!state.consume_quit_approval());
+        state.approve_quit();
+        assert!(state.consume_quit_approval());
+        assert!(!state.consume_quit_approval());
+        Ok(())
+    }
 
     #[test]
     fn load_should_create_and_restore_default_state() -> TestResult {

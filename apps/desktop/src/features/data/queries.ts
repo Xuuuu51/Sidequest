@@ -4,6 +4,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
+import { useCallback } from "react";
 
 import { queryKeys } from "../../shared/query/keys";
 import {
@@ -142,6 +143,26 @@ export function useSetQuestStatusMutation(projectPath: string, id: string) {
       });
     },
   });
+}
+
+export function useSetDraggedQuestStatusMutation(projectPath: string) {
+  const queryClient = useQueryClient();
+  return useCallback(
+    (id: string, status: QuestStatus) => {
+      const mutation = queryClient.getMutationCache().build(queryClient, {
+        mutationFn: () => setQuestStatus(projectPath, id, status),
+        scope: { id: questMutationScope(projectPath, id) },
+        onSuccess: (quest: QuestDto) => {
+          replaceCachedQuest(queryClient, projectPath, quest);
+          void queryClient.invalidateQueries({
+            queryKey: ["search", projectPath],
+          });
+        },
+      });
+      return mutation.execute(undefined);
+    },
+    [projectPath, queryClient],
+  );
 }
 
 export function useDeleteQuestMutation(projectPath: string, id: string) {

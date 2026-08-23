@@ -7,6 +7,34 @@ import type {
 } from "../shared/tauri/types";
 
 export type MainRoute = "restoring" | "onboarding" | "workspace";
+export type EditorPhase =
+  | "viewing"
+  | "editing"
+  | "pending"
+  | "saving"
+  | "saveError"
+  | "externalConflict";
+export type ExternalConflict = "modified" | "deleted";
+export type NavigationIntent = "navigation" | "hide" | "quit";
+
+export interface QuestEditorState {
+  projectPath: string;
+  questId: string;
+  createdAt: string;
+  status: QuestStatus;
+  baseContent: string;
+  draftContent: string;
+  phase: EditorPhase;
+  conflict: ExternalConflict | null;
+  error: string | null;
+  savedVisible: boolean;
+}
+
+export interface DragState {
+  questId: string;
+  fromStatus: QuestStatus;
+  overStatus: QuestStatus;
+}
 
 const DEFAULT_PREFERENCES: PanelPreferencesDto = {
   sidebarWidth: 224,
@@ -29,6 +57,13 @@ interface MainWindowState {
   projectMenuPath: string | null;
   recoveryDismissed: boolean;
   toast: string | null;
+  editor: QuestEditorState | null;
+  drag: DragState | null;
+  statusMenuOpen: boolean;
+  deleteConfirming: boolean;
+  deleteError: string | null;
+  navigationPending: boolean;
+  navigationIntent: NavigationIntent | null;
   synchronizeAppState: (appState: AppStateDto) => void;
   selectProject: (projectPath: string) => void;
   setSearchQuery: (query: string) => void;
@@ -48,6 +83,32 @@ interface MainWindowState {
   setProjectMenuPath: (projectPath: string | null) => void;
   dismissRecovery: () => void;
   showToast: (message: string | null) => void;
+  initializeEditor: (
+    projectPath: string,
+    questId: string,
+    content: string,
+    createdAt: string,
+    status: QuestStatus,
+  ) => void;
+  setEditorStatus: (status: QuestStatus) => void;
+  startEditing: () => void;
+  stopEditing: () => void;
+  changeDraft: (content: string) => void;
+  beginSaving: () => void;
+  completeSaving: (savedContent: string) => void;
+  failSaving: (message: string) => void;
+  clearSavedFeedback: () => void;
+  setExternalConflict: (conflict: ExternalConflict) => void;
+  loadDiskContent: (content: string) => void;
+  clearEditor: () => void;
+  setDrag: (drag: DragState | null) => void;
+  setStatusMenuOpen: (open: boolean) => void;
+  setDeleteConfirming: (confirming: boolean) => void;
+  setDeleteError: (message: string | null) => void;
+  setNavigationPending: (
+    pending: boolean,
+    intent?: NavigationIntent | null,
+  ) => void;
 }
 
 export const useMainWindowStore = create<MainWindowState>((set, get) => ({
@@ -63,6 +124,13 @@ export const useMainWindowStore = create<MainWindowState>((set, get) => ({
   projectMenuPath: null,
   recoveryDismissed: false,
   toast: null,
+  editor: null,
+  drag: null,
+  statusMenuOpen: false,
+  deleteConfirming: false,
+  deleteError: null,
+  navigationPending: false,
+  navigationIntent: null,
   synchronizeAppState: (appState) => {
     const preferenceState = get().preferencesHydrated
       ? {}
@@ -79,6 +147,13 @@ export const useMainWindowStore = create<MainWindowState>((set, get) => ({
         selectedQuestId: null,
         drawerOpen: false,
         projectMenuPath: null,
+        editor: null,
+        drag: null,
+        statusMenuOpen: false,
+        deleteConfirming: false,
+        deleteError: null,
+        navigationPending: false,
+        navigationIntent: null,
       });
       return;
     }
@@ -102,6 +177,13 @@ export const useMainWindowStore = create<MainWindowState>((set, get) => ({
             drawerOpen: false,
             issuesExpanded: false,
             projectMenuPath: null,
+            editor: null,
+            drag: null,
+            statusMenuOpen: false,
+            deleteConfirming: false,
+            deleteError: null,
+            navigationPending: false,
+            navigationIntent: null,
           }
         : {}),
     });
@@ -115,6 +197,13 @@ export const useMainWindowStore = create<MainWindowState>((set, get) => ({
       drawerOpen: false,
       issuesExpanded: false,
       projectMenuPath: null,
+      editor: null,
+      drag: null,
+      statusMenuOpen: false,
+      deleteConfirming: false,
+      deleteError: null,
+      navigationPending: false,
+      navigationIntent: null,
     }),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
   selectQuest: (selectedQuestId) => set({ selectedQuestId, drawerOpen: true }),
@@ -142,6 +231,155 @@ export const useMainWindowStore = create<MainWindowState>((set, get) => ({
   setProjectMenuPath: (projectMenuPath) => set({ projectMenuPath }),
   dismissRecovery: () => set({ recoveryDismissed: true }),
   showToast: (toast) => set({ toast }),
+  initializeEditor: (projectPath, questId, content, createdAt, status) =>
+    set({
+      editor: {
+        projectPath,
+        questId,
+        createdAt,
+        status,
+        baseContent: content,
+        draftContent: content,
+        phase: "viewing",
+        conflict: null,
+        error: null,
+        savedVisible: false,
+      },
+      statusMenuOpen: false,
+      deleteConfirming: false,
+      deleteError: null,
+    }),
+  setEditorStatus: (status) =>
+    set((state) =>
+      state.editor === null ? {} : { editor: { ...state.editor, status } },
+    ),
+  startEditing: () =>
+    set((state) =>
+      state.editor === null || state.editor.phase === "externalConflict"
+        ? {}
+        : { editor: { ...state.editor, phase: "editing" } },
+    ),
+  stopEditing: () =>
+    set((state) =>
+      state.editor === null ||
+      state.editor.draftContent !== state.editor.baseContent
+        ? {}
+        : { editor: { ...state.editor, phase: "viewing" } },
+    ),
+  changeDraft: (draftContent) =>
+    set((state) => {
+      if (state.editor === null || state.editor.phase === "externalConflict") {
+        return {};
+      }
+      return {
+        editor: {
+          ...state.editor,
+          draftContent,
+          phase:
+            draftContent === state.editor.baseContent ? "editing" : "pending",
+          error: null,
+          savedVisible: false,
+        },
+      };
+    }),
+  beginSaving: () =>
+    set((state) =>
+      state.editor === null
+        ? {}
+        : {
+            editor: {
+              ...state.editor,
+              phase: "saving",
+              error: null,
+              savedVisible: false,
+            },
+          },
+    ),
+  completeSaving: (savedContent) =>
+    set((state) => {
+      if (state.editor === null) {
+        return {};
+      }
+      const stillDirty = state.editor.draftContent !== savedContent;
+      return {
+        editor: {
+          ...state.editor,
+          baseContent: savedContent,
+          phase: stillDirty ? "pending" : "editing",
+          conflict: null,
+          error: null,
+          savedVisible: !stillDirty,
+        },
+      };
+    }),
+  failSaving: (error) =>
+    set((state) =>
+      state.editor === null
+        ? {}
+        : {
+            editor: {
+              ...state.editor,
+              phase: "saveError",
+              error,
+              savedVisible: false,
+            },
+          },
+    ),
+  clearSavedFeedback: () =>
+    set((state) =>
+      state.editor === null
+        ? {}
+        : { editor: { ...state.editor, savedVisible: false } },
+    ),
+  setExternalConflict: (conflict) =>
+    set((state) =>
+      state.editor === null
+        ? {}
+        : {
+            editor: {
+              ...state.editor,
+              phase: "externalConflict",
+              conflict,
+              error: null,
+              savedVisible: false,
+            },
+          },
+    ),
+  loadDiskContent: (content) =>
+    set((state) =>
+      state.editor === null
+        ? {}
+        : {
+            editor: {
+              ...state.editor,
+              baseContent: content,
+              draftContent: content,
+              phase: "viewing",
+              conflict: null,
+              error: null,
+              savedVisible: false,
+            },
+          },
+    ),
+  clearEditor: () =>
+    set({
+      editor: null,
+      statusMenuOpen: false,
+      deleteConfirming: false,
+      deleteError: null,
+      navigationPending: false,
+      navigationIntent: null,
+    }),
+  setDrag: (drag) => set({ drag }),
+  setStatusMenuOpen: (statusMenuOpen) => set({ statusMenuOpen }),
+  setDeleteConfirming: (deleteConfirming) =>
+    set({ deleteConfirming, deleteError: null }),
+  setDeleteError: (deleteError) => set({ deleteError }),
+  setNavigationPending: (navigationPending, navigationIntent = null) =>
+    set({
+      navigationPending,
+      navigationIntent: navigationPending ? navigationIntent : null,
+    }),
 }));
 
 export function laneScrollKey(

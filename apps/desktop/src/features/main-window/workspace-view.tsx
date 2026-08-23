@@ -11,11 +11,16 @@ import { useEffect, useRef } from "react";
 
 import { useSearchQuery, useWorkspaceQuery } from "../data/queries";
 import { useDebouncedValue } from "../../shared/hooks/use-debounced-value";
-import type { ProjectDto, QuestFileIssueDto } from "../../shared/tauri/types";
+import type {
+  ProjectDto,
+  QuestDto,
+  QuestFileIssueDto,
+} from "../../shared/tauri/types";
 import { IconButton } from "../../shared/ui/icon-button";
 import { useMainWindowStore } from "../../store/main-window";
 import { QuestBoard } from "./quest-board";
 import { QuestDrawer } from "./quest-drawer";
+import { useQuestWriteCoordinator } from "./quest-write-coordinator";
 import { SearchResults } from "./search-results";
 
 interface WorkspaceViewProps {
@@ -36,6 +41,7 @@ export function WorkspaceView({
   onRetryAppState,
 }: WorkspaceViewProps) {
   const searchInput = useRef<HTMLInputElement>(null);
+  const coordinator = useQuestWriteCoordinator();
   const searchQuery = useMainWindowStore((state) => state.searchQuery);
   const selectedQuestId = useMainWindowStore((state) => state.selectedQuestId);
   const drawerOpen = useMainWindowStore((state) => state.drawerOpen);
@@ -49,6 +55,12 @@ export function WorkspaceView({
     (state) => state.openSelectedQuest,
   );
   const clearSelection = useMainWindowStore((state) => state.clearSelection);
+  const clearEditor = useMainWindowStore((state) => state.clearEditor);
+  const editor = useMainWindowStore((state) => state.editor);
+  const failSaving = useMainWindowStore((state) => state.failSaving);
+  const setExternalConflict = useMainWindowStore(
+    (state) => state.setExternalConflict,
+  );
   const toggleIssues = useMainWindowStore((state) => state.toggleIssues);
   const showToast = useMainWindowStore((state) => state.showToast);
   const setProjectMenuPath = useMainWindowStore(
@@ -62,10 +74,28 @@ export function WorkspaceView({
 
   useEffect(() => {
     if (project.state === "unavailable") {
-      clearSelection();
+      if (
+        editor !== null &&
+        editor.draftContent !== editor.baseContent &&
+        editor.phase !== "saveError"
+      ) {
+        failSaving(
+          "The project is unavailable. Your local changes are preserved.",
+        );
+      } else {
+        clearEditor();
+        clearSelection();
+      }
       setSearchQuery("");
     }
-  }, [clearSelection, project.state, setSearchQuery]);
+  }, [
+    clearEditor,
+    clearSelection,
+    editor,
+    failSaving,
+    project.state,
+    setSearchQuery,
+  ]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent): void {
@@ -89,7 +119,7 @@ export function WorkspaceView({
         searchInput.current?.blur();
       } else if (drawerOpen) {
         event.preventDefault();
-        closeDrawer();
+        void coordinator.guard(() => closeDrawer());
       }
     }
     window.addEventListener("keydown", handleKeyDown);
@@ -101,20 +131,39 @@ export function WorkspaceView({
     searchQuery,
     setProjectMenuPath,
     setSearchQuery,
+    coordinator,
   ]);
 
   useEffect(() => {
-    if (
-      workspace.isSuccess &&
-      selectedQuestId !== null &&
-      !workspace.data.quests.some((quest) => quest.id === selectedQuestId)
-    ) {
+    if (!workspace.isSuccess || selectedQuestId === null) {
+      return;
+    }
+    const selected = findSelectedQuest(workspace.data.quests, selectedQuestId);
+    if (selected !== undefined) {
+      return;
+    }
+    const hasDraft =
+      editor?.questId === selectedQuestId &&
+      editor.projectPath === project.path &&
+      editor.draftContent !== editor.baseContent;
+    if (hasDraft) {
+      if (!(
+        editor.phase === "externalConflict" && editor.conflict === "deleted"
+      )) {
+        setExternalConflict("deleted");
+      }
+    } else {
+      clearEditor();
       clearSelection();
       showToast("The selected Quest no longer exists");
     }
   }, [
     clearSelection,
+    clearEditor,
+    editor,
+    project.path,
     selectedQuestId,
+    setExternalConflict,
     showToast,
     workspace.data,
     workspace.isSuccess,
@@ -131,6 +180,29 @@ export function WorkspaceView({
   const selectedQuest = workspace.data?.quests.find(
     (quest) => quest.id === selectedQuestId,
   );
+  const drawerQuest =
+    selectedQuest ??
+    (editor !== null &&
+    editor.projectPath === project.path &&
+    editor.questId === selectedQuestId
+      ? {
+          id: editor.questId,
+          createdAt: editor.createdAt,
+          content: editor.baseContent,
+          status: editor.status,
+        }
+      : undefined);
+  const deletedExternally =
+    selectedQuestId !== null &&
+    selectedQuest === undefined &&
+    drawerQuest?.id === selectedQuestId;
+
+  function handleSelectQuest(questId: string): void {
+    if (questId === selectedQuestId && drawerOpen) {
+      return;
+    }
+    void coordinator.guard(() => selectQuest(questId));
+  }
 
   return (
     <section className="workspace-shell">
@@ -222,10 +294,11 @@ export function WorkspaceView({
 
             {normalizedSearch === "" ? (
               <QuestBoard
-                onSelectQuest={selectQuest}
+                onSelectQuest={handleSelectQuest}
                 projectPath={project.path}
                 quests={workspace.data.quests}
                 selectedQuestId={selectedQuestId}
+                writable={workspace.data.access === "writable"}
               />
             ) : debouncedSearch !== normalizedSearch || search.isPending ? (
               <div className="local-progress" role="status">
@@ -242,7 +315,7 @@ export function WorkspaceView({
             ) : (
               <SearchResults
                 onClear={() => setSearchQuery("")}
-                onSelectQuest={selectQuest}
+                onSelectQuest={handleSelectQuest}
                 query={normalizedSearch}
                 quests={search.data.quests}
                 selectedQuestId={selectedQuestId}
@@ -252,11 +325,14 @@ export function WorkspaceView({
         )}
       </div>
 
-      {drawerOpen && selectedQuest !== undefined && (
+      {drawerOpen && drawerQuest !== undefined && (
         <QuestDrawer
-          onClose={closeDrawer}
+          access={workspace.data?.access ?? "readOnly"}
+          deletedExternally={deletedExternally}
+          onClose={() => void coordinator.guard(() => closeDrawer())}
           onPersistPreferences={onPersistPreferences}
-          quest={selectedQuest}
+          projectPath={project.path}
+          quest={drawerQuest}
         />
       )}
       {toast !== null && (
@@ -266,6 +342,13 @@ export function WorkspaceView({
       )}
     </section>
   );
+}
+
+function findSelectedQuest(
+  quests: QuestDto[],
+  selectedQuestId: string,
+): QuestDto | undefined {
+  return quests.find((quest) => quest.id === selectedQuestId);
 }
 
 function LoadingState() {

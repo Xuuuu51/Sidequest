@@ -14,7 +14,9 @@ vi.mock("@tauri-apps/plugin-opener", () => ({
 
 import {
   addProject,
+  completeAppQuit,
   CommandError,
+  hideMainWindow,
   relocateProject,
   removeProject,
   revealPath,
@@ -47,6 +49,8 @@ describe("typed Tauri commands", () => {
       drawerWidth: 480,
     });
     await saveMainWindowGeometry();
+    await hideMainWindow();
+    await completeAppQuit();
 
     expect(mocks.invoke.mock.calls).toEqual([
       ["add_project", { projectPath: "/project" }],
@@ -78,6 +82,8 @@ describe("typed Tauri commands", () => {
         },
       ],
       ["save_main_window_geometry", undefined],
+      ["hide_main_window", undefined],
+      ["complete_app_quit", undefined],
     ]);
   });
 

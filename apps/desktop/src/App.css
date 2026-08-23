@@ -71,7 +71,8 @@ body {
 }
 
 button,
-input {
+input,
+textarea {
   color: inherit;
   font: inherit;
 }
@@ -614,6 +615,22 @@ kbd {
   overscroll-behavior: contain;
 }
 
+.lane-scroll.drop-target {
+  background: color-mix(in srgb, var(--focus-ring) 4%, transparent);
+}
+
+.quest-card-slot {
+  position: relative;
+}
+
+.drop-indicator {
+  display: block;
+  height: 2px;
+  margin: -1px 2px 9px;
+  border-radius: 2px;
+  background: var(--focus-ring);
+}
+
 .quest-card {
   display: flex;
   width: 100%;
@@ -638,6 +655,14 @@ kbd {
   padding: 10px 11px;
   border: 2px solid var(--focus-ring);
   background: color-mix(in srgb, var(--surface-raised) 88%, var(--focus-ring));
+}
+
+.quest-card[draggable="true"] {
+  cursor: grab;
+}
+
+.quest-card.dragging {
+  opacity: 0.32;
 }
 
 .quest-content-preview {
@@ -796,26 +821,268 @@ kbd {
   min-height: 0;
   flex: 1;
   flex-direction: column;
-  padding: 18px 22px 20px;
+  padding: 18px 22px 16px;
   overflow-y: auto;
 }
 
 .drawer-content {
+  display: block;
+  width: 100%;
   flex: 1;
   min-height: 200px;
+  margin: 0;
+  padding: 0;
   color: var(--text-primary);
+  border: 0;
+  border-radius: 4px;
+  outline: 0;
+  background: transparent;
   font-size: 14px;
   line-height: 22px;
+  text-align: left;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   user-select: text;
 }
 
+.drawer-content-view:disabled {
+  color: var(--text-primary);
+  opacity: 1;
+}
+
+.drawer-content-view:not(:disabled):hover {
+  background: color-mix(in srgb, var(--surface-hover) 45%, transparent);
+}
+
+.drawer-content-editor {
+  resize: none;
+}
+
+.drawer-content-editor:focus {
+  box-shadow: 0 0 0 2px var(--focus-ring);
+}
+
+.drawer-created-row {
+  display: flex;
+  min-height: 36px;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 14px;
+}
+
 .drawer-created {
-  display: block;
-  padding-top: 18px;
   color: var(--text-muted);
   font-size: 12px;
+}
+
+.save-status {
+  min-width: 54px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: right;
+}
+
+.drawer-feedback-stack {
+  flex: 0 0 auto;
+}
+
+.drawer-inline-error {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  color: var(--danger);
+  border-top: 1px solid
+    color-mix(in srgb, var(--danger) 42%, var(--border-default));
+  background: color-mix(in srgb, var(--danger) 7%, var(--surface-panel));
+  font-size: 12px;
+}
+
+.drawer-inline-error.conflict {
+  color: var(--warning);
+  border-top-color: color-mix(
+    in srgb,
+    var(--warning) 42%,
+    var(--border-default)
+  );
+  background: color-mix(in srgb, var(--warning) 7%, var(--surface-panel));
+}
+
+.drawer-inline-error > div:first-child {
+  display: grid;
+  min-width: 0;
+}
+
+.drawer-inline-error strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.drawer-inline-error span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.drawer-error-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.drawer-error-actions button,
+.drawer-inline-error > button {
+  min-height: 27px;
+  padding: 3px 8px;
+  font-size: 12px;
+}
+
+.drawer-action-bar {
+  display: flex;
+  height: 64px;
+  flex: 0 0 64px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  border-top: 1px solid var(--border-default);
+  background: var(--surface-panel);
+}
+
+.delete-action,
+.status-primary,
+.status-menu-trigger {
+  display: inline-flex;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-action {
+  gap: 6px;
+  padding: 0 8px;
+  color: var(--danger);
+  border-color: transparent;
+  background: transparent;
+}
+
+.status-split {
+  position: relative;
+  display: flex;
+}
+
+.status-primary {
+  min-width: 138px;
+  gap: 7px;
+  padding: 0 11px;
+  border-radius: 7px 0 0 7px;
+}
+
+.status-menu-trigger {
+  width: 34px;
+  padding: 0;
+  border-left: 0;
+  border-radius: 0 7px 7px 0;
+}
+
+.status-menu {
+  position: absolute;
+  z-index: 80;
+  right: 0;
+  bottom: 38px;
+  min-width: 170px;
+  padding: 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 28%);
+}
+
+.status-menu button {
+  display: flex;
+  width: 100%;
+  height: 28px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 8px;
+  border-color: transparent;
+  background: transparent;
+  text-align: left;
+}
+
+.dialog-scrim {
+  position: absolute;
+  z-index: 140;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 52%);
+}
+
+.delete-dialog {
+  width: min(420px, calc(100% - 48px));
+  padding: 18px;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--surface-panel);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 40%);
+}
+
+.delete-dialog h2 {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.delete-dialog p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.delete-preview {
+  display: -webkit-box;
+  margin-bottom: 10px !important;
+  padding: 9px 10px;
+  overflow: hidden;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-default);
+  border-radius: 7px;
+  background: var(--surface-raised);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.dialog-error {
+  margin-top: 10px !important;
+  color: var(--danger) !important;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+  margin-top: 18px;
+}
+
+.dialog-actions button {
+  height: 30px;
+  padding: 0 11px;
+}
+
+.danger-button {
+  color: #fff;
+  border-color: color-mix(in srgb, var(--danger) 70%, #000);
+  background: color-mix(in srgb, var(--danger) 78%, #4a1717);
+}
+
+.danger-button:not(:disabled):hover {
+  background: color-mix(in srgb, var(--danger) 88%, #4a1717);
 }
 
 .workspace-state,
