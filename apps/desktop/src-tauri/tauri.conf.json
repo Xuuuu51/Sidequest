@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "identifier": "com.xuuuu51.sidequest",
   "build": {
-    "beforeDevCommand": "pnpm dev",
+    "beforeDevCommand": "pnpm prepare:integrations:dev && pnpm dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "pnpm build",
+    "beforeBuildCommand": "pnpm prepare:integrations:release && pnpm build",
     "frontendDist": "../dist"
   },
   "app": {
@@ -55,6 +55,10 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "resources": {
+      "resources/sq": "sq",
+      "resources/sidequest-skill/SKILL.md": "sidequest-skill/SKILL.md"
+    }
   }
 }

@@ -9,6 +9,7 @@
 
 node_modules/
 dist/
+apps/desktop/src-tauri/resources/sq
 target/
 
 apps/desktop/src-tauri/gen/schemas/

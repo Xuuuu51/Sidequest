@@ -42,6 +42,7 @@ const appState: AppStateDto = {
     drawerWidth: 480,
   },
   quickCapture: { lastProjectPath: "/active", position: null },
+  onboardingStep: "complete",
   recoveryWarning: null,
 };
 

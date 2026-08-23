@@ -1,10 +1,10 @@
-use tauri::{AppHandle, Manager, menu::*};
+use tauri::{AppHandle, Emitter, Manager, menu::*};
 
 use crate::quick_capture_window::show_quick_capture_window;
 
 pub(crate) const OPEN_SIDEQUEST_MENU_ID: &str = "open_sidequest";
 pub(crate) const QUICK_CAPTURE_MENU_ID: &str = "quick_capture";
-pub(crate) const SETTINGS_MENU_ID: &str = "settings_disabled";
+pub(crate) const SETTINGS_MENU_ID: &str = "settings";
 pub(crate) const QUIT_SIDEQUEST_MENU_ID: &str = "quit_sidequest";
 
 pub(crate) fn build(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
@@ -29,7 +29,7 @@ pub(crate) fn build(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
             app,
             SETTINGS_MENU_ID,
             "Settings…",
-            false,
+            true,
             Some("CmdOrCtrl+,"),
         )?;
         let app_menu = Submenu::with_items(
@@ -113,6 +113,14 @@ pub(crate) fn handle_event(app: &AppHandle, event: tauri::menu::MenuEvent) {
         }
         QUICK_CAPTURE_MENU_ID => {
             let _show_result = show_quick_capture_window(app);
+        }
+        SETTINGS_MENU_ID => {
+            if let Some(window) = app.get_webview_window("main") {
+                let _show_result = window.show();
+                let _unminimize_result = window.unminimize();
+                let _focus_result = window.set_focus();
+                let _event_result = window.emit(crate::native_events::OPEN_SETTINGS_EVENT, ());
+            }
         }
         QUIT_SIDEQUEST_MENU_ID => app.exit(0),
         _ => {}

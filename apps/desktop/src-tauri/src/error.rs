@@ -29,6 +29,18 @@ pub(crate) enum DesktopError {
         message: String,
     },
 
+    #[error("invalid shortcut: {message}")]
+    InvalidShortcut { message: String },
+
+    #[error("global shortcut could not be registered: {message}")]
+    ShortcutConflict { message: String },
+
+    #[error("integration conflict at {path}: {message}")]
+    IntegrationConflict { path: PathBuf, message: String },
+
+    #[error("integration is unavailable at {path}: {message}")]
+    IntegrationUnavailable { path: PathBuf, message: String },
+
     #[error("Desktop state lock is unavailable")]
     StateLock,
 

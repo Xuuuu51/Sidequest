@@ -6,7 +6,7 @@ import type {
   QuestStatus,
 } from "../shared/tauri/types";
 
-export type MainRoute = "restoring" | "onboarding" | "workspace";
+export type MainRoute = "restoring" | "onboarding" | "workspace" | "settings";
 export type EditorPhase =
   | "viewing"
   | "editing"
@@ -64,6 +64,8 @@ interface MainWindowState {
   deleteError: string | null;
   navigationPending: boolean;
   navigationIntent: NavigationIntent | null;
+  shortcutRecording: boolean;
+  licenseOpen: boolean;
   synchronizeAppState: (appState: AppStateDto) => void;
   selectProject: (projectPath: string) => void;
   setSearchQuery: (query: string) => void;
@@ -109,6 +111,10 @@ interface MainWindowState {
     pending: boolean,
     intent?: NavigationIntent | null,
   ) => void;
+  openSettings: () => void;
+  closeSettings: (hasProjects: boolean) => void;
+  setShortcutRecording: (recording: boolean) => void;
+  setLicenseOpen: (open: boolean) => void;
 }
 
 export const useMainWindowStore = create<MainWindowState>((set, get) => ({
@@ -131,6 +137,8 @@ export const useMainWindowStore = create<MainWindowState>((set, get) => ({
   deleteError: null,
   navigationPending: false,
   navigationIntent: null,
+  shortcutRecording: false,
+  licenseOpen: false,
   synchronizeAppState: (appState) => {
     const preferenceState = get().preferencesHydrated
       ? {}
@@ -138,11 +146,17 @@ export const useMainWindowStore = create<MainWindowState>((set, get) => ({
           ...appState.panelPreferences,
           preferencesHydrated: true,
         };
-    if (appState.projects.length === 0) {
+    if (
+      appState.projects.length === 0 ||
+      appState.onboardingStep !== "complete"
+    ) {
       set({
         ...preferenceState,
         route: "onboarding",
-        selectedProjectPath: null,
+        selectedProjectPath:
+          appState.projects.length === 0
+            ? null
+            : (get().selectedProjectPath ?? appState.lastSelectedProject),
         searchQuery: "",
         selectedQuestId: null,
         drawerOpen: false,
@@ -168,7 +182,7 @@ export const useMainWindowStore = create<MainWindowState>((set, get) => ({
     const projectChanged = selected !== null && selected !== nextSelected;
     set({
       ...preferenceState,
-      route: "workspace",
+      route: get().route === "settings" ? "settings" : "workspace",
       selectedProjectPath: nextSelected,
       ...(projectChanged
         ? {
@@ -380,6 +394,23 @@ export const useMainWindowStore = create<MainWindowState>((set, get) => ({
       navigationPending,
       navigationIntent: navigationPending ? navigationIntent : null,
     }),
+  openSettings: () =>
+    set({
+      route: "settings",
+      drawerOpen: false,
+      editor: null,
+      statusMenuOpen: false,
+      deleteConfirming: false,
+      shortcutRecording: false,
+    }),
+  closeSettings: (hasProjects) =>
+    set({
+      route: hasProjects ? "workspace" : "onboarding",
+      shortcutRecording: false,
+      licenseOpen: false,
+    }),
+  setShortcutRecording: (shortcutRecording) => set({ shortcutRecording }),
+  setLicenseOpen: (licenseOpen) => set({ licenseOpen }),
 }));
 
 export function laneScrollKey(

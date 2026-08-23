@@ -11,12 +11,15 @@ import {
 } from "./features/data/queries";
 import { useWorkspaceWatcher } from "./features/data/use-workspace-watcher";
 import { useAppStateInvalidation } from "./features/data/use-app-state-invalidation";
+import { useSettingsInvalidation } from "./features/data/use-settings-invalidation";
+import { OnboardingFlow } from "./features/onboarding/onboarding-flow";
 import { ProjectSidebar } from "./features/main-window/project-sidebar";
 import {
   QuestWriteCoordinatorProvider,
   useQuestWriteCoordinator,
 } from "./features/main-window/quest-write-coordinator";
 import { WorkspaceView } from "./features/main-window/workspace-view";
+import { SettingsPage } from "./features/settings/settings-page";
 import { useWindowGeometryPersistence } from "./features/window/use-window-geometry";
 import {
   revealPath,
@@ -24,6 +27,7 @@ import {
   selectReplacementDirectory,
 } from "./shared/tauri/commands";
 import type { ProjectDto } from "./shared/tauri/types";
+import { listenForOpenSettings } from "./shared/tauri/events";
 import { IconButton } from "./shared/ui/icon-button";
 import {
   currentPanelPreferences,
@@ -41,6 +45,7 @@ function App() {
 
 function AppContent() {
   useAppStateInvalidation();
+  useSettingsInvalidation();
   const coordinator = useQuestWriteCoordinator();
   useWindowGeometryPersistence(coordinator.guard);
   const appState = useAppStateQuery();
@@ -64,6 +69,8 @@ function AppContent() {
   const setProjectMenuPath = useMainWindowStore(
     (state) => state.setProjectMenuPath,
   );
+  const openSettings = useMainWindowStore((state) => state.openSettings);
+  const closeSettings = useMainWindowStore((state) => state.closeSettings);
   const [actionError, setActionError] = useState<Error | null>(null);
 
   useEffect(() => {
@@ -71,6 +78,21 @@ function AppContent() {
       synchronizeAppState(appState.data);
     }
   }, [appState.data, synchronizeAppState]);
+
+  useEffect(() => {
+    let active = true;
+    let unlisten: (() => void) | undefined;
+    void listenForOpenSettings(() => {
+      void coordinator.guard(async () => openSettings());
+    }).then((listener) => {
+      if (active) unlisten = listener;
+      else listener();
+    });
+    return () => {
+      active = false;
+      unlisten?.();
+    };
+  }, [coordinator, openSettings]);
 
   const selectedProject = appState.data?.projects.find(
     (project) => project.path === selectedProjectPath,
@@ -167,6 +189,15 @@ function AppContent() {
     });
   }
 
+  async function handleOpenSettings(): Promise<void> {
+    setActionError(null);
+    try {
+      await coordinator.guard(async () => openSettings());
+    } catch (error) {
+      setActionError(toError(error));
+    }
+  }
+
   if (appState.isPending || route === "restoring") {
     return (
       <main className="startup-state">
@@ -192,31 +223,12 @@ function AppContent() {
 
   if (route === "onboarding") {
     return (
-      <main className="onboarding-shell">
-        <div className="standalone-drag-region" data-tauri-drag-region />
-        <section className="onboarding-content">
-          <span className="app-mark">S</span>
-          <h1>Add your first project</h1>
-          <p>
-            Choose a folder to keep its quests in a local{" "}
-            <code>.sidequest</code>
-            directory.
-          </p>
-          <button
-            className="primary-button"
-            disabled={addProject.isPending}
-            onClick={() => void handleAddProject()}
-            type="button"
-          >
-            {addProject.isPending ? "Adding…" : "Choose Folder…"}
-          </button>
-          {actionError !== null && (
-            <p className="onboarding-error" role="alert">
-              {actionError.message}
-            </p>
-          )}
-        </section>
-      </main>
+      <OnboardingFlow
+        appState={appState.data}
+        addPending={addProject.isPending}
+        error={actionError?.message ?? null}
+        onAddProject={() => void handleAddProject()}
+      />
     );
   }
 
@@ -231,21 +243,27 @@ function AppContent() {
         onAdd={() => void handleAddProject()}
         onLocate={(project) => void handleLocateProject(project)}
         onPersistPreferences={persistPanelPreferences}
+        onSettings={() => void handleOpenSettings()}
         onRemove={(project) => void handleRemoveProject(project)}
         onReveal={(path) => void handleReveal(path)}
         onSelect={(project) => void handleSelectProject(project)}
         projects={state.projects}
         selectedProjectPath={selectedProjectPath}
+        settingsSelected={route === "settings"}
       />
-      {selectedProject !== undefined && (
-        <WorkspaceView
-          onLocate={(project) => void handleLocateProject(project)}
-          onPersistPreferences={persistPanelPreferences}
-          onRetryAppState={() => void appState.refetch()}
-          onReveal={(path) => void handleReveal(path)}
-          project={selectedProject}
-          watcherError={watcherError}
-        />
+      {route === "settings" ? (
+        <SettingsPage onBack={() => closeSettings(state.projects.length > 0)} />
+      ) : (
+        selectedProject !== undefined && (
+          <WorkspaceView
+            onLocate={(project) => void handleLocateProject(project)}
+            onPersistPreferences={persistPanelPreferences}
+            onRetryAppState={() => void appState.refetch()}
+            onReveal={(path) => void handleReveal(path)}
+            project={selectedProject}
+            watcherError={watcherError}
+          />
+        )
       )}
       {state.recoveryWarning !== null && !recoveryDismissed && (
         <div className="recovery-banner" role="status">

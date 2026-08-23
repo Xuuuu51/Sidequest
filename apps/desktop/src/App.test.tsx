@@ -30,6 +30,9 @@ const mocks = vi.hoisted(() => ({
   selectReplacementDirectory: vi.fn(),
   listenForWorkspaceInvalidation: vi.fn(),
   listenForAppStateInvalidation: vi.fn(),
+  listenForSettingsInvalidation: vi.fn(),
+  listenForIntegrationsInvalidation: vi.fn(),
+  listenForOpenSettings: vi.fn(),
   updateQuestContent: vi.fn(),
   setQuestStatus: vi.fn(),
   deleteQuest: vi.fn(),
@@ -45,6 +48,9 @@ vi.mock("./shared/tauri/commands", () => ({
 vi.mock("./shared/tauri/events", () => ({
   listenForWorkspaceInvalidation: mocks.listenForWorkspaceInvalidation,
   listenForAppStateInvalidation: mocks.listenForAppStateInvalidation,
+  listenForSettingsInvalidation: mocks.listenForSettingsInvalidation,
+  listenForIntegrationsInvalidation: mocks.listenForIntegrationsInvalidation,
+  listenForOpenSettings: mocks.listenForOpenSettings,
 }));
 
 vi.mock("./features/window/use-window-geometry", () => ({
@@ -60,6 +66,7 @@ const emptyState: AppStateDto = {
     drawerWidth: 480,
   },
   quickCapture: { lastProjectPath: null, position: null },
+  onboardingStep: "addProject",
   recoveryWarning: null,
 };
 
@@ -68,6 +75,7 @@ const projectState: AppStateDto = {
   lastSelectedProject: "/project",
   panelPreferences: emptyState.panelPreferences,
   quickCapture: { lastProjectPath: "/project", position: null },
+  onboardingStep: "complete",
   recoveryWarning: null,
 };
 
@@ -153,6 +161,13 @@ describe("App", () => {
     mocks.listenForAppStateInvalidation
       .mockReset()
       .mockResolvedValue(() => undefined);
+    mocks.listenForSettingsInvalidation
+      .mockReset()
+      .mockResolvedValue(() => undefined);
+    mocks.listenForIntegrationsInvalidation
+      .mockReset()
+      .mockResolvedValue(() => undefined);
+    mocks.listenForOpenSettings.mockReset().mockResolvedValue(() => undefined);
     mocks.workspaceInvalidatedHandler = null;
     mocks.updateQuestContent
       .mockReset()
@@ -340,13 +355,13 @@ describe("App", () => {
     expect(mocks.loadWorkspace).not.toHaveBeenCalledWith("/project");
   });
 
-  it("keeps_settings_visible_but_disabled", async () => {
+  it("keeps_settings_visible_and_enabled", async () => {
     mocks.getAppState.mockResolvedValue(projectState);
     renderApp();
 
     expect(
       await screen.findByRole("button", { name: "Settings" }),
-    ).toBeDisabled();
+    ).toBeEnabled();
   });
 
   it("supports_command_f_and_escape_for_search", async () => {

@@ -21,6 +21,15 @@ import {
   setPanelPreferences,
   setQuestStatus,
   updateQuestContent,
+  getSettings,
+  setGlobalShortcut,
+  setLaunchAtLogin,
+  setOnboardingStep,
+  getIntegrationStatus,
+  installCli,
+  uninstallCli,
+  installAgentSkill,
+  uninstallAgentSkill,
 } from "../../shared/tauri/commands";
 import type {
   AppStateDto,
@@ -29,12 +38,75 @@ import type {
   QuestStatus,
   QuickCaptureResultDto,
   WorkspaceSnapshotDto,
+  ShortcutSpecDto,
+  OnboardingStep,
+  IntegrationId,
+  IntegrationItemDto,
 } from "../../shared/tauri/types";
 
 export function useAppStateQuery() {
   return useQuery({
     queryKey: queryKeys.appState,
     queryFn: getAppState,
+  });
+}
+
+export function useSettingsQuery() {
+  return useQuery({ queryKey: queryKeys.settings, queryFn: getSettings });
+}
+
+export function useIntegrationsQuery() {
+  return useQuery({
+    queryKey: queryKeys.integrations,
+    queryFn: getIntegrationStatus,
+  });
+}
+
+export function useSetGlobalShortcutMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (shortcut: ShortcutSpecDto) => setGlobalShortcut(shortcut),
+    onSuccess: (settings) =>
+      queryClient.setQueryData(queryKeys.settings, settings),
+  });
+}
+
+export function useSetLaunchAtLoginMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (enabled: boolean) => setLaunchAtLogin(enabled),
+    onSuccess: (settings) =>
+      queryClient.setQueryData(queryKeys.settings, settings),
+  });
+}
+
+export function useSetOnboardingStepMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (step: OnboardingStep) => setOnboardingStep(step),
+    onSuccess: (appState) => setAppState(queryClient, appState),
+  });
+}
+
+export function useIntegrationMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      action,
+    }: {
+      id: IntegrationId;
+      action: "install" | "uninstall";
+    }) => {
+      if (id === "cli") {
+        return action === "install" ? installCli() : uninstallCli();
+      }
+      return action === "install"
+        ? installAgentSkill(id)
+        : uninstallAgentSkill(id);
+    },
+    onSuccess: (items: IntegrationItemDto[]) =>
+      queryClient.setQueryData(queryKeys.integrations, items),
   });
 }
 

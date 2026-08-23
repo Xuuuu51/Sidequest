@@ -19,6 +19,7 @@ const appState: AppStateDto = {
     drawerWidth: 480,
   },
   quickCapture: { lastProjectPath: "/second", position: null },
+  onboardingStep: "complete",
   recoveryWarning: null,
 };
 
@@ -66,6 +67,7 @@ describe("useMainWindowStore", () => {
       lastSelectedProject: null,
       panelPreferences: appState.panelPreferences,
       quickCapture: { lastProjectPath: null, position: null },
+      onboardingStep: "complete",
       recoveryWarning: null,
     });
 

@@ -1,6 +1,17 @@
 export type ProjectState = "writable" | "readOnly" | "unavailable";
 export type WorkspaceAccess = "writable" | "readOnly";
 export type QuestStatus = "inbox" | "ready" | "done";
+export type OnboardingStep =
+  "addProject" | "quickCapture" | "codingAgents" | "complete";
+export type ShortcutModifier = "command" | "control" | "option" | "shift";
+export type IntegrationId = "cli" | "codex" | "claude";
+export type IntegrationState =
+  | "installed"
+  | "notInstalled"
+  | "updateAvailable"
+  | "repairRequired"
+  | "conflict"
+  | "unavailable";
 
 export interface RecoveryWarningDto {
   message: string;
@@ -19,7 +30,31 @@ export interface AppStateDto {
   lastSelectedProject: string | null;
   panelPreferences: PanelPreferencesDto;
   quickCapture: QuickCapturePreferencesDto;
+  onboardingStep: OnboardingStep;
   recoveryWarning: RecoveryWarningDto | null;
+}
+
+export interface ShortcutSpecDto {
+  modifiers: ShortcutModifier[];
+  key: string;
+  display: string;
+}
+
+export interface SettingsDto {
+  shortcut: ShortcutSpecDto;
+  shortcutRegistration: "active" | "conflict";
+  launchAtLogin: boolean;
+  appVersion: string;
+  licenseText: string;
+}
+
+export interface IntegrationItemDto {
+  id: IntegrationId;
+  state: IntegrationState;
+  path: string;
+  installedVersion: string | null;
+  bundledVersion: string;
+  message: string | null;
 }
 
 export interface QuickCapturePreferencesDto {

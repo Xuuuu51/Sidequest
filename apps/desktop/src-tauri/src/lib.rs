@@ -5,18 +5,22 @@ mod app_state;
 mod commands;
 mod dto;
 mod error;
+mod integration;
 mod native_events;
 mod quick_capture_window;
+mod shortcut;
 mod watcher;
 mod window_state;
 
 use tauri::{Emitter, Manager};
-use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
+use tauri_plugin_global_shortcut::ShortcutState;
 
 use crate::app_state::{AppStateStore, DesktopState};
+use crate::integration::auto_maintain_cli;
 use crate::quick_capture_window::{
     QUICK_CAPTURE_WINDOW_LABEL, restore_quick_capture_window, show_quick_capture_window,
 };
+use crate::shortcut::ShortcutManager;
 use crate::window_state::restore_main_window;
 
 /// Runs the Sidequest desktop application.
@@ -29,6 +33,10 @@ pub fn run() -> tauri::Result<()> {
         .menu(app_menu::build)
         .on_menu_event(app_menu::handle_event)
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            Some(vec!["--hidden"]),
+        ))
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, _shortcut, event| {
@@ -50,11 +58,16 @@ pub fn run() -> tauri::Result<()> {
                 .get_webview_window(QUICK_CAPTURE_WINDOW_LABEL)
                 .ok_or_else(|| tauri::Error::WindowNotFound)?;
             restore_quick_capture_window(&quick_capture, store.quick_capture_position())?;
-            app.manage(DesktopState::new(store));
-            let _shortcut_result = app
-                .global_shortcut()
-                .register("CommandOrControl+Shift+Space");
-            window.show()?;
+            let shortcut = ShortcutManager::start(app.handle(), store.shortcut());
+            app.manage(DesktopState::new(store, shortcut));
+            if let Some(state) = app.try_state::<DesktopState>()
+                && let Ok(mut store) = state.app_state.lock()
+            {
+                let _maintenance_result = auto_maintain_cli(app.handle(), &mut store);
+            }
+            if !is_hidden_startup(std::env::args_os()) {
+                window.show()?;
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -78,6 +91,15 @@ pub fn run() -> tauri::Result<()> {
             commands::delete_quest,
             commands::search_quests,
             commands::set_watched_project,
+            commands::get_settings,
+            commands::set_global_shortcut,
+            commands::set_launch_at_login,
+            commands::set_onboarding_step,
+            commands::get_integration_status,
+            commands::install_cli,
+            commands::uninstall_cli,
+            commands::install_agent_skill,
+            commands::uninstall_agent_skill,
         ])
         .build(tauri::generate_context!())?;
 
@@ -113,5 +135,24 @@ pub fn run() -> tauri::Result<()> {
         Ok(())
     } else {
         std::process::exit(exit_code)
+    }
+}
+
+fn is_hidden_startup(arguments: impl IntoIterator<Item = std::ffi::OsString>) -> bool {
+    arguments.into_iter().any(|argument| argument == "--hidden")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_hidden_startup;
+
+    #[test]
+    fn hidden_argument_should_suppress_main_window() {
+        assert!(is_hidden_startup(["sidequest".into(), "--hidden".into()]));
+    }
+
+    #[test]
+    fn ordinary_start_should_show_main_window() {
+        assert!(!is_hidden_startup(["sidequest".into()]));
     }
 }

@@ -11,10 +11,11 @@ use serde::{Deserialize, Serialize};
 use sidequest_core::{WorkspaceAccess, init_workspace, open_workspace};
 
 use crate::dto::{
-    AppStateDto, PanelPreferencesDto, ProjectDto, ProjectStateDto, QuickCapturePositionDto,
-    QuickCapturePreferencesDto, RecoveryWarningDto, display_path,
+    AppStateDto, OnboardingStepDto, PanelPreferencesDto, ProjectDto, ProjectStateDto,
+    QuickCapturePositionDto, QuickCapturePreferencesDto, RecoveryWarningDto, display_path,
 };
 use crate::error::{DesktopError, Result};
+use crate::shortcut::{ShortcutManager, ShortcutSpec};
 use crate::watcher::ProjectWatcher;
 
 const APP_STATE_FILENAME: &str = "app.json";
@@ -33,14 +34,16 @@ pub(crate) const MIN_WINDOW_HEIGHT: u32 = 640;
 pub(crate) struct DesktopState {
     pub(crate) app_state: Mutex<AppStateStore>,
     pub(crate) watcher: Mutex<ProjectWatcher>,
+    pub(crate) shortcut: Mutex<ShortcutManager>,
     quit_approved: AtomicBool,
 }
 
 impl DesktopState {
-    pub(crate) fn new(app_state: AppStateStore) -> Self {
+    pub(crate) fn new(app_state: AppStateStore, shortcut: ShortcutManager) -> Self {
         Self {
             app_state: Mutex::new(app_state),
             watcher: Mutex::new(ProjectWatcher::default()),
+            shortcut: Mutex::new(shortcut),
             quit_approved: AtomicBool::new(false),
         }
     }
@@ -67,6 +70,46 @@ struct PersistentAppState {
     main_window: Option<MainWindowGeometry>,
     #[serde(default)]
     quick_capture: QuickCapturePreferences,
+    #[serde(default)]
+    onboarding_step: OnboardingStep,
+    #[serde(default)]
+    shortcut: ShortcutSpec,
+    #[serde(default)]
+    integrations: IntegrationPreferences,
+}
+
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum OnboardingStep {
+    #[default]
+    AddProject,
+    QuickCapture,
+    CodingAgents,
+    Complete,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct IntegrationPreferences {
+    cli_user_uninstalled: bool,
+    cli: Option<ManagedArtifactRecord>,
+    codex: Option<ManagedArtifactRecord>,
+    claude: Option<ManagedArtifactRecord>,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ManagedArtifactRecord {
+    pub(crate) path: PathBuf,
+    pub(crate) version: String,
+    pub(crate) sha256: String,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum ManagedArtifact {
+    Cli,
+    Codex,
+    Claude,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
@@ -121,6 +164,9 @@ impl Default for PersistentAppState {
             panel_preferences: PanelPreferences::default(),
             main_window: None,
             quick_capture: QuickCapturePreferences::default(),
+            onboarding_step: OnboardingStep::default(),
+            shortcut: ShortcutSpec::default(),
+            integrations: IntegrationPreferences::default(),
         }
     }
 }
@@ -220,6 +266,7 @@ impl AppStateStore {
                     .map(display_path),
                 position: self.state.quick_capture.position.map(Into::into),
             },
+            onboarding_step: self.state.onboarding_step.into(),
             recovery_warning: self.recovery_warning.clone(),
         }
     }
@@ -230,6 +277,9 @@ impl AppStateStore {
         let mut next = self.state.clone();
         if !next.project_paths.contains(&path) {
             next.project_paths.push(path.clone());
+        }
+        if next.onboarding_step == OnboardingStep::AddProject {
+            next.onboarding_step = OnboardingStep::QuickCapture;
         }
         mark_recent(&mut next, &path);
         next.last_selected_project = Some(path);
@@ -366,6 +416,61 @@ impl AppStateStore {
             })
     }
 
+    pub(crate) fn has_projects(&self) -> bool {
+        !self.state.project_paths.is_empty()
+    }
+
+    pub(crate) fn shortcut(&self) -> ShortcutSpec {
+        self.state.shortcut.clone()
+    }
+
+    pub(crate) fn set_shortcut(&mut self, shortcut: ShortcutSpec) -> Result<()> {
+        let mut next = self.state.clone();
+        next.shortcut = shortcut;
+        self.persist(next)
+    }
+
+    pub(crate) fn set_onboarding_step(&mut self, step: OnboardingStep) -> Result<AppStateDto> {
+        let mut next = self.state.clone();
+        next.onboarding_step = step;
+        self.persist(next)?;
+        Ok(self.snapshot())
+    }
+
+    pub(crate) fn integration_record(
+        &self,
+        artifact: ManagedArtifact,
+    ) -> Option<ManagedArtifactRecord> {
+        match artifact {
+            ManagedArtifact::Cli => &self.state.integrations.cli,
+            ManagedArtifact::Codex => &self.state.integrations.codex,
+            ManagedArtifact::Claude => &self.state.integrations.claude,
+        }
+        .clone()
+    }
+
+    pub(crate) fn cli_user_uninstalled(&self) -> bool {
+        self.state.integrations.cli_user_uninstalled
+    }
+
+    pub(crate) fn set_integration_record(
+        &mut self,
+        artifact: ManagedArtifact,
+        record: Option<ManagedArtifactRecord>,
+        cli_user_uninstalled: Option<bool>,
+    ) -> Result<()> {
+        let mut next = self.state.clone();
+        match artifact {
+            ManagedArtifact::Cli => next.integrations.cli = record,
+            ManagedArtifact::Codex => next.integrations.codex = record,
+            ManagedArtifact::Claude => next.integrations.claude = record,
+        }
+        if let Some(uninstalled) = cli_user_uninstalled {
+            next.integrations.cli_user_uninstalled = uninstalled;
+        }
+        self.persist(next)
+    }
+
     pub(crate) fn set_last_quick_capture_project(&mut self, path: &Path) -> Result<()> {
         let project = self.registered_project(path)?;
         let mut next = self.state.clone();
@@ -434,6 +539,9 @@ impl AppStateStore {
 }
 
 fn normalize_state(mut state: PersistentAppState) -> PersistentAppState {
+    if !state.project_paths.is_empty() && state.onboarding_step == OnboardingStep::AddProject {
+        state.onboarding_step = OnboardingStep::QuickCapture;
+    }
     state.panel_preferences.sidebar_width = state
         .panel_preferences
         .sidebar_width
@@ -476,6 +584,17 @@ fn normalize_state(mut state: PersistentAppState) -> PersistentAppState {
         state.quick_capture.last_project_path = None;
     }
     state
+}
+
+impl From<OnboardingStep> for OnboardingStepDto {
+    fn from(step: OnboardingStep) -> Self {
+        match step {
+            OnboardingStep::AddProject => Self::AddProject,
+            OnboardingStep::QuickCapture => Self::QuickCapture,
+            OnboardingStep::CodingAgents => Self::CodingAgents,
+            OnboardingStep::Complete => Self::Complete,
+        }
+    }
 }
 
 impl From<QuickCapturePosition> for QuickCapturePositionDto {
@@ -635,7 +754,10 @@ mod tests {
     #[test]
     fn quit_approval_should_be_consumed_once() -> TestResult {
         let temporary = TempDir::new()?;
-        let state = DesktopState::new(AppStateStore::load(temporary.path())?);
+        let state = DesktopState::new(
+            AppStateStore::load(temporary.path())?,
+            crate::shortcut::ShortcutManager::unregistered(crate::shortcut::ShortcutSpec::default()),
+        );
 
         assert!(!state.consume_quit_approval());
         state.approve_quit();
@@ -679,6 +801,32 @@ mod tests {
         assert!(store.main_window_geometry().is_none());
         assert!(state.quick_capture.last_project_path.is_none());
         assert!(state.quick_capture.position.is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn legacy_state_with_a_project_should_resume_remaining_onboarding() -> TestResult {
+        let temporary = TempDir::new()?;
+        let project = TempDir::new()?;
+        sidequest_core::init_workspace(project.path())?;
+        let project_path = fs::canonicalize(project.path())?;
+        fs::write(
+            temporary.path().join("app.json"),
+            serde_json::json!({
+                "schemaVersion": 1,
+                "projectPaths": [project_path],
+                "lastSelectedProject": project_path,
+                "recentProjectPaths": [project_path]
+            })
+            .to_string(),
+        )?;
+
+        let state = AppStateStore::load(temporary.path())?.snapshot();
+
+        assert_eq!(
+            state.onboarding_step,
+            crate::dto::OnboardingStepDto::QuickCapture
+        );
         Ok(())
     }
 

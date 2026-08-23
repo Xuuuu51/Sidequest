@@ -11,6 +11,11 @@ import type {
   QuickCaptureResultDto,
   QuestStatus,
   WorkspaceSnapshotDto,
+  SettingsDto,
+  ShortcutSpecDto,
+  OnboardingStep,
+  IntegrationItemDto,
+  IntegrationId,
 } from "./types";
 
 export function getAppState(): Promise<AppStateDto> {
@@ -123,6 +128,48 @@ export function searchQuests(
 
 export function setWatchedProject(projectPath: string | null): Promise<void> {
   return invokeCommand("set_watched_project", { projectPath });
+}
+
+export function getSettings(): Promise<SettingsDto> {
+  return invokeCommand("get_settings");
+}
+
+export function setGlobalShortcut(
+  shortcut: ShortcutSpecDto,
+): Promise<SettingsDto> {
+  return invokeCommand("set_global_shortcut", { shortcut });
+}
+
+export function setLaunchAtLogin(enabled: boolean): Promise<SettingsDto> {
+  return invokeCommand("set_launch_at_login", { enabled });
+}
+
+export function setOnboardingStep(step: OnboardingStep): Promise<AppStateDto> {
+  return invokeCommand("set_onboarding_step", { step });
+}
+
+export function getIntegrationStatus(): Promise<IntegrationItemDto[]> {
+  return invokeCommand("get_integration_status");
+}
+
+export function installCli(): Promise<IntegrationItemDto[]> {
+  return invokeCommand("install_cli");
+}
+
+export function uninstallCli(): Promise<IntegrationItemDto[]> {
+  return invokeCommand("uninstall_cli");
+}
+
+export function installAgentSkill(
+  agent: Exclude<IntegrationId, "cli">,
+): Promise<IntegrationItemDto[]> {
+  return invokeCommand("install_agent_skill", { agent });
+}
+
+export function uninstallAgentSkill(
+  agent: Exclude<IntegrationId, "cli">,
+): Promise<IntegrationItemDto[]> {
+  return invokeCommand("uninstall_agent_skill", { agent });
 }
 
 export async function selectReplacementDirectory(): Promise<string | null> {

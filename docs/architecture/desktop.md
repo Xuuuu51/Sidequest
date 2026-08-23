@@ -29,7 +29,7 @@ Quick Capture：`show_quick_capture`、`hide_quick_capture`、`save_quick_captur
 
 Workspace 与 Quest：`load_workspace`、`create_quest`、`update_quest_content`、`set_quest_status`、`delete_quest`、`search_quests`、`set_watched_project`。
 
-Settings 与 integration：`get_settings`、`set_global_shortcut`、`get_integration_status`、`install_cli`、`uninstall_cli`、`install_agent_skill`、`uninstall_agent_skill`。
+Settings 与 integration：`get_settings`、`set_global_shortcut`、`set_launch_at_login`、`set_onboarding_step`、`get_integration_status`、`install_cli`、`uninstall_cli`、`install_agent_skill`、`uninstall_agent_skill`。
 
 ```ts
 interface ProjectDto {
@@ -80,6 +80,17 @@ Tauri backend 将 Desktop-only 数据保存到 app-local `app.json`，例如 mac
   "quickCapture": {
     "lastProjectPath": null,
     "position": null
+  },
+  "onboardingStep": "addProject",
+  "shortcut": {
+    "modifiers": ["command", "shift"],
+    "key": "Space"
+  },
+  "integrations": {
+    "cliUserUninstalled": false,
+    "cli": null,
+    "codex": null,
+    "claude": null
   }
 }
 ```
@@ -128,6 +139,8 @@ filesystem event → debounce → workspace-invalidated → query reload
 不从事件推导增量数据，不实现 sync engine。refetch 不能直接覆盖未落盘的编辑内容；冲突进入状态机定义的恢复流程。
 
 Desktop command 创建 Quest 后也发出同名 `workspace-invalidated`，因此非当前项目的 Query cache 也会失效。项目列表变化通过 `app-state-invalidated` 同步到两个窗口。
+
+Settings 与 integration 分别通过 `settings-invalidated` 和 `integrations-invalidated` 失效。macOS 菜单通过 `open-settings` 请求 Main Window 先执行既有写入保护，再切换 route。
 
 ## 6. Main Window 生命周期
 

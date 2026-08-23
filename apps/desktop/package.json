@@ -4,6 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "prepare:integrations:dev": "node scripts/prepare-integration-resources.mjs debug",
+    "prepare:integrations:release": "node scripts/prepare-integration-resources.mjs release",
     "dev": "vite",
     "build": "pnpm typecheck && vite build",
     "lint": "eslint eslint.config.js vite.config.ts vitest.config.ts src",

@@ -15,7 +15,81 @@ pub(crate) struct AppStateDto {
     pub(crate) last_selected_project: Option<String>,
     pub(crate) panel_preferences: PanelPreferencesDto,
     pub(crate) quick_capture: QuickCapturePreferencesDto,
+    pub(crate) onboarding_step: OnboardingStepDto,
     pub(crate) recovery_warning: Option<RecoveryWarningDto>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum OnboardingStepDto {
+    AddProject,
+    QuickCapture,
+    CodingAgents,
+    Complete,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ShortcutSpecDto {
+    pub(crate) modifiers: Vec<ShortcutModifierDto>,
+    pub(crate) key: String,
+    pub(crate) display: String,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum ShortcutModifierDto {
+    Command,
+    Control,
+    Option,
+    Shift,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum ShortcutRegistrationDto {
+    Active,
+    Conflict,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct SettingsDto {
+    pub(crate) shortcut: ShortcutSpecDto,
+    pub(crate) shortcut_registration: ShortcutRegistrationDto,
+    pub(crate) launch_at_login: bool,
+    pub(crate) app_version: String,
+    pub(crate) license_text: String,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum IntegrationIdDto {
+    Cli,
+    Codex,
+    Claude,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum IntegrationStateDto {
+    Installed,
+    NotInstalled,
+    UpdateAvailable,
+    RepairRequired,
+    Conflict,
+    Unavailable,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct IntegrationItemDto {
+    pub(crate) id: IntegrationIdDto,
+    pub(crate) state: IntegrationStateDto,
+    pub(crate) path: String,
+    pub(crate) installed_version: Option<String>,
+    pub(crate) bundled_version: String,
+    pub(crate) message: Option<String>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
@@ -198,6 +272,14 @@ impl From<DesktopError> for CommandErrorDto {
             DesktopError::Io { path, .. } => Self::new("io_error", message, Some(path)),
             DesktopError::Watcher { path, .. } => Self::new("io_error", message, Some(path)),
             DesktopError::Window { .. } => Self::new("internal_error", message, None),
+            DesktopError::InvalidShortcut { .. } => Self::new("invalid_shortcut", message, None),
+            DesktopError::ShortcutConflict { .. } => Self::new("shortcut_conflict", message, None),
+            DesktopError::IntegrationConflict { path, .. } => {
+                Self::new("integration_conflict", message, Some(path))
+            }
+            DesktopError::IntegrationUnavailable { path, .. } => {
+                Self::new("integration_unavailable", message, Some(path))
+            }
             DesktopError::StateLock => Self::new("internal_error", message, None),
             DesktopError::Core(core) => from_core_error(core, message),
         }

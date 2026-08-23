@@ -4,17 +4,24 @@ use std::sync::{Mutex, MutexGuard};
 
 use sidequest_core::{CreateQuest, QuestId, QuestStatus, Workspace, open_workspace};
 use tauri::{AppHandle, Manager, State, WebviewWindow};
+use tauri_plugin_autostart::ManagerExt;
 
-use crate::app_state::{AppStateStore, DesktopState};
+use crate::app_state::{AppStateStore, DesktopState, OnboardingStep};
 use crate::dto::{
-    AppStateDto, CommandErrorDto, DeletedQuestDto, PanelPreferencesDto, QuestDto,
-    QuickCaptureResultDto, WorkspaceSnapshotDto,
+    AppStateDto, CommandErrorDto, DeletedQuestDto, IntegrationIdDto, IntegrationItemDto,
+    OnboardingStepDto, PanelPreferencesDto, QuestDto, QuickCaptureResultDto, SettingsDto,
+    ShortcutSpecDto, WorkspaceSnapshotDto,
 };
 use crate::error::{DesktopError, Result};
-use crate::native_events::{emit_app_state_invalidated, emit_workspace_invalidated};
+use crate::integration;
+use crate::native_events::{
+    emit_app_state_invalidated, emit_integrations_invalidated, emit_settings_invalidated,
+    emit_workspace_invalidated,
+};
 use crate::quick_capture_window::{
     QUICK_CAPTURE_WINDOW_LABEL, capture_quick_capture_position, show_quick_capture_window,
 };
+use crate::shortcut::ShortcutSpec;
 use crate::watcher::ProjectWatcher;
 use crate::window_state::capture_main_window;
 
@@ -37,7 +44,164 @@ pub(crate) fn add_project(
         .and_then(|mut store| store.add_project(Path::new(&project_path)))
         .map_err(CommandErrorDto::from)?;
     let _event_result = emit_app_state_invalidated(&app_handle);
+    if let Ok(mut store) = app_state_lock(&state) {
+        let _maintenance_result = integration::auto_maintain_cli(&app_handle, &mut store);
+    }
+    let _integration_event = emit_integrations_invalidated(&app_handle);
     Ok(snapshot)
+}
+
+#[tauri::command]
+pub(crate) fn get_settings(
+    app_handle: AppHandle,
+    state: State<'_, DesktopState>,
+) -> CommandResult<SettingsDto> {
+    let shortcut = app_state_lock(&state)
+        .map(|store| store.shortcut())
+        .map_err(CommandErrorDto::from)?;
+    let registration = lock(&state.shortcut)
+        .map(|manager| manager.registration())
+        .map_err(CommandErrorDto::from)?;
+    let launch_at_login = app_handle
+        .autolaunch()
+        .is_enabled()
+        .map_err(|error| DesktopError::Window {
+            operation: "read Launch at Login setting",
+            message: error.to_string(),
+        })
+        .map_err(CommandErrorDto::from)?;
+    Ok(SettingsDto {
+        shortcut: ShortcutSpecDto::from(&shortcut),
+        shortcut_registration: registration,
+        launch_at_login,
+        app_version: env!("CARGO_PKG_VERSION").to_owned(),
+        license_text: include_str!("../../../../LICENSE").to_owned(),
+    })
+}
+
+#[tauri::command]
+pub(crate) fn set_global_shortcut(
+    app_handle: AppHandle,
+    state: State<'_, DesktopState>,
+    shortcut: ShortcutSpecDto,
+) -> CommandResult<SettingsDto> {
+    let candidate = ShortcutSpec::parse(shortcut).map_err(CommandErrorDto::from)?;
+    let previous = app_state_lock(&state)
+        .map(|store| store.shortcut())
+        .map_err(CommandErrorDto::from)?;
+    lock(&state.shortcut)
+        .and_then(|mut manager| manager.replace(&app_handle, &candidate))
+        .map_err(CommandErrorDto::from)?;
+    if let Err(error) = app_state_lock(&state).and_then(|mut store| store.set_shortcut(candidate)) {
+        if let Ok(mut manager) = lock(&state.shortcut) {
+            manager.restore(&app_handle, previous);
+        }
+        return Err(CommandErrorDto::from(error));
+    }
+    let _event_result = emit_settings_invalidated(&app_handle);
+    get_settings(app_handle, state)
+}
+
+#[tauri::command]
+pub(crate) fn set_launch_at_login(
+    app_handle: AppHandle,
+    state: State<'_, DesktopState>,
+    enabled: bool,
+) -> CommandResult<SettingsDto> {
+    let result = if enabled {
+        app_handle.autolaunch().enable()
+    } else {
+        app_handle.autolaunch().disable()
+    };
+    result
+        .map_err(|error| DesktopError::Window {
+            operation: "update Launch at Login setting",
+            message: error.to_string(),
+        })
+        .map_err(CommandErrorDto::from)?;
+    let _event_result = emit_settings_invalidated(&app_handle);
+    get_settings(app_handle, state)
+}
+
+#[tauri::command]
+pub(crate) fn set_onboarding_step(
+    app_handle: AppHandle,
+    state: State<'_, DesktopState>,
+    step: OnboardingStepDto,
+) -> CommandResult<AppStateDto> {
+    let step = match step {
+        OnboardingStepDto::AddProject => OnboardingStep::AddProject,
+        OnboardingStepDto::QuickCapture => OnboardingStep::QuickCapture,
+        OnboardingStepDto::CodingAgents => OnboardingStep::CodingAgents,
+        OnboardingStepDto::Complete => OnboardingStep::Complete,
+    };
+    let snapshot = app_state_lock(&state)
+        .and_then(|mut store| store.set_onboarding_step(step))
+        .map_err(CommandErrorDto::from)?;
+    let _event_result = emit_app_state_invalidated(&app_handle);
+    Ok(snapshot)
+}
+
+#[tauri::command]
+pub(crate) fn get_integration_status(
+    app_handle: AppHandle,
+    state: State<'_, DesktopState>,
+) -> CommandResult<Vec<IntegrationItemDto>> {
+    app_state_lock(&state)
+        .map(|store| integration::status(&app_handle, &store))
+        .map_err(CommandErrorDto::from)
+}
+
+#[tauri::command]
+pub(crate) fn install_cli(
+    app_handle: AppHandle,
+    state: State<'_, DesktopState>,
+) -> CommandResult<Vec<IntegrationItemDto>> {
+    app_state_lock(&state)
+        .and_then(|mut store| integration::install_cli(&app_handle, &mut store))
+        .map_err(CommandErrorDto::from)?;
+    let _event_result = emit_integrations_invalidated(&app_handle);
+    get_integration_status(app_handle, state)
+}
+
+#[tauri::command]
+pub(crate) fn uninstall_cli(
+    app_handle: AppHandle,
+    state: State<'_, DesktopState>,
+) -> CommandResult<Vec<IntegrationItemDto>> {
+    app_state_lock(&state)
+        .and_then(|mut store| {
+            integration::uninstall(&app_handle, &mut store, IntegrationIdDto::Cli)
+        })
+        .map_err(CommandErrorDto::from)?;
+    let _event_result = emit_integrations_invalidated(&app_handle);
+    get_integration_status(app_handle, state)
+}
+
+#[tauri::command]
+pub(crate) fn install_agent_skill(
+    app_handle: AppHandle,
+    state: State<'_, DesktopState>,
+    agent: IntegrationIdDto,
+) -> CommandResult<Vec<IntegrationItemDto>> {
+    app_state_lock(&state)
+        .and_then(|mut store| integration::install_agent_skill(&app_handle, &mut store, agent))
+        .map_err(CommandErrorDto::from)?;
+    let _event_result = emit_integrations_invalidated(&app_handle);
+    get_integration_status(app_handle, state)
+}
+
+#[tauri::command]
+pub(crate) fn uninstall_agent_skill(
+    app_handle: AppHandle,
+    state: State<'_, DesktopState>,
+    agent: IntegrationIdDto,
+) -> CommandResult<Vec<IntegrationItemDto>> {
+    app_state_lock(&state)
+        .and_then(|mut store| integration::uninstall(&app_handle, &mut store, agent))
+        .map_err(CommandErrorDto::from)?;
+    let _event_result = emit_integrations_invalidated(&app_handle);
+    get_integration_status(app_handle, state)
 }
 
 #[tauri::command]

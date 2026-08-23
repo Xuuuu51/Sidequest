@@ -18,18 +18,18 @@ Desktop 安装器拥有它安装出去的副本；不得修改用户手工安装
 
 ## 2. CLI
 
-首次完成 Desktop onboarding 时默认安装 `sq`，不设置为可跳过步骤；安装失败不阻止用户进入主窗口，但必须展示可恢复状态。
+添加首个项目后默认安装 `sq`，不设置为可跳过步骤；安装失败不阻止用户继续 onboarding 或进入主窗口，但必须展示可恢复状态。
 
 安装要求：
 
-- 目标是当前用户可执行且通常位于 shell `PATH` 的位置。
+- 目标固定为 `~/.local/bin/sq`；应用不修改 shell profile，目录不在 `PATH` 时显示配置提示。
 - 使用 app bundle 中的 native binary，不依赖 Node/Bun/Deno。
 - 重复安装同时承担 verify/repair。
-- 检测至少校验文件存在、可执行、归属标记和版本。
+- 检测至少校验文件存在、内容 SHA-256、app-local ownership 和版本。
 - Desktop 升级后，若目标由当前 app 管理且版本落后，允许自动替换。
 - 用户可以在 Settings 中单独卸载 CLI；卸载不影响 Desktop 或项目数据。
 
-如果目标路径被不同来源占用，状态显示 Conflict，不覆盖；向用户说明现有路径并提供恢复指引。
+Ownership 只记录在 `app.json` 的路径、版本与 SHA-256。状态文件丢失后，已有目标视为 external conflict；不得覆盖或删除。如果目标路径被不同来源占用，状态显示 Conflict，并向用户说明现有路径。
 
 ## 3. Agent Skills
 
@@ -47,7 +47,7 @@ Skill 不随首次 onboarding 强制安装；用户从 Coding Agents 设置中�
 - 创建缺失的父目录；
 - 只覆盖能够确认由 Sidequest 管理的副本；
 - 检测缺失、版本落后、内容损坏和路径冲突；
-- 卸载时只移除 Sidequest 管理的目录，不影响 Agent 的其他 Skill。
+- 卸载时只移除 Sidequest 管理的 `SKILL.md`，不影响 Agent 的其他 Skill。
 
 ## 4. 状态模型
 
@@ -70,4 +70,3 @@ UI 可以把无需用户理解的细分原因合并展示，但 backend 必须�
 - Integration 失败不影响 Quest 读写和 Desktop 主流程。
 - Desktop 启动或 Settings 打开时可以重新检测；MVP 不运行常驻后台服务。
 - CLI 与 Skill 的安装逻辑属于 Tauri backend integration 模块，不进入 `sidequest-core`。
-

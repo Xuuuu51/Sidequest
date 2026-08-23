@@ -24,6 +24,8 @@ interface ProjectSidebarProps {
   onReveal: (path: string) => void;
   onRemove: (project: ProjectDto) => void;
   onPersistPreferences: () => void;
+  onSettings: () => void;
+  settingsSelected: boolean;
 }
 
 export function ProjectSidebar({
@@ -36,6 +38,8 @@ export function ProjectSidebar({
   onReveal,
   onRemove,
   onPersistPreferences,
+  onSettings,
+  settingsSelected,
 }: ProjectSidebarProps) {
   const sidebarWidth = useMainWindowStore((state) => state.sidebarWidth);
   const collapsed = useMainWindowStore((state) => state.sidebarCollapsed);
@@ -148,23 +152,18 @@ export function ProjectSidebar({
         })}
       </nav>
 
-      <div
-        className="sidebar-settings"
-        title="Settings will be available in a later stage"
-      >
+      <div className="sidebar-settings">
         <button
-          aria-disabled="true"
-          aria-describedby="settings-unavailable"
-          className="settings-row"
-          disabled
+          aria-current={settingsSelected ? "page" : undefined}
+          className={
+            settingsSelected ? "settings-row selected" : "settings-row"
+          }
+          onClick={onSettings}
           type="button"
         >
           <GearSix aria-hidden="true" size={16} weight="regular" />
           {!collapsed && <span>Settings</span>}
         </button>
-        <span className="sr-only" id="settings-unavailable">
-          Settings will be available in a later stage
-        </span>
       </div>
 
       {!collapsed && (
