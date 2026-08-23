@@ -6,7 +6,8 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 use sidequest_core::{
-    CreateQuest, Error, QuestId, QuestStatus, init_workspace, open_workspace, resolve_workspace,
+    CreateQuest, Error, QuestId, QuestStatus, WorkspaceAccess, init_workspace, open_workspace,
+    resolve_workspace,
 };
 use tempfile::TempDir;
 
@@ -103,6 +104,33 @@ fn open_workspace_should_allow_missing_quest_directory_until_quest_access() -> T
         workspace.list_quests(),
         Err(Error::InvalidWorkspaceLayout { .. })
     ));
+    Ok(())
+}
+
+#[test]
+fn workspace_access_should_report_writable_and_remove_its_probe() -> TestResult {
+    let temporary = initialized_project()?;
+    let workspace = open_workspace(temporary.path())?;
+
+    assert_eq!(workspace.access()?, WorkspaceAccess::Writable);
+    assert_eq!(fs::read_dir(quest_directory(temporary.path()))?.count(), 0);
+    Ok(())
+}
+
+#[cfg(unix)]
+#[test]
+fn workspace_access_should_report_read_only_permissions() -> TestResult {
+    use std::os::unix::fs::PermissionsExt;
+
+    let temporary = initialized_project()?;
+    let quests = quest_directory(temporary.path());
+    let original_permissions = fs::metadata(&quests)?.permissions();
+    fs::set_permissions(&quests, fs::Permissions::from_mode(0o555))?;
+
+    let access = open_workspace(temporary.path())?.access();
+    fs::set_permissions(&quests, original_permissions)?;
+
+    assert_eq!(access?, WorkspaceAccess::ReadOnly);
     Ok(())
 }
 

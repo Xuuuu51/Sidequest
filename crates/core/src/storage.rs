@@ -9,7 +9,9 @@ use ulid::Ulid;
 
 use crate::error::io_error;
 use crate::quest::validate_content;
-use crate::{Error, Quest, QuestCollection, QuestFileIssue, QuestId, QuestStatus, Result};
+use crate::{
+    Error, Quest, QuestCollection, QuestFileIssue, QuestId, QuestStatus, Result, WorkspaceAccess,
+};
 
 const FRONTMATTER_START_LF: &str = "---\n";
 const FRONTMATTER_END_LF: &str = "\n---\n\n";
@@ -105,6 +107,62 @@ pub(crate) fn sync_directory(path: &Path) -> Result<()> {
     directory
         .sync_all()
         .map_err(|source| io_error("sync directory", path, source))
+}
+
+pub(crate) fn probe_workspace_access(directory: &Path) -> Result<WorkspaceAccess> {
+    for _ in 0..16 {
+        let temporary_path = directory.join(format!(
+            ".sidequest-access-{}.tmp",
+            QuestId::new().as_ulid()
+        ));
+        let file = OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .open(&temporary_path);
+        let file = match file {
+            Ok(file) => file,
+            Err(source) if source.kind() == io::ErrorKind::AlreadyExists => continue,
+            Err(source)
+                if matches!(
+                    source.kind(),
+                    io::ErrorKind::PermissionDenied | io::ErrorKind::ReadOnlyFilesystem
+                ) =>
+            {
+                return Ok(WorkspaceAccess::ReadOnly);
+            }
+            Err(source) => {
+                return Err(io_error(
+                    "create Workspace access probe",
+                    temporary_path,
+                    source,
+                ));
+            }
+        };
+
+        let probe_result = (|| {
+            file.sync_all().map_err(|source| {
+                io_error("sync Workspace access probe", &temporary_path, source)
+            })?;
+            drop(file);
+            fs::remove_file(&temporary_path).map_err(|source| {
+                io_error("remove Workspace access probe", &temporary_path, source)
+            })?;
+            sync_directory(directory)
+        })();
+        if probe_result.is_err() {
+            let _cleanup_result = fs::remove_file(&temporary_path);
+        }
+        return probe_result.map(|()| WorkspaceAccess::Writable);
+    }
+
+    Err(io_error(
+        "create Workspace access probe",
+        directory,
+        io::Error::new(
+            io::ErrorKind::AlreadyExists,
+            "could not allocate a unique Workspace access probe",
+        ),
+    ))
 }
 
 fn parse_quest(path: &Path, text: &str, expected_id: Option<QuestId>) -> Result<Quest> {

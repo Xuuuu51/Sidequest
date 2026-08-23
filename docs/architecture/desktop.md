@@ -53,9 +53,24 @@ interface WorkspaceSnapshotDto {
 
 Desktop 始终以精确项目路径调用 Core 的 `open_workspace`。目录选择使用 Tauri 官方 Dialog Plugin。所有写 command 返回落盘后的 DTO；Delete 返回被删除的 ID。
 
+`remove_project` 接收 `deleteSidequestData`。默认只移除 app-local 项目记录；值为 `true` 时必须先由 Core 安全删除 `.sidequest/`，删除失败则保留项目记录。
+
 ## 3. App-local state
 
 Tauri backend 将 Desktop-only 数据保存到 app-local `app.json`，例如 macOS 的 Application Support 目录。只允许保存：项目路径、最后选择项目、全局快捷键和窗口/UI 偏好；不得写入 `.sidequest/`。
+
+基础 schema 为：
+
+```json
+{
+  "schemaVersion": 1,
+  "projectPaths": [],
+  "lastSelectedProject": null,
+  "recentProjectPaths": []
+}
+```
+
+写入必须使用同目录临时文件与 atomic rename。损坏或不支持的 schema 改名保留为 `app.corrupt-<timestamp>[-n].json` 后恢复为空状态，并向当前会话返回 recovery warning；不得静默覆盖损坏文件。
 
 ## 4. TanStack Query 与 Zustand
 
@@ -90,9 +105,10 @@ MVP 同时只监听 Main Window 当前项目的 `.sidequest/quests/`。文件事
 filesystem event → debounce → workspace-invalidated → query reload
 ```
 
+事件 payload 固定为 `{ projectPath }`，React 使用 150ms trailing debounce。同一时刻只保留当前项目 watcher；切换时先停止旧 watcher，新项目不可用时不恢复旧 watcher。
+
 不从事件推导增量数据，不实现 sync engine。refetch 不能直接覆盖未落盘的编辑内容；冲突进入状态机定义的恢复流程。
 
 ## 6. 多窗口
 
 Main Window 与 Quick Capture Window 是独立原生窗口，分别拥有 QueryClient 和 Zustand store，不共享 JavaScript memory。Quick Capture 写入后，Main Window 通过 watcher 重新加载。
-

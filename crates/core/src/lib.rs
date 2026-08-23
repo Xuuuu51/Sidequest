@@ -12,4 +12,6 @@ mod workspace;
 
 pub use error::{Error, Result};
 pub use quest::{CreateQuest, Quest, QuestCollection, QuestFileIssue, QuestId, QuestStatus};
-pub use workspace::{Workspace, WorkspaceRoot, init_workspace, open_workspace, resolve_workspace};
+pub use workspace::{
+    Workspace, WorkspaceAccess, WorkspaceRoot, init_workspace, open_workspace, resolve_workspace,
+};

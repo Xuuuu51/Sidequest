@@ -1,39 +1,212 @@
 :root {
-  color: #f2f3f4;
-  background: #16191c;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  color: #e8e8e8;
+  background: #17191c;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  font-size: 14px;
   font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
 }
 
 * {
   box-sizing: border-box;
 }
 
-html,
-body,
-#root {
-  min-width: 320px;
-  min-height: 100%;
+body {
   margin: 0;
-}
-
-.app-shell {
+  min-width: 640px;
   min-height: 100vh;
-  display: grid;
-  place-content: center;
-  text-align: center;
 }
 
-.app-shell h1 {
-  margin: 0;
-  font-size: 18px;
+button {
+  border: 1px solid #42464c;
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: inherit;
+  background: #25282c;
+  font: inherit;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: #30343a;
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+code,
+pre {
+  font-family: "SFMono-Regular", Consolas, monospace;
+}
+
+.validation-page {
+  display: grid;
+  min-height: 100vh;
+  place-content: center;
+  padding: 32px;
+}
+
+.onboarding {
+  justify-items: start;
+  max-width: 520px;
+  margin: auto;
+}
+
+.validation-shell {
+  display: grid;
+  min-height: 100vh;
+  grid-template-columns: 240px minmax(0, 1fr);
+}
+
+.project-panel {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  border-right: 1px solid #34383d;
+  background: #1d1f22;
+}
+
+.project-panel header,
+.workspace-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+}
+
+.project-panel h1,
+.workspace-heading h2 {
+  margin-bottom: 0;
+  font-size: 16px;
   font-weight: 600;
 }
 
-.app-shell p {
-  margin: 8px 0 0;
-  color: #939aa2;
-  font-size: 13px;
+.project-panel nav {
+  display: grid;
+  gap: 2px;
+  padding: 0 8px;
+}
+
+.project-row {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  border-color: transparent;
+  background: transparent;
+  text-align: left;
+}
+
+.project-row.selected {
+  border-color: #454b52;
+  background: #30343a;
+}
+
+.project-row small,
+.eyebrow,
+time,
+.quest-count {
+  color: #9298a0;
+  font-size: 11px;
+}
+
+.eyebrow {
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.remove-project {
+  margin: auto 8px 12px;
+}
+
+.workspace-panel {
+  padding: 20px;
+  background: #17191c;
+}
+
+.workspace-heading {
+  padding: 0 0 18px;
+  border-bottom: 1px solid #34383d;
+}
+
+.workspace-heading h2 {
+  overflow: hidden;
+  color: #c8ccd1;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.warning,
+.workspace-error {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+  border: 1px solid #6a5731;
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: #2d281e;
+}
+
+.warning code {
+  overflow: hidden;
+  color: #c9b98c;
+  font-size: 11px;
+  text-overflow: ellipsis;
+}
+
+.error-message {
+  color: #ff8d86;
+}
+
+.quest-count {
+  margin: 18px 0 8px;
+}
+
+.empty-state {
+  color: #9298a0;
+}
+
+.quest-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.quest-list li {
+  border: 1px solid #34383d;
+  border-radius: 6px;
+  padding: 12px;
+  background: #1d1f22;
+}
+
+.quest-list li > div {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.quest-list pre {
+  margin: 0;
+  color: #d8dadd;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
 }

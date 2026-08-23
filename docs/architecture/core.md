@@ -10,6 +10,7 @@
 ```rust
 pub struct Workspace { /* private fields */ }
 pub struct WorkspaceRoot(PathBuf);
+pub enum WorkspaceAccess { Writable, ReadOnly }
 pub struct QuestId(Ulid);
 
 pub struct Quest {
@@ -44,6 +45,7 @@ pub fn resolve_workspace(start_path: &Path) -> Result<Workspace>;
 
 ```rust
 impl Workspace {
+    pub fn access(&self) -> Result<WorkspaceAccess>;
     pub fn create_quest(&self, input: CreateQuest) -> Result<Quest>;
     pub fn get_quest(&self, id: &QuestId) -> Result<Quest>;
     pub fn list_quests(&self) -> Result<QuestCollection>;
@@ -72,4 +74,3 @@ error      稳定、可映射的错误类型
 ## 5. 非 Core 责任
 
 Desktop 项目列表与设置、窗口行为、文件 watcher、安装集成、UI debounce、CLI 参数/DTO/exit code 都不属于 Core。
-

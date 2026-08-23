@@ -12,6 +12,15 @@ use crate::{CreateQuest, Error, Quest, QuestCollection, QuestId, QuestStatus, Re
 const SIDEQUEST_DIRECTORY: &str = ".sidequest";
 const QUESTS_DIRECTORY: &str = "quests";
 
+/// The effective write capability of an opened Workspace.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorkspaceAccess {
+    /// Quest files can be created, updated, and deleted.
+    Writable,
+    /// Quest files can be read but the Quest directory cannot be written.
+    ReadOnly,
+}
+
 /// The canonical project directory that owns a Sidequest Workspace.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct WorkspaceRoot(PathBuf);
@@ -41,6 +50,18 @@ impl Workspace {
     #[must_use]
     pub const fn root(&self) -> &WorkspaceRoot {
         &self.root
+    }
+
+    /// Probes whether the Quest directory can currently be written.
+    ///
+    /// The probe uses a uniquely named ignored temporary file and removes it before returning.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the Workspace layout is invalid or an I/O failure other than a
+    /// read-only filesystem prevents the probe from completing safely.
+    pub fn access(&self) -> Result<WorkspaceAccess> {
+        storage::probe_workspace_access(&self.quests_directory()?)
     }
 
     /// Creates an Inbox Quest using the supplied content.
