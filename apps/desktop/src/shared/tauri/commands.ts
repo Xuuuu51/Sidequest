@@ -8,6 +8,7 @@ import type {
   CommandErrorDto,
   PanelPreferencesDto,
   QuestDto,
+  QuickCaptureResultDto,
   QuestStatus,
   WorkspaceSnapshotDto,
 } from "./types";
@@ -54,6 +55,18 @@ export function hideMainWindow(): Promise<void> {
   return invokeCommand("hide_main_window");
 }
 
+export function showQuickCapture(): Promise<void> {
+  return invokeCommand("show_quick_capture");
+}
+
+export function hideQuickCapture(): Promise<void> {
+  return invokeCommand("hide_quick_capture");
+}
+
+export function saveQuickCapturePosition(): Promise<void> {
+  return invokeCommand("save_quick_capture_position");
+}
+
 export function completeAppQuit(): Promise<void> {
   return invokeCommand("complete_app_quit");
 }
@@ -69,6 +82,13 @@ export function createQuest(
   content: string,
 ): Promise<QuestDto> {
   return invokeCommand("create_quest", { projectPath, content });
+}
+
+export function captureQuest(
+  projectPath: string,
+  content: string,
+): Promise<QuickCaptureResultDto> {
+  return invokeCommand("capture_quest", { projectPath, content });
 }
 
 export function updateQuestContent(

@@ -18,6 +18,7 @@ const appState: AppStateDto = {
     sidebarCollapsed: false,
     drawerWidth: 480,
   },
+  quickCapture: { lastProjectPath: "/second", position: null },
   recoveryWarning: null,
 };
 
@@ -64,6 +65,7 @@ describe("useMainWindowStore", () => {
       projects: [],
       lastSelectedProject: null,
       panelPreferences: appState.panelPreferences,
+      quickCapture: { lastProjectPath: null, position: null },
       recoveryWarning: null,
     });
 

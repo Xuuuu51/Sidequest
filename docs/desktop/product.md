@@ -13,9 +13,9 @@ MVP 包含 Main Window 与独立的 Quick Capture Window。
 
 - 关闭 Main Window 只隐藏窗口；Dock 图标重新打开它。
 - `⌘Q` 或 Quit 才退出应用，退出后全局快捷键不可用。
-- 菜单栏提供 Open Sidequest、Quick Capture、Capture Project、Settings…、Quit Sidequest。
+- 菜单栏提供 Open Sidequest、Quick Capture、禁用的 Settings… 与 Quit Sidequest。
 - 开机启动默认关闭，可在 onboarding 和 Settings 中开启。
-- 默认 Quick Capture 快捷键为 `⌘⇧Space`；冲突时保留旧快捷键并要求重新设置。
+- 默认 Quick Capture 快捷键为 `⌘⇧Space`；阶段 6 注册冲突不阻止启动、不显示警告，用户仍可从菜单打开。冲突检测与重新设置留到 Settings。
 
 ## 2. Onboarding
 

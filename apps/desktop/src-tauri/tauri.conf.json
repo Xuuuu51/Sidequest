@@ -12,6 +12,7 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "Sidequest",
         "width": 1280,
         "height": 800,
@@ -25,6 +26,20 @@
           "x": 18,
           "y": 16
         }
+      },
+      {
+        "label": "quick-capture",
+        "title": "Quick Capture",
+        "width": 520,
+        "height": 300,
+        "minWidth": 520,
+        "minHeight": 300,
+        "maxWidth": 520,
+        "maxHeight": 300,
+        "visible": false,
+        "resizable": false,
+        "decorations": false,
+        "alwaysOnTop": true
       }
     ],
     "security": {

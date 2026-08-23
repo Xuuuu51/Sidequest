@@ -14,7 +14,22 @@ pub(crate) struct AppStateDto {
     pub(crate) projects: Vec<ProjectDto>,
     pub(crate) last_selected_project: Option<String>,
     pub(crate) panel_preferences: PanelPreferencesDto,
+    pub(crate) quick_capture: QuickCapturePreferencesDto,
     pub(crate) recovery_warning: Option<RecoveryWarningDto>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct QuickCapturePreferencesDto {
+    pub(crate) last_project_path: Option<String>,
+    pub(crate) position: Option<QuickCapturePositionDto>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct QuickCapturePositionDto {
+    pub(crate) x: i32,
+    pub(crate) y: i32,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -133,6 +148,13 @@ impl From<&QuestFileIssue> for QuestFileIssueDto {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct DeletedQuestDto {
     pub(crate) id: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct QuickCaptureResultDto {
+    pub(crate) quest: QuestDto,
+    pub(crate) preference_warning: Option<CommandErrorDto>,
 }
 
 impl From<QuestId> for DeletedQuestDto {

@@ -10,6 +10,7 @@ import {
   useSelectProjectMutation,
 } from "./features/data/queries";
 import { useWorkspaceWatcher } from "./features/data/use-workspace-watcher";
+import { useAppStateInvalidation } from "./features/data/use-app-state-invalidation";
 import { ProjectSidebar } from "./features/main-window/project-sidebar";
 import {
   QuestWriteCoordinatorProvider,
@@ -39,6 +40,7 @@ function App() {
 }
 
 function AppContent() {
+  useAppStateInvalidation();
   const coordinator = useQuestWriteCoordinator();
   useWindowGeometryPersistence(coordinator.guard);
   const appState = useAppStateQuery();

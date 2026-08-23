@@ -25,6 +25,8 @@ interface CommandErrorDto {
 
 App 与项目：`get_app_state`、`add_project`、`remove_project`、`relocate_project`、`set_last_selected_project`、`set_panel_preferences`、`save_main_window_geometry`、`hide_main_window`、`complete_app_quit`。
 
+Quick Capture：`show_quick_capture`、`hide_quick_capture`、`save_quick_capture_position`、`capture_quest`。`capture_quest` 只接受已注册项目的精确路径；Quest 创建成功后才更新捕获项目偏好。偏好写入失败通过 `preferenceWarning` 返回，不把已经创建的 Quest 伪装成失败。
+
 Workspace 与 Quest：`load_workspace`、`create_quest`、`update_quest_content`、`set_quest_status`、`delete_quest`、`search_quests`、`set_watched_project`。
 
 Settings 与 integration：`get_settings`、`set_global_shortcut`、`get_integration_status`、`install_cli`、`uninstall_cli`、`install_agent_skill`、`uninstall_agent_skill`。
@@ -74,11 +76,15 @@ Tauri backend 将 Desktop-only 数据保存到 app-local `app.json`，例如 mac
     "sidebarCollapsed": false,
     "drawerWidth": 480
   },
-  "mainWindow": null
+  "mainWindow": null,
+  "quickCapture": {
+    "lastProjectPath": null,
+    "position": null
+  }
 }
 ```
 
-阶段 4 新增字段使用 Serde default，缺少字段的既有 schema version 1 文件继续有效。`mainWindow` 保存位置、尺寸与 maximized 状态；若原显示器失效或标题栏不可见，启动时回退到主显示器安全区域。
+新增字段使用 Serde default，缺少字段的既有 schema version 1 文件继续有效。`mainWindow` 保存位置、尺寸与 maximized 状态；`quickCapture.position` 只保存 x/y。若原显示器失效或标题拖动区不可见，窗口回退到主显示器安全区域。
 
 写入必须使用同目录临时文件与 atomic rename。损坏或不支持的 schema 改名保留为 `app.corrupt-<timestamp>[-n].json` 后恢复为空状态，并向当前会话返回 recovery warning；不得静默覆盖损坏文件。
 
@@ -121,6 +127,8 @@ filesystem event → debounce → workspace-invalidated → query reload
 
 不从事件推导增量数据，不实现 sync engine。refetch 不能直接覆盖未落盘的编辑内容；冲突进入状态机定义的恢复流程。
 
+Desktop command 创建 Quest 后也发出同名 `workspace-invalidated`，因此非当前项目的 Query cache 也会失效。项目列表变化通过 `app-state-invalidated` 同步到两个窗口。
+
 ## 6. Main Window 生命周期
 
 - 红色关闭按钮由 React 拦截：先 flush pending content 与窗口几何，再隐藏而不是销毁 Main Window。
@@ -130,4 +138,4 @@ filesystem event → debounce → workspace-invalidated → query reload
 
 ## 7. 多窗口
 
-Main Window 与 Quick Capture Window 是独立原生窗口，分别拥有 QueryClient 和 Zustand store，不共享 JavaScript memory。Quick Capture 写入后，Main Window 通过 watcher 重新加载。
+Main Window 与 Quick Capture Window 是独立原生窗口，分别拥有 QueryClient 和 Zustand store，不共享 JavaScript memory。Quick Capture Window 固定 `520×300`、不可 resize、无原生标题栏并始终置顶；`quick-capture-shown` 只负责刷新项目状态与恢复输入焦点。重复显示现有窗口，不重建 webview，因此草稿和项目选择得以保留。

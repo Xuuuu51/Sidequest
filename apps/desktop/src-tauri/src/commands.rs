@@ -3,14 +3,18 @@ use std::str::FromStr;
 use std::sync::{Mutex, MutexGuard};
 
 use sidequest_core::{CreateQuest, QuestId, QuestStatus, Workspace, open_workspace};
-use tauri::{AppHandle, State, WebviewWindow};
+use tauri::{AppHandle, Manager, State, WebviewWindow};
 
 use crate::app_state::{AppStateStore, DesktopState};
 use crate::dto::{
     AppStateDto, CommandErrorDto, DeletedQuestDto, PanelPreferencesDto, QuestDto,
-    WorkspaceSnapshotDto,
+    QuickCaptureResultDto, WorkspaceSnapshotDto,
 };
 use crate::error::{DesktopError, Result};
+use crate::native_events::{emit_app_state_invalidated, emit_workspace_invalidated};
+use crate::quick_capture_window::{
+    QUICK_CAPTURE_WINDOW_LABEL, capture_quick_capture_position, show_quick_capture_window,
+};
 use crate::watcher::ProjectWatcher;
 use crate::window_state::capture_main_window;
 
@@ -25,46 +29,58 @@ pub(crate) fn get_app_state(state: State<'_, DesktopState>) -> CommandResult<App
 
 #[tauri::command]
 pub(crate) fn add_project(
+    app_handle: AppHandle,
     state: State<'_, DesktopState>,
     project_path: String,
 ) -> CommandResult<AppStateDto> {
-    app_state_lock(&state)
+    let snapshot = app_state_lock(&state)
         .and_then(|mut store| store.add_project(Path::new(&project_path)))
-        .map_err(CommandErrorDto::from)
+        .map_err(CommandErrorDto::from)?;
+    let _event_result = emit_app_state_invalidated(&app_handle);
+    Ok(snapshot)
 }
 
 #[tauri::command]
 pub(crate) fn remove_project(
+    app_handle: AppHandle,
     state: State<'_, DesktopState>,
     project_path: String,
     delete_sidequest_data: bool,
 ) -> CommandResult<AppStateDto> {
-    app_state_lock(&state)
+    let snapshot = app_state_lock(&state)
         .and_then(|mut store| store.remove_project(Path::new(&project_path), delete_sidequest_data))
-        .map_err(CommandErrorDto::from)
+        .map_err(CommandErrorDto::from)?;
+    let _event_result = emit_app_state_invalidated(&app_handle);
+    Ok(snapshot)
 }
 
 #[tauri::command]
 pub(crate) fn set_last_selected_project(
+    app_handle: AppHandle,
     state: State<'_, DesktopState>,
     project_path: String,
 ) -> CommandResult<AppStateDto> {
-    app_state_lock(&state)
+    let snapshot = app_state_lock(&state)
         .and_then(|mut store| store.set_last_selected_project(Path::new(&project_path)))
-        .map_err(CommandErrorDto::from)
+        .map_err(CommandErrorDto::from)?;
+    let _event_result = emit_app_state_invalidated(&app_handle);
+    Ok(snapshot)
 }
 
 #[tauri::command]
 pub(crate) fn relocate_project(
+    app_handle: AppHandle,
     state: State<'_, DesktopState>,
     project_path: String,
     replacement_path: String,
 ) -> CommandResult<AppStateDto> {
-    app_state_lock(&state)
+    let snapshot = app_state_lock(&state)
         .and_then(|mut store| {
             store.relocate_project(Path::new(&project_path), Path::new(&replacement_path))
         })
-        .map_err(CommandErrorDto::from)
+        .map_err(CommandErrorDto::from)?;
+    let _event_result = emit_app_state_invalidated(&app_handle);
+    Ok(snapshot)
 }
 
 #[tauri::command]
@@ -103,6 +119,52 @@ pub(crate) fn hide_main_window(window: WebviewWindow) -> CommandResult<()> {
 }
 
 #[tauri::command]
+pub(crate) fn show_quick_capture(app_handle: AppHandle) -> CommandResult<()> {
+    show_quick_capture_window(&app_handle).map_err(CommandErrorDto::from)
+}
+
+#[tauri::command]
+pub(crate) fn save_quick_capture_position(
+    app_handle: AppHandle,
+    state: State<'_, DesktopState>,
+) -> CommandResult<()> {
+    let window = app_handle
+        .get_webview_window(QUICK_CAPTURE_WINDOW_LABEL)
+        .ok_or_else(|| DesktopError::Window {
+            operation: "find Quick Capture Window",
+            message: "Quick Capture Window is unavailable".to_owned(),
+        })?;
+    capture_quick_capture_position(&window)
+        .map_err(|error| DesktopError::Window {
+            operation: "capture Quick Capture Window position",
+            message: error.to_string(),
+        })
+        .and_then(|position| app_state_lock(&state)?.set_quick_capture_position(position))
+        .map_err(CommandErrorDto::from)
+}
+
+#[tauri::command]
+pub(crate) fn hide_quick_capture(
+    app_handle: AppHandle,
+    state: State<'_, DesktopState>,
+) -> CommandResult<()> {
+    let position_result = save_quick_capture_position(app_handle.clone(), state);
+    app_handle
+        .get_webview_window(QUICK_CAPTURE_WINDOW_LABEL)
+        .ok_or_else(|| DesktopError::Window {
+            operation: "find Quick Capture Window",
+            message: "Quick Capture Window is unavailable".to_owned(),
+        })?
+        .hide()
+        .map_err(|error| DesktopError::Window {
+            operation: "hide Quick Capture Window",
+            message: error.to_string(),
+        })
+        .map_err(CommandErrorDto::from)?;
+    position_result
+}
+
+#[tauri::command]
 pub(crate) fn complete_app_quit(
     app_handle: AppHandle,
     state: State<'_, DesktopState>,
@@ -118,15 +180,39 @@ pub(crate) fn load_workspace(project_path: String) -> CommandResult<WorkspaceSna
 }
 
 #[tauri::command]
-pub(crate) fn create_quest(project_path: String, content: String) -> CommandResult<QuestDto> {
-    open_exact(Path::new(&project_path))
+pub(crate) fn create_quest(
+    app_handle: AppHandle,
+    project_path: String,
+    content: String,
+) -> CommandResult<QuestDto> {
+    let project_path = Path::new(&project_path);
+    let quest = open_exact(project_path)
         .and_then(|workspace| {
             workspace
                 .create_quest(CreateQuest { content })
                 .map_err(Into::into)
         })
         .map(|quest| QuestDto::from(&quest))
-        .map_err(CommandErrorDto::from)
+        .map_err(CommandErrorDto::from)?;
+    let _event_result = emit_workspace_invalidated(&app_handle, project_path);
+    Ok(quest)
+}
+
+#[tauri::command]
+pub(crate) fn capture_quest(
+    app_handle: AppHandle,
+    state: State<'_, DesktopState>,
+    project_path: String,
+    content: String,
+) -> CommandResult<QuickCaptureResultDto> {
+    let (result, registered_path) = app_state_lock(&state)
+        .and_then(|mut store| capture_quest_impl(&mut store, Path::new(&project_path), content))
+        .map_err(CommandErrorDto::from)?;
+    let _workspace_event = emit_workspace_invalidated(&app_handle, &registered_path);
+    if result.preference_warning.is_none() {
+        let _app_state_event = emit_app_state_invalidated(&app_handle);
+    }
+    Ok(result)
 }
 
 #[tauri::command]
@@ -245,14 +331,37 @@ fn search_workspace_impl(path: &Path, query: &str) -> Result<WorkspaceSnapshotDt
     ))
 }
 
+fn capture_quest_impl(
+    store: &mut AppStateStore,
+    project_path: &Path,
+    content: String,
+) -> Result<(QuickCaptureResultDto, std::path::PathBuf)> {
+    let registered_path = store.registered_project(project_path)?;
+    let workspace = open_exact(&registered_path)?;
+    let quest = workspace.create_quest(CreateQuest { content })?;
+    let preference_warning = store
+        .set_last_quick_capture_project(&registered_path)
+        .err()
+        .map(CommandErrorDto::from);
+    Ok((
+        QuickCaptureResultDto {
+            quest: QuestDto::from(&quest),
+            preference_warning,
+        },
+        registered_path,
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use std::fs;
+    use std::path::Path;
 
     use sidequest_core::{CreateQuest, QuestStatus};
     use tempfile::TempDir;
 
-    use super::{load_workspace_impl, search_workspace_impl};
+    use super::{capture_quest_impl, load_workspace_impl, search_workspace_impl};
+    use crate::app_state::AppStateStore;
 
     type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
 
@@ -301,6 +410,29 @@ mod tests {
         fs::create_dir_all(&nested)?;
 
         assert!(load_workspace_impl(&nested).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn quick_capture_should_require_a_registered_project_and_create_inbox() -> TestResult {
+        let data = TempDir::new()?;
+        let project = TempDir::new()?;
+        let unregistered = TempDir::new()?;
+        let mut store = AppStateStore::load(data.path())?;
+        let state = store.add_project(project.path())?;
+
+        let (result, registered_path) = capture_quest_impl(
+            &mut store,
+            Path::new(&state.projects[0].path),
+            "Captured from Desktop".to_owned(),
+        )?;
+
+        assert_eq!(result.quest.status, "inbox");
+        assert_eq!(registered_path, fs::canonicalize(project.path())?);
+        assert!(result.preference_warning.is_none());
+        assert!(
+            capture_quest_impl(&mut store, unregistered.path(), "Not allowed".to_owned()).is_err()
+        );
         Ok(())
     }
 }

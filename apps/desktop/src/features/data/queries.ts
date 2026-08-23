@@ -9,6 +9,7 @@ import { useCallback } from "react";
 import { queryKeys } from "../../shared/query/keys";
 import {
   addProject,
+  captureQuest,
   createQuest,
   deleteQuest,
   getAppState,
@@ -26,6 +27,7 @@ import type {
   PanelPreferencesDto,
   QuestDto,
   QuestStatus,
+  QuickCaptureResultDto,
   WorkspaceSnapshotDto,
 } from "../../shared/tauri/types";
 
@@ -112,6 +114,18 @@ export function useCreateQuestMutation(projectPath: string) {
   return useMutation({
     mutationFn: (content: string) => createQuest(projectPath, content),
     onSuccess: async () => invalidateProjectData(queryClient, projectPath),
+  });
+}
+
+export function useCaptureQuestMutation() {
+  return useMutation({
+    mutationFn: ({
+      projectPath,
+      content,
+    }: {
+      projectPath: string;
+      content: string;
+    }): Promise<QuickCaptureResultDto> => captureQuest(projectPath, content),
   });
 }
 

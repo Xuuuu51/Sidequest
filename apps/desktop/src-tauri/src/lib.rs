@@ -1,15 +1,22 @@
 //! Native application entry point for Sidequest Desktop.
 
+mod app_menu;
 mod app_state;
 mod commands;
 mod dto;
 mod error;
+mod native_events;
+mod quick_capture_window;
 mod watcher;
 mod window_state;
 
 use tauri::{Emitter, Manager};
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
 use crate::app_state::{AppStateStore, DesktopState};
+use crate::quick_capture_window::{
+    QUICK_CAPTURE_WINDOW_LABEL, restore_quick_capture_window, show_quick_capture_window,
+};
 use crate::window_state::restore_main_window;
 
 /// Runs the Sidequest desktop application.
@@ -19,7 +26,18 @@ use crate::window_state::restore_main_window;
 /// Returns a Tauri error when application setup or the native event loop fails.
 pub fn run() -> tauri::Result<()> {
     let app = tauri::Builder::default()
+        .menu(app_menu::build)
+        .on_menu_event(app_menu::handle_event)
         .plugin(tauri_plugin_dialog::init())
+        .plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(|app, _shortcut, event| {
+                    if event.state() == ShortcutState::Pressed {
+                        let _show_result = show_quick_capture_window(app);
+                    }
+                })
+                .build(),
+        )
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             let app_data_directory = app.path().app_data_dir()?;
@@ -28,7 +46,14 @@ pub fn run() -> tauri::Result<()> {
                 .get_webview_window("main")
                 .ok_or_else(|| tauri::Error::WindowNotFound)?;
             restore_main_window(&window, store.main_window_geometry())?;
+            let quick_capture = app
+                .get_webview_window(QUICK_CAPTURE_WINDOW_LABEL)
+                .ok_or_else(|| tauri::Error::WindowNotFound)?;
+            restore_quick_capture_window(&quick_capture, store.quick_capture_position())?;
             app.manage(DesktopState::new(store));
+            let _shortcut_result = app
+                .global_shortcut()
+                .register("CommandOrControl+Shift+Space");
             window.show()?;
             Ok(())
         })
@@ -41,9 +66,13 @@ pub fn run() -> tauri::Result<()> {
             commands::set_panel_preferences,
             commands::save_main_window_geometry,
             commands::hide_main_window,
+            commands::show_quick_capture,
+            commands::hide_quick_capture,
+            commands::save_quick_capture_position,
             commands::complete_app_quit,
             commands::load_workspace,
             commands::create_quest,
+            commands::capture_quest,
             commands::update_quest_content,
             commands::set_quest_status,
             commands::delete_quest,

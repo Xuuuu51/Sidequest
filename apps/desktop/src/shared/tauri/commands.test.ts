@@ -14,18 +14,22 @@ vi.mock("@tauri-apps/plugin-opener", () => ({
 
 import {
   addProject,
+  captureQuest,
   completeAppQuit,
   CommandError,
   hideMainWindow,
+  hideQuickCapture,
   relocateProject,
   removeProject,
   revealPath,
   saveMainWindowGeometry,
+  saveQuickCapturePosition,
   selectProjectDirectory,
   selectReplacementDirectory,
   setPanelPreferences,
   setQuestStatus,
   setWatchedProject,
+  showQuickCapture,
   updateQuestContent,
 } from "./commands";
 
@@ -50,6 +54,10 @@ describe("typed Tauri commands", () => {
     });
     await saveMainWindowGeometry();
     await hideMainWindow();
+    await showQuickCapture();
+    await saveQuickCapturePosition();
+    await hideQuickCapture();
+    await captureQuest("/project", "Captured");
     await completeAppQuit();
 
     expect(mocks.invoke.mock.calls).toEqual([
@@ -83,6 +91,10 @@ describe("typed Tauri commands", () => {
       ],
       ["save_main_window_geometry", undefined],
       ["hide_main_window", undefined],
+      ["show_quick_capture", undefined],
+      ["save_quick_capture_position", undefined],
+      ["hide_quick_capture", undefined],
+      ["capture_quest", { projectPath: "/project", content: "Captured" }],
       ["complete_app_quit", undefined],
     ]);
   });

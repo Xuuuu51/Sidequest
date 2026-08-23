@@ -29,6 +29,7 @@ const mocks = vi.hoisted(() => ({
   selectProjectDirectory: vi.fn(),
   selectReplacementDirectory: vi.fn(),
   listenForWorkspaceInvalidation: vi.fn(),
+  listenForAppStateInvalidation: vi.fn(),
   updateQuestContent: vi.fn(),
   setQuestStatus: vi.fn(),
   deleteQuest: vi.fn(),
@@ -43,6 +44,7 @@ vi.mock("./shared/tauri/commands", () => ({
 
 vi.mock("./shared/tauri/events", () => ({
   listenForWorkspaceInvalidation: mocks.listenForWorkspaceInvalidation,
+  listenForAppStateInvalidation: mocks.listenForAppStateInvalidation,
 }));
 
 vi.mock("./features/window/use-window-geometry", () => ({
@@ -57,6 +59,7 @@ const emptyState: AppStateDto = {
     sidebarCollapsed: false,
     drawerWidth: 480,
   },
+  quickCapture: { lastProjectPath: null, position: null },
   recoveryWarning: null,
 };
 
@@ -64,6 +67,7 @@ const projectState: AppStateDto = {
   projects: [{ path: "/project", name: "project", state: "writable" }],
   lastSelectedProject: "/project",
   panelPreferences: emptyState.panelPreferences,
+  quickCapture: { lastProjectPath: "/project", position: null },
   recoveryWarning: null,
 };
 
@@ -146,6 +150,9 @@ describe("App", () => {
           return () => undefined;
         },
       );
+    mocks.listenForAppStateInvalidation
+      .mockReset()
+      .mockResolvedValue(() => undefined);
     mocks.workspaceInvalidatedHandler = null;
     mocks.updateQuestContent
       .mockReset()

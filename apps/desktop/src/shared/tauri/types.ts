@@ -18,7 +18,18 @@ export interface AppStateDto {
   projects: ProjectDto[];
   lastSelectedProject: string | null;
   panelPreferences: PanelPreferencesDto;
+  quickCapture: QuickCapturePreferencesDto;
   recoveryWarning: RecoveryWarningDto | null;
+}
+
+export interface QuickCapturePreferencesDto {
+  lastProjectPath: string | null;
+  position: QuickCapturePositionDto | null;
+}
+
+export interface QuickCapturePositionDto {
+  x: number;
+  y: number;
 }
 
 export interface PanelPreferencesDto {
@@ -54,6 +65,11 @@ export interface CommandErrorDto {
   code: string;
   message: string;
   path: string | null;
+}
+
+export interface QuickCaptureResultDto {
+  quest: QuestDto;
+  preferenceWarning: CommandErrorDto | null;
 }
 
 export interface WorkspaceInvalidatedDto {

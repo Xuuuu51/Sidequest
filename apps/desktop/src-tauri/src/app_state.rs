@@ -11,7 +11,8 @@ use serde::{Deserialize, Serialize};
 use sidequest_core::{WorkspaceAccess, init_workspace, open_workspace};
 
 use crate::dto::{
-    AppStateDto, PanelPreferencesDto, ProjectDto, ProjectStateDto, RecoveryWarningDto, display_path,
+    AppStateDto, PanelPreferencesDto, ProjectDto, ProjectStateDto, QuickCapturePositionDto,
+    QuickCapturePreferencesDto, RecoveryWarningDto, display_path,
 };
 use crate::error::{DesktopError, Result};
 use crate::watcher::ProjectWatcher;
@@ -64,6 +65,22 @@ struct PersistentAppState {
     panel_preferences: PanelPreferences,
     #[serde(default)]
     main_window: Option<MainWindowGeometry>,
+    #[serde(default)]
+    quick_capture: QuickCapturePreferences,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct QuickCapturePreferences {
+    last_project_path: Option<PathBuf>,
+    position: Option<QuickCapturePosition>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct QuickCapturePosition {
+    pub(crate) x: i32,
+    pub(crate) y: i32,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -103,6 +120,7 @@ impl Default for PersistentAppState {
             recent_project_paths: Vec::new(),
             panel_preferences: PanelPreferences::default(),
             main_window: None,
+            quick_capture: QuickCapturePreferences::default(),
         }
     }
 }
@@ -195,6 +213,13 @@ impl AppStateStore {
                 .as_deref()
                 .map(display_path),
             panel_preferences: self.state.panel_preferences.into(),
+            quick_capture: QuickCapturePreferencesDto {
+                last_project_path: self
+                    .preferred_quick_capture_project()
+                    .as_deref()
+                    .map(display_path),
+                position: self.state.quick_capture.position.map(Into::into),
+            },
             recovery_warning: self.recovery_warning.clone(),
         }
     }
@@ -256,6 +281,9 @@ impl AppStateStore {
         }
         next.recent_project_paths
             .retain(|recent| recent != current_path);
+        if next.quick_capture.last_project_path.as_deref() == Some(current_path) {
+            next.quick_capture.last_project_path = Some(replacement.clone());
+        }
 
         if let Some(existing_index) = next
             .project_paths
@@ -314,6 +342,53 @@ impl AppStateStore {
         self.persist(next)
     }
 
+    pub(crate) fn quick_capture_position(&self) -> Option<QuickCapturePosition> {
+        self.state.quick_capture.position
+    }
+
+    pub(crate) fn set_quick_capture_position(
+        &mut self,
+        position: QuickCapturePosition,
+    ) -> Result<()> {
+        let mut next = self.state.clone();
+        next.quick_capture.position = Some(position);
+        self.persist(next)
+    }
+
+    pub(crate) fn registered_project(&self, path: &Path) -> Result<PathBuf> {
+        self.state
+            .project_paths
+            .iter()
+            .find(|project| project.as_path() == path)
+            .cloned()
+            .ok_or_else(|| DesktopError::ProjectNotFound {
+                path: path.to_path_buf(),
+            })
+    }
+
+    pub(crate) fn set_last_quick_capture_project(&mut self, path: &Path) -> Result<()> {
+        let project = self.registered_project(path)?;
+        let mut next = self.state.clone();
+        next.quick_capture.last_project_path = Some(project);
+        self.persist(next)
+    }
+
+    fn preferred_quick_capture_project(&self) -> Option<PathBuf> {
+        self.state
+            .quick_capture
+            .last_project_path
+            .as_ref()
+            .filter(|path| self.state.project_paths.contains(path))
+            .or_else(|| {
+                self.state
+                    .last_selected_project
+                    .as_ref()
+                    .filter(|path| self.state.project_paths.contains(path))
+            })
+            .or_else(|| self.state.project_paths.first())
+            .cloned()
+    }
+
     pub(crate) fn remove_project(
         &mut self,
         path: &Path,
@@ -336,6 +411,9 @@ impl AppStateStore {
         let mut next = self.state.clone();
         next.project_paths.retain(|project| project != path);
         next.recent_project_paths.retain(|project| project != path);
+        if next.quick_capture.last_project_path.as_deref() == Some(path) {
+            next.quick_capture.last_project_path = None;
+        }
         if next.last_selected_project.as_deref() == Some(path) {
             next.last_selected_project = next
                 .recent_project_paths
@@ -389,7 +467,24 @@ fn normalize_state(mut state: PersistentAppState) -> PersistentAppState {
     {
         state.last_selected_project = None;
     }
+    if state
+        .quick_capture
+        .last_project_path
+        .as_ref()
+        .is_some_and(|path| !state.project_paths.contains(path))
+    {
+        state.quick_capture.last_project_path = None;
+    }
     state
+}
+
+impl From<QuickCapturePosition> for QuickCapturePositionDto {
+    fn from(position: QuickCapturePosition) -> Self {
+        Self {
+            x: position.x,
+            y: position.y,
+        }
+    }
 }
 
 impl From<PanelPreferences> for PanelPreferencesDto {
@@ -531,7 +626,7 @@ mod tests {
 
     use super::{
         AppStateStore, DEFAULT_DRAWER_WIDTH, DEFAULT_SIDEBAR_WIDTH, DesktopState, MAX_DRAWER_WIDTH,
-        MAX_SIDEBAR_WIDTH, MainWindowGeometry, PersistentAppState,
+        MAX_SIDEBAR_WIDTH, MainWindowGeometry, PersistentAppState, QuickCapturePosition,
     };
     use crate::dto::PanelPreferencesDto;
 
@@ -582,6 +677,53 @@ mod tests {
         assert_eq!(state.panel_preferences.sidebar_width, DEFAULT_SIDEBAR_WIDTH);
         assert_eq!(state.panel_preferences.drawer_width, DEFAULT_DRAWER_WIDTH);
         assert!(store.main_window_geometry().is_none());
+        assert!(state.quick_capture.last_project_path.is_none());
+        assert!(state.quick_capture.position.is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn quick_capture_preferences_should_persist_and_restore() -> TestResult {
+        let data = TempDir::new()?;
+        let project = TempDir::new()?;
+        let mut store = AppStateStore::load(data.path())?;
+        let state = store.add_project(project.path())?;
+        let project_path = PathBuf::from(&state.projects[0].path);
+
+        store.set_last_quick_capture_project(&project_path)?;
+        store.set_quick_capture_position(QuickCapturePosition { x: 80, y: 640 })?;
+        let restored = AppStateStore::load(data.path())?.snapshot();
+
+        assert_eq!(
+            restored.quick_capture.last_project_path,
+            Some(project_path.to_string_lossy().into_owned())
+        );
+        assert_eq!(
+            restored.quick_capture.position,
+            Some(crate::dto::QuickCapturePositionDto { x: 80, y: 640 })
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn quick_capture_project_should_fall_back_after_removal() -> TestResult {
+        let data = TempDir::new()?;
+        let first = TempDir::new()?;
+        let second = TempDir::new()?;
+        let mut store = AppStateStore::load(data.path())?;
+        let first_path = fs::canonicalize(first.path())?;
+        let second_path = fs::canonicalize(second.path())?;
+        store.add_project(&first_path)?;
+        store.add_project(&second_path)?;
+        store.set_last_quick_capture_project(&second_path)?;
+        store.set_last_selected_project(&first_path)?;
+
+        let state = store.remove_project(&second_path, false)?;
+
+        assert_eq!(
+            state.quick_capture.last_project_path,
+            Some(first_path.to_string_lossy().into_owned())
+        );
         Ok(())
     }
 
