@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="34 20 170 184" role="img" aria-labelledby="title description">
+  <title id="title">Sidequest menu bar icon</title>
+  <desc id="description">A monochrome template version of the Sidequest route symbol.</desc>
+  <g fill="none" stroke="#000000" stroke-width="18" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M52 184 C52 145 153 158 153 113 C153 70 91 84 91 50 C91 35 112 32 184 32"/>
+    <path d="M105 137 C132 132 132 99 160 91"/>
+    <circle cx="175" cy="88" r="12" fill="#000000" stroke="none"/>
+  </g>
+</svg>

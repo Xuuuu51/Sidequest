@@ -1,4 +1,9 @@
-# Sidequest
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/brand/sidequest-readme-lockup-dark.svg">
+    <img src="./docs/assets/brand/sidequest-readme-lockup-light.svg" width="720" alt="Sidequest — Stay on the main quest without losing the sidequests.">
+  </picture>
+</p>
 
 Sidequest is a local-first project memory layer for software projects.
 
