@@ -1,0 +1,14 @@
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+*.log
+*.local
+*.tsbuildinfo
+
+node_modules/
+dist/
+target/
+
+apps/desktop/src-tauri/gen/schemas/

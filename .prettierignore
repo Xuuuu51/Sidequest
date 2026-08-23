@@ -1,0 +1,10 @@
+.agents/
+docs/
+**/*.md
+skills-lock.json
+node_modules/
+target/
+dist/
+pnpm-lock.yaml
+apps/desktop/src-tauri/
+apps/desktop/public/

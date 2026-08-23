@@ -1,0 +1,23 @@
+{
+  "name": "sidequest",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=24 <25",
+    "pnpm": ">=11.7.0 <12"
+  },
+  "packageManager": "pnpm@11.7.0",
+  "scripts": {
+    "build": "pnpm --filter @sidequest/desktop build",
+    "desktop": "pnpm --filter @sidequest/desktop tauri dev",
+    "format": "prettier --write . && cargo fmt --all",
+    "format:check": "prettier --check . && cargo fmt --all --check",
+    "lint": "pnpm --filter @sidequest/desktop lint",
+    "tauri": "pnpm --filter @sidequest/desktop tauri",
+    "test": "pnpm --filter @sidequest/desktop test",
+    "typecheck": "pnpm --filter @sidequest/desktop typecheck"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.6"
+  }
+}
