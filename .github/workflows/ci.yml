@@ -37,6 +37,9 @@ jobs:
       - name: Check formatting
         run: pnpm format:check
 
+      - name: Prepare desktop integration resources
+        run: pnpm --filter @sidequest/desktop prepare:integrations:dev
+
       - name: Lint Rust
         run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
 
