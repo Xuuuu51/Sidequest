@@ -5,5 +5,13 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 
+[dependencies]
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+thiserror = "2"
+ulid = "1"
+
+[dev-dependencies]
+tempfile = "3"
+
 [lints]
 workspace = true
