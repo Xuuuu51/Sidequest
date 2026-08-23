@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="168" viewBox="0 0 820 168" role="img" aria-labelledby="title description">
+  <title id="title">Sidequest</title>
+  <desc id="description">Stay on the main quest without losing the sidequests.</desc>
+  <defs>
+    <linearGradient id="plate" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#252D35"/>
+      <stop offset="0.54" stop-color="#192028"/>
+      <stop offset="1" stop-color="#11151A"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="136" height="136" rx="30" fill="url(#plate)" stroke="#3A3A42"/>
+  <g transform="translate(16 18) scale(.56)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M52 184 C52 145 153 158 153 113 C153 70 91 84 91 50 C91 35 112 32 184 32" stroke="#7AA2F7" stroke-width="15"/>
+    <path d="M105 137 C132 132 132 99 160 91" stroke="#C6944B" stroke-width="15"/>
+    <circle cx="174" cy="88" r="11" fill="#C6944B" stroke="none"/>
+  </g>
+  <text x="180" y="76" fill="#ECECEF" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" font-size="54" font-weight="650">Side</text>
+  <text x="288" y="76" fill="#ECECEF" font-family="'SF Mono', ui-monospace, monospace" font-size="50" font-weight="600">quest</text>
+  <text x="182" y="112" fill="#8C8C96" font-family="'SF Mono', ui-monospace, monospace" font-size="14" letter-spacing="0.25">Stay on the main quest without losing the sidequests.</text>
+</svg>

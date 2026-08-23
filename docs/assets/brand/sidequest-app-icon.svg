@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title description">
+  <title id="title">Sidequest app icon</title>
+  <desc id="description">A blue S-shaped main route with an amber side route and captured endpoint on a deep blue-gray macOS icon plate.</desc>
+  <defs>
+    <linearGradient id="plate" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#252D35"/>
+      <stop offset="0.54" stop-color="#192028"/>
+      <stop offset="1" stop-color="#11151A"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.16"/>
+      <stop offset="0.42" stop-color="#FFFFFF" stop-opacity="0.035"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.38"/>
+    </linearGradient>
+    <filter id="plate-shadow" x="-30%" y="-30%" width="160%" height="175%">
+      <feDropShadow dx="0" dy="34" stdDeviation="38" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+    <filter id="route-depth" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="9" stdDeviation="8" flood-color="#000000" flood-opacity="0.55"/>
+      <feDropShadow dx="0" dy="-2" stdDeviation="2" flood-color="#FFFFFF" flood-opacity="0.13"/>
+    </filter>
+  </defs>
+
+  <rect x="72" y="72" width="880" height="880" rx="198" fill="url(#plate)" filter="url(#plate-shadow)"/>
+  <rect x="75" y="75" width="874" height="874" rx="195" fill="none" stroke="url(#edge)" stroke-width="6"/>
+  <path d="M188 216 Q512 86 836 216" fill="none" stroke="#FFFFFF" stroke-opacity="0.04" stroke-width="6"/>
+
+  <g transform="translate(137 135) scale(3.42)" fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#route-depth)">
+    <path d="M52 184 C52 145 153 158 153 113 C153 70 91 84 91 50 C91 35 112 32 184 32" stroke="#7AA2F7" stroke-width="15"/>
+    <path d="M105 137 C132 132 132 99 160 91" stroke="#C6944B" stroke-width="15"/>
+    <circle cx="174" cy="88" r="11" fill="#C6944B" stroke="none"/>
+  </g>
+</svg>
