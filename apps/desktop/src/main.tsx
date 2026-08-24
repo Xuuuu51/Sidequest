@@ -7,20 +7,30 @@ import { applicationKindForWindowLabel } from "./app-entry";
 import { QuickCaptureApp } from "./features/quick-capture/quick-capture-app";
 import { createDesktopQueryClient } from "./shared/query/client";
 import { currentWindowLabel } from "./shared/tauri/window";
+import { ApplicationErrorBoundary } from "./shared/diagnostics/error-boundary";
+import { installGlobalErrorLogging } from "./shared/diagnostics/logger";
+import { initializeI18n } from "./shared/i18n/bootstrap";
+import { LocaleListener } from "./shared/i18n/locale-listener";
 import "./App.css";
 
-const queryClient = createDesktopQueryClient();
-const application =
-  applicationKindForWindowLabel(currentWindowLabel()) === "quickCapture" ? (
-    <QuickCaptureApp />
-  ) : (
-    <App />
-  );
+installGlobalErrorLogging();
 
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-  <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      {application}
-    </QueryClientProvider>
-  </React.StrictMode>,
-);
+async function start(): Promise<void> {
+  await initializeI18n();
+  const queryClient = createDesktopQueryClient();
+  const applicationKind = applicationKindForWindowLabel(currentWindowLabel());
+  const application =
+    applicationKind === "quickCapture" ? <QuickCaptureApp /> : <App />;
+
+  ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
+    <React.StrictMode>
+      <ApplicationErrorBoundary applicationKind={applicationKind}>
+        <QueryClientProvider client={queryClient}>
+          <LocaleListener>{application}</LocaleListener>
+        </QueryClientProvider>
+      </ApplicationErrorBoundary>
+    </React.StrictMode>,
+  );
+}
+
+void start();

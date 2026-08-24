@@ -6,6 +6,7 @@ import { createDesktopQueryClient } from "../../shared/query/client";
 import type { AppStateDto } from "../../shared/tauri/types";
 import { useQuickCaptureStore } from "../../store/quick-capture";
 import { QuickCaptureApp } from "./quick-capture-app";
+import { i18n } from "../../shared/i18n/i18n";
 
 const mocks = vi.hoisted(() => ({
   getAppState: vi.fn(),
@@ -16,14 +17,17 @@ const mocks = vi.hoisted(() => ({
   selectProjectDirectory: vi.fn(),
   listenForQuickCaptureShown: vi.fn(),
   listenForAppStateInvalidation: vi.fn(),
+  listenForDebugReloadRequest: vi.fn(),
   listenForCurrentWindowClose: vi.fn(),
   listenForCurrentWindowMove: vi.fn(),
+  debugReloadHandler: null as (() => void) | null,
 }));
 
 vi.mock("../../shared/tauri/commands", () => mocks);
 vi.mock("../../shared/tauri/events", () => ({
   listenForQuickCaptureShown: mocks.listenForQuickCaptureShown,
   listenForAppStateInvalidation: mocks.listenForAppStateInvalidation,
+  listenForDebugReloadRequest: mocks.listenForDebugReloadRequest,
 }));
 vi.mock("../../shared/tauri/window", () => ({
   listenForCurrentWindowClose: mocks.listenForCurrentWindowClose,
@@ -47,7 +51,8 @@ const appState: AppStateDto = {
 };
 
 describe("QuickCaptureApp", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await i18n.changeLanguage("en");
     useQuickCaptureStore.setState({
       draft: "",
       selectedProjectPath: null,
@@ -71,11 +76,43 @@ describe("QuickCaptureApp", () => {
     for (const listener of [
       mocks.listenForQuickCaptureShown,
       mocks.listenForAppStateInvalidation,
+      mocks.listenForDebugReloadRequest,
       mocks.listenForCurrentWindowClose,
       mocks.listenForCurrentWindowMove,
     ]) {
       listener.mockReset().mockResolvedValue(() => undefined);
     }
+    mocks.debugReloadHandler = null;
+    mocks.listenForDebugReloadRequest.mockImplementation(async (handler) => {
+      mocks.debugReloadHandler = handler;
+      return () => undefined;
+    });
+  });
+
+  it("renders_the_capture_flow_in_simplified_chinese", async () => {
+    await i18n.changeLanguage("zh-CN");
+    renderQuickCapture();
+
+    expect(
+      await screen.findByRole("textbox", { name: "内容" }),
+    ).toHaveAttribute("placeholder", "有什么需要之后处理？");
+    expect(screen.getByRole("button", { name: "记录" })).toBeInTheDocument();
+  });
+
+  it("blocks_debug_reload_while_a_draft_is_present", async () => {
+    renderQuickCapture();
+    const editor = await screen.findByRole("textbox", {
+      name: "Quest content",
+    });
+    fireEvent.change(editor, { target: { value: "Keep this draft" } });
+
+    mocks.debugReloadHandler?.();
+
+    expect(
+      await screen.findByText(
+        "Capture or close this draft before reloading Quick Capture.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("uses_the_remembered_project_and_captures_with_command_enter", async () => {
@@ -117,7 +154,9 @@ describe("QuickCaptureApp", () => {
     fireEvent.change(editor, { target: { value: "Keep me" } });
     fireEvent.click(screen.getByRole("button", { name: "Capture" }));
 
-    expect(await screen.findByText("Disk is busy")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Could not capture this Quest."),
+    ).toBeInTheDocument();
     expect(editor).toHaveValue("Keep me");
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
 

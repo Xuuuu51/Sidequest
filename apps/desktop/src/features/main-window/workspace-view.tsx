@@ -8,6 +8,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 
 import { useSearchQuery, useWorkspaceQuery } from "../data/queries";
 import { useDebouncedValue } from "../../shared/hooks/use-debounced-value";
@@ -22,6 +23,7 @@ import { QuestBoard } from "./quest-board";
 import { QuestDrawer } from "./quest-drawer";
 import { useQuestWriteCoordinator } from "./quest-write-coordinator";
 import { SearchResults } from "./search-results";
+import { localizedError } from "../../shared/i18n/errors";
 
 interface WorkspaceViewProps {
   project: ProjectDto;
@@ -40,6 +42,7 @@ export function WorkspaceView({
   onReveal,
   onRetryAppState,
 }: WorkspaceViewProps) {
+  const { t } = useTranslation(["main-window", "common"]);
   const searchInput = useRef<HTMLInputElement>(null);
   const coordinator = useQuestWriteCoordinator();
   const searchQuery = useMainWindowStore((state) => state.searchQuery);
@@ -79,9 +82,7 @@ export function WorkspaceView({
         editor.draftContent !== editor.baseContent &&
         editor.phase !== "saveError"
       ) {
-        failSaving(
-          "The project is unavailable. Your local changes are preserved.",
-        );
+        failSaving(t("workspace.unavailableDraft"));
       } else {
         clearEditor();
         clearSelection();
@@ -95,6 +96,7 @@ export function WorkspaceView({
     failSaving,
     project.state,
     setSearchQuery,
+    t,
   ]);
 
   useEffect(() => {
@@ -155,7 +157,7 @@ export function WorkspaceView({
     } else {
       clearEditor();
       clearSelection();
-      showToast("The selected Quest no longer exists");
+      showToast(t("workspace.selectedMissing"));
     }
   }, [
     clearSelection,
@@ -167,6 +169,7 @@ export function WorkspaceView({
     showToast,
     workspace.data,
     workspace.isSuccess,
+    t,
   ]);
 
   useEffect(() => {
@@ -211,22 +214,22 @@ export function WorkspaceView({
         <h1>{project.name}</h1>
         <label className="search-field">
           <MagnifyingGlass aria-hidden="true" size={15} weight="regular" />
-          <span className="sr-only">Search current project</span>
+          <span className="sr-only">{t("toolbar.searchLabel")}</span>
           <input
-            aria-label="Search current project"
+            aria-label={t("toolbar.searchLabel")}
             onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search"
+            placeholder={t("toolbar.searchPlaceholder")}
             ref={searchInput}
             value={searchQuery}
           />
           {searchQuery === "" ? (
-            <kbd>⌘ F</kbd>
+            <kbd>{t("toolbar.searchShortcut")}</kbd>
           ) : (
             <button
-              aria-label="Clear Search"
+              aria-label={t("toolbar.clearSearch")}
               className="search-clear"
               onClick={() => setSearchQuery("")}
-              title="Clear Search"
+              title={t("toolbar.clearSearch")}
               type="button"
             >
               <X aria-hidden="true" size={13} weight="regular" />
@@ -236,7 +239,7 @@ export function WorkspaceView({
         <IconButton
           disabled={selectedQuestId === null || drawerOpen}
           icon={Sidebar}
-          label="Open Quest details"
+          label={t("toolbar.openDetails")}
           onClick={openSelectedQuest}
         />
       </header>
@@ -247,13 +250,11 @@ export function WorkspaceView({
             onLocate={() => onLocate(project)}
             onReveal={() => onReveal(project.path)}
             onRetry={onRetryAppState}
-            project={project}
           />
         ) : workspace.isPending ? (
           <LoadingState />
         ) : workspace.isError ? (
           <FatalState
-            error={toError(workspace.error)}
             onReveal={() => onReveal(project.path)}
             onRetry={() => void workspace.refetch()}
           />
@@ -263,10 +264,7 @@ export function WorkspaceView({
               {workspace.data.access === "readOnly" && (
                 <div className="compact-banner" role="status">
                   <LockBannerIcon />
-                  <span>
-                    This project is read-only. Browsing and search remain
-                    available.
-                  </span>
+                  <span>{t("workspace.readOnlyBanner")}</span>
                 </div>
               )}
               {workspace.data.issues.length > 0 && (
@@ -280,13 +278,13 @@ export function WorkspaceView({
               {watcherError !== null && (
                 <div className="compact-banner warning" role="status">
                   <Warning aria-hidden="true" size={15} weight="regular" />
-                  <span>External changes may not refresh automatically.</span>
+                  <span>{t("workspace.externalRefreshFailed")}</span>
                   <button
                     className="inline-action"
                     onClick={() => void workspace.refetch()}
                     type="button"
                   >
-                    Reload
+                    {t("workspace.reload")}
                   </button>
                 </div>
               )}
@@ -302,14 +300,14 @@ export function WorkspaceView({
               />
             ) : debouncedSearch !== normalizedSearch || search.isPending ? (
               <div className="local-progress" role="status">
-                <span className="progress-spinner" /> Searching…
+                <span className="progress-spinner" /> {t("workspace.searching")}
               </div>
             ) : search.isError ? (
               <div className="inline-error-state">
-                <strong>Search failed</strong>
-                <span>{toError(search.error).message}</span>
+                <strong>{t("workspace.searchFailed")}</strong>
+                <span>{localizedError(search.error)}</span>
                 <button onClick={() => void search.refetch()} type="button">
-                  Retry
+                  {t("actions.retry", { ns: "common" })}
                 </button>
               </div>
             ) : (
@@ -352,38 +350,40 @@ function findSelectedQuest(
 }
 
 function LoadingState() {
+  const { t } = useTranslation("main-window");
   return (
     <div className="local-progress" role="status">
-      <span className="progress-spinner" /> Loading workspace…
+      <span className="progress-spinner" /> {t("workspace.loading")}
     </div>
   );
 }
 
 function UnavailableState({
-  project,
   onLocate,
   onRetry,
   onReveal,
 }: {
-  project: ProjectDto;
   onLocate: () => void;
   onRetry: () => void;
   onReveal: () => void;
 }) {
+  const { t } = useTranslation(["main-window", "common"]);
   return (
     <div className="workspace-state">
       <Warning aria-hidden="true" size={20} weight="regular" />
-      <h2>Project unavailable</h2>
-      <p>Sidequest can’t access {project.path}.</p>
+      <h2>{t("workspace.projectUnavailable")}</h2>
+      <p>{t("workspace.cannotAccessProject")}</p>
       <div className="state-actions">
         <button className="primary-button" onClick={onLocate} type="button">
-          <FolderOpen aria-hidden="true" size={15} /> Locate Folder
+          <FolderOpen aria-hidden="true" size={15} />
+          {t("actions.locateFolder", { ns: "common" })}
         </button>
         <button onClick={onRetry} type="button">
-          <ArrowClockwise aria-hidden="true" size={15} /> Retry
+          <ArrowClockwise aria-hidden="true" size={15} />
+          {t("actions.retry", { ns: "common" })}
         </button>
         <button onClick={onReveal} type="button">
-          Reveal in Finder
+          {t("actions.revealInFinder", { ns: "common" })}
         </button>
       </div>
     </div>
@@ -391,25 +391,25 @@ function UnavailableState({
 }
 
 function FatalState({
-  error,
   onRetry,
   onReveal,
 }: {
-  error: Error;
   onRetry: () => void;
   onReveal: () => void;
 }) {
+  const { t } = useTranslation(["main-window", "common"]);
   return (
     <div className="workspace-state">
       <Warning aria-hidden="true" size={20} weight="regular" />
-      <h2>Workspace could not be read</h2>
-      <p>{error.message}</p>
+      <h2>{t("workspace.workspaceUnreadable")}</h2>
+      <p>{t("workspace.workspaceUnreadableDescription")}</p>
       <div className="state-actions">
         <button className="primary-button" onClick={onRetry} type="button">
-          <ArrowClockwise aria-hidden="true" size={15} /> Retry
+          <ArrowClockwise aria-hidden="true" size={15} />
+          {t("actions.retry", { ns: "common" })}
         </button>
         <button onClick={onReveal} type="button">
-          Reveal in Finder
+          {t("actions.revealInFinder", { ns: "common" })}
         </button>
       </div>
     </div>
@@ -427,18 +427,19 @@ function IssuesBanner({
   onToggle: () => void;
   onReveal: (path: string) => void;
 }) {
+  const { t } = useTranslation(["main-window", "common"]);
   return (
     <div className="issues-banner compact-banner warning" role="status">
       <div className="issues-summary">
         <Warning aria-hidden="true" size={15} weight="regular" />
-        <span>{issues.length} quest files could not be read</span>
+        <span>{t("workspace.issueCount", { count: issues.length })}</span>
         <button
           aria-expanded={expanded}
           className="inline-action"
           onClick={onToggle}
           type="button"
         >
-          {expanded ? "Hide Details" : "View Details"}
+          {expanded ? t("workspace.hideDetails") : t("workspace.viewDetails")}
         </button>
       </div>
       {expanded && (
@@ -446,11 +447,14 @@ function IssuesBanner({
           {issues.map((issue) => (
             <li key={issue.path}>
               <div>
-                <code>{issue.path}</code>
-                <span>{issue.message}</span>
+                <span>
+                  {t("workspace.issueItem", {
+                    index: issues.indexOf(issue) + 1,
+                  })}
+                </span>
               </div>
               <button onClick={() => onReveal(issue.path)} type="button">
-                Reveal
+                {t("actions.reveal", { ns: "common" })}
               </button>
             </li>
           ))}
@@ -462,8 +466,4 @@ function IssuesBanner({
 
 function LockBannerIcon() {
   return <LockSimple aria-hidden="true" size={15} weight="regular" />;
-}
-
-function toError(value: unknown): Error {
-  return value instanceof Error ? value : new Error(String(value));
 }

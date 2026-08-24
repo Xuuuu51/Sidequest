@@ -1,0 +1,27 @@
+{
+  "generic": "出现问题，请重试。",
+  "invalidArguments": "请求无效。",
+  "projectNotFound": "项目已不在 Sidequest 中。",
+  "workspaceUnavailable": "工作区不可用。",
+  "workspaceReadOnly": "工作区为只读。",
+  "questNotFound": "找不到这条 Quest。",
+  "questFileInvalid": "Quest 文件无效。",
+  "ioError": "文件系统操作失败。",
+  "internalError": "Sidequest 遇到内部错误。",
+  "languageSaveFailed": "无法保存语言设置。",
+  "fatal": {
+    "title": "Sidequest 遇到意外错误",
+    "description": "这个错误没有修改项目文件。诊断日志可以帮助定位问题。",
+    "draftWarning": "内存中仍有未保存的草稿，请在重新加载窗口前复制。",
+    "copyDraft": "复制未保存草稿",
+    "copyDiagnostics": "复制诊断信息",
+    "revealLogs": "显示日志",
+    "reload": "重新加载窗口",
+    "draftCopied": "草稿已复制。",
+    "draftCopyFailed": "无法复制草稿。",
+    "diagnosticsCopied": "诊断信息已复制。",
+    "diagnosticsCopyFailed": "无法复制诊断信息。",
+    "logsRevealed": "已在 Finder 中显示日志。",
+    "logsRevealFailed": "无法显示日志。"
+  }
+}

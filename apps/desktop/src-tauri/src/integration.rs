@@ -9,13 +9,17 @@ use tauri::{AppHandle, Manager};
 use crate::app_state::{AppStateStore, ManagedArtifact, ManagedArtifactRecord};
 use crate::dto::{IntegrationIdDto, IntegrationItemDto, IntegrationStateDto, display_path};
 use crate::error::{DesktopError, Result};
+use crate::logging::sanitize_path;
+use crate::runtime_paths::RuntimePaths;
 
 const BUNDLED_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-pub(crate) fn status(app: &AppHandle, store: &AppStateStore) -> Vec<IntegrationItemDto> {
-    let Some(home) = app.path().home_dir().ok() else {
-        return unavailable_items("Home directory is unavailable");
-    };
+pub(crate) fn status(
+    app: &AppHandle,
+    store: &AppStateStore,
+    paths: &RuntimePaths,
+) -> Vec<IntegrationItemDto> {
+    let home = paths.home_directory();
     let resources = resource_paths(app);
     vec![
         item_status(
@@ -42,38 +46,40 @@ pub(crate) fn status(app: &AppHandle, store: &AppStateStore) -> Vec<IntegrationI
     ]
 }
 
-pub(crate) fn install_cli(app: &AppHandle, store: &mut AppStateStore) -> Result<()> {
-    let home = app
-        .path()
-        .home_dir()
-        .map_err(|error| DesktopError::Window {
-            operation: "resolve home directory",
-            message: error.to_string(),
-        })?;
+pub(crate) fn install_cli(
+    app: &AppHandle,
+    store: &mut AppStateStore,
+    paths: &RuntimePaths,
+) -> Result<()> {
+    let home = paths.home_directory();
     let source = resource_paths(app).cli;
-    install_file(
+    let target = home.join(".local/bin/sq");
+    log::info!(
+        "installing managed CLI target={}",
+        sanitize_path(&target, home)
+    );
+    let result = install_file(
         store,
         ManagedArtifact::Cli,
         &source,
-        &home.join(".local/bin/sq"),
+        &target,
         true,
         Some(false),
-    )
+    );
+    if result.is_ok() {
+        log::info!("managed CLI installation completed");
+    }
+    result
 }
 
 pub(crate) fn install_agent_skill(
     app: &AppHandle,
     store: &mut AppStateStore,
     agent: IntegrationIdDto,
+    paths: &RuntimePaths,
 ) -> Result<()> {
-    install_cli(app, store)?;
-    let home = app
-        .path()
-        .home_dir()
-        .map_err(|error| DesktopError::Window {
-            operation: "resolve home directory",
-            message: error.to_string(),
-        })?;
+    install_cli(app, store, paths)?;
+    let home = paths.home_directory();
     let (artifact, target) = match agent {
         IntegrationIdDto::Codex => (
             ManagedArtifact::Codex,
@@ -85,33 +91,35 @@ pub(crate) fn install_agent_skill(
         ),
         IntegrationIdDto::Cli => {
             return Err(DesktopError::IntegrationUnavailable {
-                path: home,
+                path: home.to_path_buf(),
                 message: "CLI is not an agent skill".to_owned(),
             });
         }
     };
-    install_file(
+    log::info!(
+        "installing managed agent skill target={}",
+        sanitize_path(&target, home)
+    );
+    let result = install_file(
         store,
         artifact,
         &resource_paths(app).skill,
         &target,
         false,
         None,
-    )
+    );
+    if result.is_ok() {
+        log::info!("managed agent skill installation completed");
+    }
+    result
 }
 
 pub(crate) fn uninstall(
-    app: &AppHandle,
     store: &mut AppStateStore,
     integration: IntegrationIdDto,
+    paths: &RuntimePaths,
 ) -> Result<()> {
-    let home = app
-        .path()
-        .home_dir()
-        .map_err(|error| DesktopError::Window {
-            operation: "resolve home directory",
-            message: error.to_string(),
-        })?;
+    let home = paths.home_directory();
     let (artifact, target, cli_intent) = match integration {
         IntegrationIdDto::Cli => (ManagedArtifact::Cli, home.join(".local/bin/sq"), Some(true)),
         IntegrationIdDto::Codex => (
@@ -125,14 +133,27 @@ pub(crate) fn uninstall(
             None,
         ),
     };
-    uninstall_file(store, artifact, &target, cli_intent)
+    log::info!(
+        "uninstalling managed integration target={}",
+        sanitize_path(&target, home)
+    );
+    let result = uninstall_file(store, artifact, &target, cli_intent);
+    if result.is_ok() {
+        log::info!("managed integration uninstall completed");
+    }
+    result
 }
 
-pub(crate) fn auto_maintain_cli(app: &AppHandle, store: &mut AppStateStore) -> Result<()> {
+pub(crate) fn auto_maintain_cli(
+    app: &AppHandle,
+    store: &mut AppStateStore,
+    paths: &RuntimePaths,
+) -> Result<()> {
     if !store.has_projects() || store.cli_user_uninstalled() {
+        log::debug!("automatic CLI maintenance skipped");
         return Ok(());
     }
-    let current = status(app, store)
+    let current = status(app, store, paths)
         .into_iter()
         .find(|item| item.id == IntegrationIdDto::Cli)
         .ok_or_else(|| DesktopError::IntegrationUnavailable {
@@ -145,7 +166,8 @@ pub(crate) fn auto_maintain_cli(app: &AppHandle, store: &mut AppStateStore) -> R
     ) || (current.state == IntegrationStateDto::RepairRequired
         && current.message.as_deref() == Some("Managed item is missing"))
     {
-        install_cli(app, store)?;
+        log::info!("automatic CLI maintenance requested an install or upgrade");
+        install_cli(app, store, paths)?;
     }
     Ok(())
 }
@@ -313,7 +335,11 @@ fn install_file(
     let staged = sibling_path(target, "stage");
     let backup = sibling_path(target, "backup");
     if let Err(error) = copy_synced(source, &staged, executable) {
-        let _cleanup_result = fs::remove_file(&staged);
+        if let Err(cleanup_error) = fs::remove_file(&staged)
+            && cleanup_error.kind() != io::ErrorKind::NotFound
+        {
+            log::warn!("could not clean staged integration after copy failure: {cleanup_error}");
+        }
         return Err(error);
     }
     let had_target = target.exists();
@@ -322,12 +348,19 @@ fn install_file(
             .map_err(|source| DesktopError::io("stage existing integration", target, source))?;
     }
     if let Err(error) = fs::rename(&staged, target) {
-        let _restore_result = if had_target {
+        let restore_result = if had_target {
             fs::rename(&backup, target)
         } else {
             Ok(())
         };
-        let _cleanup_result = fs::remove_file(&staged);
+        if let Err(restore_error) = restore_result {
+            log::error!("could not restore integration after install failure: {restore_error}");
+        }
+        if let Err(cleanup_error) = fs::remove_file(&staged)
+            && cleanup_error.kind() != io::ErrorKind::NotFound
+        {
+            log::warn!("could not clean staged integration after install failure: {cleanup_error}");
+        }
         return Err(DesktopError::io("install integration", target, error));
     }
     let next_record = ManagedArtifactRecord {
@@ -338,14 +371,18 @@ fn install_file(
     if let Err(error) =
         store.set_integration_record(artifact, Some(next_record), cli_user_uninstalled)
     {
-        let _remove_result = fs::remove_file(target);
-        if had_target {
-            let _restore_result = fs::rename(&backup, target);
+        if let Err(remove_error) = fs::remove_file(target)
+            && remove_error.kind() != io::ErrorKind::NotFound
+        {
+            log::error!("could not remove failed managed integration: {remove_error}");
+        }
+        if had_target && let Err(restore_error) = fs::rename(&backup, target) {
+            log::error!("could not restore integration after state write failure: {restore_error}");
         }
         return Err(error);
     }
-    if had_target {
-        let _cleanup_result = fs::remove_file(&backup);
+    if had_target && let Err(error) = fs::remove_file(&backup) {
+        log::warn!("could not clean integration backup: {error}");
     }
     sync_directory(parent)
 }
@@ -384,8 +421,8 @@ fn uninstall_file(
             .map_err(|source| DesktopError::io("stage integration removal", target, source))?;
     }
     if let Err(error) = store.set_integration_record(artifact, None, cli_user_uninstalled) {
-        if existed {
-            let _restore_result = fs::rename(&backup, target);
+        if existed && let Err(restore_error) = fs::rename(&backup, target) {
+            log::error!("could not restore integration removal: {restore_error}");
         }
         return Err(error);
     }
@@ -476,24 +513,6 @@ fn path_contains(directory: Option<&Path>) -> bool {
     };
     std::env::var_os("PATH")
         .is_some_and(|path| std::env::split_paths(&path).any(|item| item == directory))
-}
-
-fn unavailable_items(message: &str) -> Vec<IntegrationItemDto> {
-    [
-        IntegrationIdDto::Cli,
-        IntegrationIdDto::Codex,
-        IntegrationIdDto::Claude,
-    ]
-    .into_iter()
-    .map(|id| IntegrationItemDto {
-        id,
-        state: IntegrationStateDto::Unavailable,
-        path: String::new(),
-        installed_version: None,
-        bundled_version: BUNDLED_VERSION.to_owned(),
-        message: Some(message.to_owned()),
-    })
-    .collect()
 }
 
 #[cfg(test)]

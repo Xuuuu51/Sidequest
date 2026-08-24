@@ -30,6 +30,8 @@ import {
   uninstallCli,
   installAgentSkill,
   uninstallAgentSkill,
+  getLocaleSettings,
+  setLocalePreference,
 } from "../../shared/tauri/commands";
 import type {
   AppStateDto,
@@ -42,6 +44,7 @@ import type {
   OnboardingStep,
   IntegrationId,
   IntegrationItemDto,
+  LanguagePreference,
 } from "../../shared/tauri/types";
 
 export function useAppStateQuery() {
@@ -53,6 +56,23 @@ export function useAppStateQuery() {
 
 export function useSettingsQuery() {
   return useQuery({ queryKey: queryKeys.settings, queryFn: getSettings });
+}
+
+export function useLocaleSettingsQuery() {
+  return useQuery({
+    queryKey: queryKeys.localeSettings,
+    queryFn: getLocaleSettings,
+  });
+}
+
+export function useSetLocalePreferenceMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (preference: LanguagePreference) =>
+      setLocalePreference(preference),
+    onSuccess: (localeSettings) =>
+      queryClient.setQueryData(queryKeys.localeSettings, localeSettings),
+  });
 }
 
 export function useIntegrationsQuery() {

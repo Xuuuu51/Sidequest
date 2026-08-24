@@ -8,6 +8,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   useIntegrationMutation,
@@ -15,16 +16,24 @@ import {
   useSetGlobalShortcutMutation,
   useSetLaunchAtLoginMutation,
   useSettingsQuery,
+  useLocaleSettingsQuery,
+  useSetLocalePreferenceMutation,
 } from "../data/queries";
 import type {
   IntegrationId,
   IntegrationItemDto,
+  LanguagePreference,
   ShortcutModifier,
   ShortcutSpecDto,
 } from "../../shared/tauri/types";
-import { revealPath } from "../../shared/tauri/commands";
+import {
+  copyDiagnosticReport,
+  revealDiagnosticLogs,
+  revealPath,
+} from "../../shared/tauri/commands";
 import { IconButton } from "../../shared/ui/icon-button";
 import { useMainWindowStore } from "../../store/main-window";
+import { localizedError } from "../../shared/i18n/errors";
 
 interface SettingsPageProps {
   onBack: () => void;
@@ -32,7 +41,10 @@ interface SettingsPageProps {
 }
 
 export function SettingsPage({ onBack, compact }: SettingsPageProps) {
+  const { t } = useTranslation(["settings", "common", "errors"]);
   const settings = useSettingsQuery();
+  const localeSettings = useLocaleSettingsQuery();
+  const setLocale = useSetLocalePreferenceMutation();
   const integrations = useIntegrationsQuery();
   const setShortcut = useSetGlobalShortcutMutation();
   const setLaunch = useSetLaunchAtLoginMutation();
@@ -44,6 +56,9 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
   const licenseOpen = useMainWindowStore((state) => state.licenseOpen);
   const setLicenseOpen = useMainWindowStore((state) => state.setLicenseOpen);
   const [error, setError] = useState<string | null>(null);
+  const [diagnosticFeedback, setDiagnosticFeedback] = useState<string | null>(
+    null,
+  );
   const [confirming, setConfirming] = useState<IntegrationItemDto | null>(null);
 
   useEffect(() => {
@@ -59,7 +74,7 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
       await setShortcut.mutateAsync(shortcut);
       setRecording(false);
     } catch (cause) {
-      setError(toMessage(cause));
+      setError(localizedError(cause));
     }
   }
 
@@ -72,7 +87,7 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
       await integrationMutation.mutateAsync({ id: item.id, action });
       setConfirming(null);
     } catch (cause) {
-      setError(toMessage(cause));
+      setError(localizedError(cause));
     }
   }
 
@@ -81,7 +96,29 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
     try {
       await revealPath(item.path);
     } catch (cause) {
-      setError(toMessage(cause));
+      setError(localizedError(cause));
+    }
+  }
+
+  async function copyDiagnostics(): Promise<void> {
+    setError(null);
+    setDiagnosticFeedback(null);
+    try {
+      await copyDiagnosticReport();
+      setDiagnosticFeedback(t("feedback.copied", { ns: "common" }));
+    } catch (cause) {
+      setError(localizedError(cause));
+    }
+  }
+
+  async function revealLogs(): Promise<void> {
+    setError(null);
+    setDiagnosticFeedback(null);
+    try {
+      await revealDiagnosticLogs();
+      setDiagnosticFeedback(t("feedback.revealedInFinder", { ns: "common" }));
+    } catch (cause) {
+      setError(localizedError(cause));
     }
   }
 
@@ -93,22 +130,54 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
     >
       {compact === undefined && (
         <header className="settings-titlebar" data-tauri-drag-region>
-          <IconButton icon={ArrowLeft} label="Back" onClick={onBack} />
-          <h1>Settings</h1>
+          <IconButton
+            icon={ArrowLeft}
+            label={t("actions.back", { ns: "common" })}
+            onClick={onBack}
+          />
+          <h1>{t("title")}</h1>
         </header>
       )}
       <div className="settings-scroll">
         {compact !== "codingAgents" && (
-          <SettingsSection title="General">
+          <SettingsSection title={t("sections.general")}>
+            {compact === undefined && (
+              <SettingRow
+                label={t("language.label")}
+                description={t("language.description")}
+              >
+                <select
+                  aria-label={t("language.label")}
+                  disabled={
+                    localeSettings.data === undefined || setLocale.isPending
+                  }
+                  value={localeSettings.data?.preference ?? "system"}
+                  onChange={(event) => {
+                    setError(null);
+                    void setLocale
+                      .mutateAsync(event.target.value as LanguagePreference)
+                      .catch(() =>
+                        setError(t("languageSaveFailed", { ns: "errors" })),
+                      );
+                  }}
+                >
+                  <option value="system">{t("language.system")}</option>
+                  <option value="en">{t("language.english")}</option>
+                  <option value="zh-CN">
+                    {t("language.simplifiedChinese")}
+                  </option>
+                </select>
+              </SettingRow>
+            )}
             <SettingRow
-              label="Shortcut"
-              description="Open Quick Capture from any app."
+              label={t("shortcut.label")}
+              description={t("shortcut.description")}
             >
               {settings.data !== undefined && (
                 <ShortcutRecorder
                   error={
                     settings.data.shortcutRegistration === "conflict"
-                      ? "Shortcut is currently unavailable"
+                      ? t("shortcut.unavailable")
                       : null
                   }
                   onCancel={() => setRecording(false)}
@@ -130,22 +199,32 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
                 }
                 type="button"
               >
-                Restore Default
+                {t("shortcut.restoreDefault")}
               </button>
             </SettingRow>
             <SettingRow
-              label="Launch at Login"
-              description="Start Sidequest hidden and keep Quick Capture available."
+              label={t("launchAtLogin.label")}
+              description={
+                settings.data?.debugProfile
+                  ? t("launchAtLogin.isolated")
+                  : t("launchAtLogin.description")
+              }
             >
               <label className="switch-control">
                 <input
                   checked={settings.data?.launchAtLogin ?? false}
-                  disabled={settings.data === undefined || setLaunch.isPending}
+                  disabled={
+                    settings.data === undefined ||
+                    !settings.data.launchAtLoginAvailable ||
+                    setLaunch.isPending
+                  }
                   onChange={(event) => {
                     setError(null);
                     void setLaunch
                       .mutateAsync(event.target.checked)
-                      .catch((cause: unknown) => setError(toMessage(cause)));
+                      .catch((cause: unknown) =>
+                        setError(localizedError(cause)),
+                      );
                   }}
                   type="checkbox"
                 />
@@ -156,7 +235,7 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
         )}
 
         {compact !== "quickCapture" && (
-          <SettingsSection title="Coding Agents">
+          <SettingsSection title={t("sections.codingAgents")}>
             {(["codex", "claude"] as const).map((id) => (
               <IntegrationRow
                 item={integrations.data?.find((item) => item.id === id)}
@@ -176,7 +255,7 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
         )}
 
         {compact === "quickCapture" && (
-          <SettingsSection title="Command Line Tool">
+          <SettingsSection title={t("sections.commandLine")}>
             <IntegrationRow
               item={integrations.data?.find((item) => item.id === "cli")}
               onAction={(item, action) => {
@@ -194,7 +273,7 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
 
         {compact === undefined && (
           <>
-            <SettingsSection title="Command Line Tool">
+            <SettingsSection title={t("sections.commandLine")}>
               <IntegrationRow
                 item={integrations.data?.find((item) => item.id === "cli")}
                 onAction={(item, action) => {
@@ -208,26 +287,39 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
                 pending={integrationMutation.isPending}
               />
             </SettingsSection>
-            <SettingsSection title="About">
-              <SettingRow label="Sidequest" description="Desktop application">
+            <SettingsSection title={t("sections.about")}>
+              <SettingRow
+                label="Sidequest"
+                description={t("about.application")}
+              >
                 <span className="setting-value">
-                  Version {settings.data?.appVersion ?? "—"}
+                  {t("about.version", {
+                    version: settings.data?.appVersion ?? "—",
+                  })}
                 </span>
               </SettingRow>
               <SettingRow
-                label="Check for Updates"
-                description="Available in Stage 8."
+                label={t("about.diagnostics")}
+                description={t("about.diagnosticsDescription")}
               >
-                <button disabled type="button">
-                  Check
+                {diagnosticFeedback !== null && (
+                  <span className="setting-feedback" role="status">
+                    {diagnosticFeedback}
+                  </span>
+                )}
+                <button onClick={() => void copyDiagnostics()} type="button">
+                  {t("about.copyDiagnostics")}
+                </button>
+                <button onClick={() => void revealLogs()} type="button">
+                  {t("about.revealLogs")}
                 </button>
               </SettingRow>
               <SettingRow
-                label="License"
-                description="Sidequest is released under the MIT License."
+                label={t("about.license")}
+                description={t("about.licenseDescription")}
               >
                 <button onClick={() => setLicenseOpen(true)} type="button">
-                  View License
+                  {t("about.viewLicense")}
                 </button>
               </SettingRow>
             </SettingsSection>
@@ -237,7 +329,7 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
         {(error !== null || settings.isError || integrations.isError) && (
           <p className="settings-error" role="alert">
             <Warning aria-hidden="true" size={14} />
-            {error ?? toMessage(settings.error ?? integrations.error)}
+            {error ?? localizedError(settings.error ?? integrations.error)}
           </p>
         )}
       </div>
@@ -251,9 +343,11 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
         >
           <div className="compact-dialog">
             <h2 id="integration-confirm-title">
-              Uninstall {integrationName(confirming.id)}?
+              {t("integration.confirmUninstall", {
+                name: integrationName(confirming.id),
+              })}
             </h2>
-            <p>Sidequest will remove the managed file at:</p>
+            <p>{t("integration.removeManaged")}</p>
             <code>{confirming.path}</code>
             <div className="dialog-actions">
               <button
@@ -261,14 +355,14 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
                 onClick={() => setConfirming(null)}
                 type="button"
               >
-                Cancel
+                {t("actions.cancel", { ns: "common" })}
               </button>
               <button
                 className="danger-button"
                 onClick={() => void runIntegration(confirming, "uninstall")}
                 type="button"
               >
-                Uninstall
+                {t("actions.uninstall", { ns: "common" })}
               </button>
             </div>
           </div>
@@ -284,10 +378,10 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
         >
           <div className="license-dialog">
             <header>
-              <h2 id="license-title">MIT License</h2>
+              <h2 id="license-title">{t("about.licenseTitle")}</h2>
               <IconButton
                 icon={X}
-                label="Close license"
+                label={t("about.closeLicense")}
                 onClick={() => setLicenseOpen(false)}
               />
             </header>
@@ -349,6 +443,7 @@ function ShortcutRecorder({
   onCancel: () => void;
   onRecord: (shortcut: ShortcutSpecDto) => void;
 }) {
+  const { t } = useTranslation("settings");
   function handleKeyDown(event: KeyboardEvent<HTMLButtonElement>): void {
     if (!recording) return;
     event.preventDefault();
@@ -381,7 +476,7 @@ function ShortcutRecorder({
         type="button"
       >
         <Command aria-hidden="true" size={14} />
-        {recording ? "Type shortcut…" : shortcut.display}
+        {recording ? t("shortcut.recording") : shortcut.display}
       </button>
       {error !== null && <span className="inline-warning">{error}</span>}
     </div>
@@ -400,6 +495,7 @@ function IntegrationRow({
     action: "install" | "uninstall" | "reveal",
   ) => void;
 }) {
+  const { t } = useTranslation(["settings", "common"]);
   const id = item?.id ?? "cli";
   const needsAttention =
     item !== undefined &&
@@ -410,14 +506,14 @@ function IntegrationRow({
   const blocked = item?.state === "conflict" || item?.state === "unavailable";
   const action = blocked ? "reveal" : installed ? "uninstall" : "install";
   const label = installed
-    ? "Uninstall"
+    ? t("actions.uninstall", { ns: "common" })
     : blocked
-      ? "Reveal"
+      ? t("actions.reveal", { ns: "common" })
       : item?.state === "updateAvailable"
-        ? "Update"
+        ? t("actions.update", { ns: "common" })
         : item?.state === "repairRequired"
-          ? "Repair"
-          : "Install";
+          ? t("actions.repair", { ns: "common" })
+          : t("actions.install", { ns: "common" });
   return (
     <div className="setting-row integration-row">
       <div className="integration-icon">
@@ -431,7 +527,16 @@ function IntegrationRow({
       </div>
       <div className="setting-copy">
         <strong>{integrationName(id)}</strong>
-        <span>{item?.message ?? item?.path ?? "Loading…"}</span>
+        <span>
+          {item === undefined
+            ? t("integration.loading", { ns: "settings" })
+            : integrationDescription(
+                item,
+                t("integration.installed", { ns: "settings" }),
+                t("integration.notInstalled", { ns: "settings" }),
+                t("integration.needsAttention", { ns: "settings" }),
+              )}
+        </span>
       </div>
       <span
         className={
@@ -444,10 +549,10 @@ function IntegrationRow({
           <Warning size={13} />
         ) : null}
         {installed
-          ? "Installed"
+          ? t("integration.installed", { ns: "settings" })
           : needsAttention
-            ? "Needs Attention"
-            : "Not Installed"}
+            ? t("integration.needsAttention", { ns: "settings" })
+            : t("integration.notInstalled", { ns: "settings" })}
       </span>
       <button
         disabled={item === undefined || pending}
@@ -464,8 +569,13 @@ function integrationName(id: IntegrationId): string {
   return id === "cli" ? "sq CLI" : id === "codex" ? "Codex" : "Claude";
 }
 
-function toMessage(value: unknown): string {
-  return value instanceof Error
-    ? value.message
-    : String(value ?? "Unknown error");
+function integrationDescription(
+  item: IntegrationItemDto,
+  installed: string,
+  notInstalled: string,
+  needsAttention: string,
+): string {
+  if (item.state === "installed") return installed;
+  if (item.state === "notInstalled") return notInstalled;
+  return needsAttention;
 }

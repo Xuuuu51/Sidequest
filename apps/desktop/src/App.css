@@ -237,16 +237,20 @@ kbd {
   padding: 0;
 }
 
-.project-row.selected {
-  color: var(--text-primary);
-  background: var(--surface-selected);
-  box-shadow: inset 2px 0 var(--focus-ring);
-}
-
+.project-row.selected,
 .settings-row.selected {
   color: var(--text-primary);
+  font-weight: 500;
   background: var(--surface-selected);
-  box-shadow: inset 2px 0 var(--focus-ring);
+}
+
+.project-row.selected:not(:disabled):hover,
+.settings-row.selected:not(:disabled):hover {
+  background: var(--surface-selected);
+}
+
+.project-row.selected .project-state-icon:not(.warning-icon) {
+  color: currentcolor;
 }
 
 .settings-page {
@@ -1658,6 +1662,62 @@ kbd {
 .onboarding-error {
   color: var(--danger) !important;
   font-size: 12px;
+}
+
+.setting-feedback {
+  color: var(--text-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.fatal-boundary {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 10px;
+  padding: 32px;
+  color: var(--text-secondary);
+  background: var(--surface-canvas);
+}
+
+.fatal-boundary-quickCapture {
+  padding: 24px;
+}
+
+.fatal-boundary h1,
+.fatal-boundary p {
+  max-width: 560px;
+  margin: 0;
+}
+
+.fatal-boundary h1 {
+  color: var(--text-primary);
+  font-size: 16px;
+  line-height: 22px;
+}
+
+.fatal-boundary p {
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.fatal-draft-warning {
+  color: var(--warning);
+}
+
+.fatal-boundary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.fatal-boundary-feedback {
+  color: var(--text-muted);
 }
 
 @keyframes spin {

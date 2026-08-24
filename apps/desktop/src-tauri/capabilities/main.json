@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main-diagnostics",
+  "description": "Diagnostic clipboard access for the Main Window",
+  "windows": ["main"],
+  "permissions": ["clipboard-manager:allow-write-text"]
+}

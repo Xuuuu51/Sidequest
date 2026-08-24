@@ -1,0 +1,99 @@
+{
+  "sidebar": {
+    "projects": "Projects",
+    "addProject": "Add Project",
+    "expand": "Expand sidebar",
+    "collapse": "Collapse sidebar",
+    "actionsFor": "Project actions for {{name}}",
+    "removeProject": "Remove Project",
+    "settings": "Settings",
+    "resize": "Resize project sidebar"
+  },
+  "toolbar": {
+    "searchLabel": "Search current project",
+    "searchPlaceholder": "Search",
+    "clearSearch": "Clear Search",
+    "openDetails": "Open Quest details",
+    "searchShortcut": "⌘ F"
+  },
+  "board": {
+    "label": "Quest board",
+    "noQuestsYet": "No quests yet",
+    "captureHint": "Use ⌘⇧Space to capture one.",
+    "noQuests": "No quests",
+    "dragBlocked": "Save or resolve this Quest before dragging",
+    "statusChangeFailed": "Status could not be changed",
+    "actionsUnavailable": "{{label}} actions are not available yet",
+    "questCount": "{{count}} Quests"
+  },
+  "search": {
+    "results": "Search results",
+    "noResults": "No results for “{{query}}”",
+    "tryAnother": "Try a different word or clear the search."
+  },
+  "drawer": {
+    "title": "Quest details",
+    "close": "Close Quest details",
+    "resize": "Resize Quest details",
+    "editContent": "Edit Quest content",
+    "contentLabel": "Quest content",
+    "saveFailed": "Content could not be saved",
+    "retryAndQuit": "Retry & Quit",
+    "quitWithoutSaving": "Quit Without Saving",
+    "discardLocalChanges": "Discard Local Changes",
+    "cancelNavigation": "Cancel Current Navigation",
+    "deletedExternally": "Quest was deleted outside Sidequest",
+    "changedExternally": "Quest changed outside Sidequest",
+    "draftPreserved": "Your local draft is preserved here so you can copy it.",
+    "chooseContent": "Choose which content should be kept.",
+    "loadDiskVersion": "Load Disk Version",
+    "overwrite": "Overwrite",
+    "discardDraft": "Discard Draft",
+    "deleteQuest": "Delete Quest",
+    "deleted": "Quest deleted",
+    "externalDeletedClosed": "The externally deleted Quest was closed"
+  },
+  "statusControl": {
+    "moreActions": "More status actions",
+    "actions": "Status actions",
+    "moveToReady": "Move to Ready",
+    "markDone": "Mark Done",
+    "moveToInbox": "Move to Inbox",
+    "readOnly": "Project is read-only"
+  },
+  "deleteDialog": {
+    "title": "Delete this Quest?",
+    "description": "This permanently deletes its Markdown file. This action cannot be undone in Sidequest.",
+    "recentDraft": "Your most recent unsaved changes will also be discarded.",
+    "deleting": "Deleting…",
+    "confirm": "Delete Quest"
+  },
+  "workspace": {
+    "externalRefreshFailed": "External changes may not refresh automatically.",
+    "searchFailed": "Search failed",
+    "projectUnavailable": "Project unavailable",
+    "workspaceUnreadable": "Workspace could not be read",
+    "unavailableDraft": "The project is unavailable. Your local changes are preserved.",
+    "selectedMissing": "The selected Quest no longer exists",
+    "hideDetails": "Hide Details",
+    "viewDetails": "View Details",
+    "retry": "Retry",
+    "removeFromSidequest": "Remove from Sidequest",
+    "readOnlyBanner": "This project is read-only. Browsing and search remain available.",
+    "reload": "Reload",
+    "searching": "Searching…",
+    "loading": "Loading workspace…",
+    "cannotAccessProject": "Sidequest can’t access this project folder.",
+    "workspaceUnreadableDescription": "The project data could not be loaded.",
+    "issueCount": "{{count}} Quest files could not be read",
+    "issueItem": "Unreadable Quest file {{index}}"
+  },
+  "shell": {
+    "restoring": "Restoring Sidequest…",
+    "startFailed": "Sidequest could not start",
+    "stateRecovered": "Desktop state recovered",
+    "dismissRecovery": "Dismiss recovery warning",
+    "dismissError": "Dismiss error",
+    "recoveryDescription": "Sidequest restored the app with safe default settings."
+  }
+}

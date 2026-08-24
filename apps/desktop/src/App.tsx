@@ -1,5 +1,6 @@
 import { Warning, X } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   useAddProjectMutation,
@@ -27,13 +28,18 @@ import {
   selectReplacementDirectory,
 } from "./shared/tauri/commands";
 import type { ProjectDto } from "./shared/tauri/types";
-import { listenForOpenSettings } from "./shared/tauri/events";
+import {
+  listenForDebugReloadRequest,
+  listenForOpenSettings,
+} from "./shared/tauri/events";
+import { logFrontendError } from "./shared/diagnostics/logger";
 import { IconButton } from "./shared/ui/icon-button";
 import {
   currentPanelPreferences,
   useMainWindowStore,
 } from "./store/main-window";
 import "./App.css";
+import { localizedError } from "./shared/i18n/errors";
 
 function App() {
   return (
@@ -44,6 +50,7 @@ function App() {
 }
 
 function AppContent() {
+  const { t } = useTranslation(["main-window", "common"]);
   useAppStateInvalidation();
   useSettingsInvalidation();
   const coordinator = useQuestWriteCoordinator();
@@ -84,15 +91,38 @@ function AppContent() {
     let unlisten: (() => void) | undefined;
     void listenForOpenSettings(() => {
       void coordinator.guard(async () => openSettings());
-    }).then((listener) => {
-      if (active) unlisten = listener;
-      else listener();
-    });
+    })
+      .then((listener) => {
+        if (active) unlisten = listener;
+        else listener();
+      })
+      .catch((cause: unknown) =>
+        logFrontendError("open-settings listener registration failed", cause),
+      );
     return () => {
       active = false;
       unlisten?.();
     };
   }, [coordinator, openSettings]);
+
+  useEffect(() => {
+    let active = true;
+    let unlisten: (() => void) | undefined;
+    void listenForDebugReloadRequest(() => {
+      void coordinator.guard(async () => window.location.reload());
+    })
+      .then((listener) => {
+        if (active) unlisten = listener;
+        else listener();
+      })
+      .catch((cause: unknown) =>
+        logFrontendError("debug reload listener registration failed", cause),
+      );
+    return () => {
+      active = false;
+      unlisten?.();
+    };
+  }, [coordinator]);
 
   const selectedProject = appState.data?.projects.find(
     (project) => project.path === selectedProjectPath,
@@ -106,7 +136,7 @@ function AppContent() {
   async function handleAddProject(): Promise<void> {
     setActionError(null);
     try {
-      const projectPath = await selectProjectDirectory();
+      const projectPath = await selectProjectDirectory(t("sidebar.addProject"));
       if (projectPath === null) {
         return;
       }
@@ -156,7 +186,9 @@ function AppContent() {
   async function handleLocateProject(project: ProjectDto): Promise<void> {
     setActionError(null);
     try {
-      const replacementPath = await selectReplacementDirectory();
+      const replacementPath = await selectReplacementDirectory(
+        t("actions.locateFolder", { ns: "common" }),
+      );
       if (replacementPath === null) {
         return;
       }
@@ -202,7 +234,7 @@ function AppContent() {
     return (
       <main className="startup-state">
         <div className="standalone-drag-region" data-tauri-drag-region />
-        <span className="progress-spinner" /> Restoring Sidequest…
+        <span className="progress-spinner" /> {t("shell.restoring")}
       </main>
     );
   }
@@ -212,10 +244,10 @@ function AppContent() {
       <main className="startup-state startup-error">
         <div className="standalone-drag-region" data-tauri-drag-region />
         <Warning aria-hidden="true" size={22} weight="regular" />
-        <h1>Sidequest could not start</h1>
-        <p>{toError(appState.error).message}</p>
+        <h1>{t("shell.startFailed")}</h1>
+        <p>{localizedError(appState.error)}</p>
         <button onClick={() => void appState.refetch()} type="button">
-          Retry
+          {t("actions.retry", { ns: "common" })}
         </button>
       </main>
     );
@@ -226,7 +258,7 @@ function AppContent() {
       <OnboardingFlow
         appState={appState.data}
         addPending={addProject.isPending}
-        error={actionError?.message ?? null}
+        error={actionError === null ? null : localizedError(actionError)}
         onAddProject={() => void handleAddProject()}
       />
     );
@@ -269,13 +301,12 @@ function AppContent() {
         <div className="recovery-banner" role="status">
           <Warning aria-hidden="true" size={15} weight="regular" />
           <div>
-            <strong>Desktop state recovered</strong>
-            <span>{state.recoveryWarning.message}</span>
-            <code>{state.recoveryWarning.backupPath}</code>
+            <strong>{t("shell.stateRecovered")}</strong>
+            <span>{t("shell.recoveryDescription")}</span>
           </div>
           <IconButton
             icon={X}
-            label="Dismiss recovery warning"
+            label={t("shell.dismissRecovery")}
             onClick={dismissRecovery}
           />
         </div>
@@ -283,10 +314,10 @@ function AppContent() {
       {actionError !== null && (
         <div className="action-error" role="alert">
           <Warning aria-hidden="true" size={15} weight="regular" />
-          <span>{actionError.message}</span>
+          <span>{localizedError(actionError)}</span>
           <IconButton
             icon={X}
-            label="Dismiss error"
+            label={t("shell.dismissError")}
             onClick={() => setActionError(null)}
           />
         </div>

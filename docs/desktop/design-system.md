@@ -54,7 +54,7 @@ Sidequest Desktop 采用克制、专业、高密度的 developer tool 视觉语�
 - 收起/展开按钮位于 Sidebar 顶部右侧、divider 左边，不占用主工作区 Titlebar。
 - `Projects` 是纯文字 section heading，不带文件夹图标；右侧保留添加项目图标。
 - 项目行高 `30px`，图标 `15px`，文字 `13px`。
-- 选中态使用轻微的 surface-selected 背景和左侧/文字强调，不使用大型圆角胶囊。
+- 选中态使用轻微的 surface-selected 背景，并通过文字与图标强调表达；不使用左侧强调线或大型圆角胶囊。
 - `Settings` 固定在底部并保留文字，其上方 divider 左右贴齐 Sidebar 边缘。
 
 ### 2.3 Titlebar 与 Toolbar

@@ -1,0 +1,33 @@
+{
+  "app": {
+    "about": "About Sidequest",
+    "open": "Open Sidequest",
+    "quickCapture": "Quick Capture",
+    "settings": "Settings…",
+    "quit": "Quit Sidequest",
+    "services": "Services",
+    "hide": "Hide Sidequest",
+    "hideOthers": "Hide Others",
+    "showAll": "Show All"
+  },
+  "menu": {
+    "file": "File",
+    "edit": "Edit",
+    "view": "View",
+    "window": "Window",
+    "debug": "Debug",
+    "closeWindow": "Close Window",
+    "undo": "Undo",
+    "redo": "Redo",
+    "cut": "Cut",
+    "copy": "Copy",
+    "paste": "Paste",
+    "selectAll": "Select All",
+    "enterFullScreen": "Enter Full Screen",
+    "minimize": "Minimize",
+    "zoom": "Zoom",
+    "openDevTools": "Open DevTools",
+    "reloadActiveWindow": "Reload Active Window",
+    "openLogs": "Open Logs"
+  }
+}

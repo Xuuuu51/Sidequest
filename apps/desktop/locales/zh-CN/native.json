@@ -1,0 +1,33 @@
+{
+  "app": {
+    "about": "关于 Sidequest",
+    "open": "打开 Sidequest",
+    "quickCapture": "快速记录",
+    "settings": "设置…",
+    "quit": "退出 Sidequest",
+    "services": "服务",
+    "hide": "隐藏 Sidequest",
+    "hideOthers": "隐藏其他",
+    "showAll": "全部显示"
+  },
+  "menu": {
+    "file": "文件",
+    "edit": "编辑",
+    "view": "显示",
+    "window": "窗口",
+    "debug": "调试",
+    "closeWindow": "关闭窗口",
+    "undo": "撤销",
+    "redo": "重做",
+    "cut": "剪切",
+    "copy": "复制",
+    "paste": "粘贴",
+    "selectAll": "全选",
+    "enterFullScreen": "进入全屏幕",
+    "minimize": "最小化",
+    "zoom": "缩放",
+    "openDevTools": "打开开发者工具",
+    "reloadActiveWindow": "重新加载当前窗口",
+    "openLogs": "打开日志"
+  }
+}

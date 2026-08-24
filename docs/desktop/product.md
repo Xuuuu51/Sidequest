@@ -2,8 +2,8 @@
 
 > 状态：已确认产品基线  
 > 平台：macOS  
-> 界面语言：英文  
-> 更新日期：2026-08-23
+> 界面语言：英文、简体中文
+> 更新日期：2026-08-24
 
 本文只定义 Desktop 的用户入口、窗口与可见行为。视觉规格见 [Design System](./design-system.md)，精确转换见 [Main Window 状态机](./main-window-state.md)，技术实现见 [Desktop 架构](../architecture/desktop.md)。
 
@@ -88,11 +88,13 @@ Delete 必须确认，显示 content 摘要并说明对应文件会被删除且�
 
 Toolbar 常驻紧凑搜索框，只搜索当前项目。空查询显示三列看板；非空查询实时切换为单列结果，展示 content 摘要、创建时间与文字 status。清除查询后恢复各列原滚动位置。
 
-无结果显示查询词与 Clear Search，不提供“从搜索创建”。损坏文件不参与结果；页面顶部显示可展开警告，列出路径并支持 Reveal in Finder。底层搜索规则见 [Quest 契约](../contracts/quest-storage.md)。
+无结果显示查询词与 Clear Search，不提供“从搜索创建”。损坏文件不参与结果；页面顶部显示可展开警告和匿名文件项，并支持 Reveal in Finder，但不直接展示后端原始路径或错误消息。底层搜索规则见 [Quest 契约](../contracts/quest-storage.md)。
 
 ## 8. Quick Capture Window
 
 Quick Capture 是始终置顶的独立 native window：
+
+中文界面名称为“快速记录”，提交按钮使用“记录”；Quick Capture 仍是英文产品术语及代码名称。`Quest` 保持不翻译，但上下文明确时可省略并使用量词“条”。
 
 - 点击窗口外部不关闭；`Esc` 或 Close 关闭并直接丢弃草稿。
 - `content` 允许多行；`Enter` 换行，`⌘Enter` 保存。
@@ -110,16 +112,18 @@ Settings 是 Main Window 内的单页状态，不是独立窗口。从 Sidebar�
 
 Settings 只包含：
 
-- General：`Shortcut` 与 Launch at Login。点击 Shortcut 后直接录制组合键；必须包含修饰键，`Esc` 取消，冲突不替换旧值，可 Restore Default。
+- General：Language、`Shortcut` 与 Launch at Login。Language 默认为跟随系统，也可固定为 English 或简体中文；更改成功保存后立即作用于两个窗口和原生菜单，不重置当前操作状态。点击 Shortcut 后直接录制组合键；必须包含修饰键，`Esc` 取消，冲突不替换旧值，可 Restore Default。
 - Coding Agents：Codex、Claude 两行，只显示 Ready、Not Installed、Needs Attention 与对应 Install/Repair/Uninstall。
 - Command Line Tool：只显示 Installed、Not Installed、Needs Attention 与对应 Install/Repair/Uninstall。
-- About：Desktop version、Check for Updates、Licenses。
+- About：Desktop version、Licenses 与 Diagnostics。Diagnostics 提供 Copy Diagnostics 和 Reveal Logs；摘要不包含 Quest 内容、搜索内容、用户名或项目绝对路径。
 
-不提供 Projects、Quick Capture Position、App Data 或独立 Diagnostics 设置。路径、版本和 hash 只在异常时按需展示。安装技术规则见 [Integration 与分发](../architecture/distribution.md)。
+不提供 Projects、Quick Capture Position、App Data 或更新入口。路径、版本和 hash 只在异常时按需展示。安装技术规则见 [Integration 与分发](../architecture/distribution.md)。
 
 ## 10. 语言与范围
 
-- MVP 只支持 macOS，UI 固定英文；内部产品文档与术语使用中文。
-- UI 字符串集中管理，但首版没有语言设置。
+- MVP 只支持 macOS，UI 支持英文和简体中文；英文是完整 fallback，内部产品文档与术语使用中文。
+- 默认跟随系统。简体中文系统区域映射到 `zh-CN`；繁体中文及其他尚不支持的系统语言回退英文。手动选择持久化到 app-local state，系统语言变化在下次启动时生效。
+- Quest content、CLI/JSON contract、Agent Skill、日志和诊断摘要不做翻译。日期和相对时间使用当前界面的 locale 格式化。
+- 界面错误只显示本地化摘要；后端原始 message/path 仅在 Debug build 的 DevTools console 中可见，不写入普通界面或 release console。
 - 完整包含与排除项只在 [MVP Scope](../product/mvp-scope.md)维护。
 - 代码签名、自动更新与发布权限体验在 release 阶段确认。

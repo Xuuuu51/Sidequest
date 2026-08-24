@@ -8,6 +8,7 @@ import {
 } from "../../shared/tauri/commands";
 import { listenForAppQuitRequest } from "../../shared/tauri/events";
 import type { NavigationIntent } from "../../store/main-window";
+import { logFrontendError } from "../../shared/diagnostics/logger";
 
 const SAVE_DELAY_MS = 300;
 
@@ -55,7 +56,10 @@ export function useWindowGeometryPersistence(
       listenForAppQuitRequest(() => {
         void guard(completeAppQuit, "quit");
       }),
-    ]);
+    ]).catch((cause: unknown) => {
+      logFrontendError("window lifecycle listener registration failed", cause);
+      return [];
+    });
 
     return () => {
       disposed = true;

@@ -1,0 +1,49 @@
+{
+  "title": "设置",
+  "sections": {
+    "general": "通用",
+    "codingAgents": "编程 Agent",
+    "commandLine": "命令行工具",
+    "about": "关于"
+  },
+  "language": {
+    "label": "语言",
+    "description": "选择 Sidequest 使用的语言。",
+    "system": "跟随系统",
+    "english": "English",
+    "simplifiedChinese": "简体中文"
+  },
+  "shortcut": {
+    "label": "快捷键",
+    "description": "从任意应用打开快速记录。",
+    "unavailable": "当前快捷键不可用",
+    "restoreDefault": "恢复默认",
+    "recording": "请按下快捷键…"
+  },
+  "launchAtLogin": {
+    "label": "登录时启动",
+    "description": "后台启动 Sidequest，并保持快速记录可用。",
+    "isolated": "隔离调试 Profile 中不可用。"
+  },
+  "about": {
+    "application": "桌面应用",
+    "version": "版本 {{version}}",
+    "diagnostics": "诊断信息",
+    "diagnosticsDescription": "复制不含隐私的系统摘要，或显示本机日志。",
+    "copyDiagnostics": "复制诊断信息",
+    "revealLogs": "显示日志",
+    "license": "许可证",
+    "licenseDescription": "Sidequest 使用 MIT License 发布。",
+    "viewLicense": "查看许可证",
+    "closeLicense": "关闭许可证",
+    "licenseTitle": "MIT 许可证"
+  },
+  "integration": {
+    "installed": "已安装",
+    "needsAttention": "需要处理",
+    "notInstalled": "未安装",
+    "loading": "正在载入…",
+    "removeManaged": "Sidequest 将移除以下受管理文件：",
+    "confirmUninstall": "卸载 {{name}}？"
+  }
+}

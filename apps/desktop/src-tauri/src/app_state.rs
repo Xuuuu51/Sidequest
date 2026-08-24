@@ -15,11 +15,12 @@ use crate::dto::{
     QuickCapturePositionDto, QuickCapturePreferencesDto, RecoveryWarningDto, display_path,
 };
 use crate::error::{DesktopError, Result};
+use crate::locale::LanguagePreference;
 use crate::shortcut::{ShortcutManager, ShortcutSpec};
 use crate::watcher::ProjectWatcher;
 
 const APP_STATE_FILENAME: &str = "app.json";
-const APP_STATE_SCHEMA_VERSION: u8 = 1;
+pub(crate) const APP_STATE_SCHEMA_VERSION: u8 = 1;
 pub(crate) const DEFAULT_SIDEBAR_WIDTH: u16 = 224;
 pub(crate) const MIN_SIDEBAR_WIDTH: u16 = 180;
 pub(crate) const MAX_SIDEBAR_WIDTH: u16 = 320;
@@ -76,6 +77,8 @@ struct PersistentAppState {
     shortcut: ShortcutSpec,
     #[serde(default)]
     integrations: IntegrationPreferences,
+    #[serde(default)]
+    language_preference: LanguagePreference,
 }
 
 #[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
@@ -167,6 +170,7 @@ impl Default for PersistentAppState {
             onboarding_step: OnboardingStep::default(),
             shortcut: ShortcutSpec::default(),
             integrations: IntegrationPreferences::default(),
+            language_preference: LanguagePreference::default(),
         }
     }
 }
@@ -422,6 +426,16 @@ impl AppStateStore {
 
     pub(crate) fn shortcut(&self) -> ShortcutSpec {
         self.state.shortcut.clone()
+    }
+
+    pub(crate) const fn language_preference(&self) -> LanguagePreference {
+        self.state.language_preference
+    }
+
+    pub(crate) fn set_language_preference(&mut self, preference: LanguagePreference) -> Result<()> {
+        let mut next = self.state.clone();
+        next.language_preference = preference;
+        self.persist(next)
     }
 
     pub(crate) fn set_shortcut(&mut self, shortcut: ShortcutSpec) -> Result<()> {
@@ -704,8 +718,11 @@ fn write_atomic_state(path: &Path, state: &PersistentAppState) -> Result<()> {
                 .map_err(|source| DesktopError::io("replace Desktop state", path, source))?;
             sync_directory(parent)
         })();
-        if result.is_err() {
-            let _cleanup_result = fs::remove_file(&temporary_path);
+        if result.is_err()
+            && let Err(cleanup_error) = fs::remove_file(&temporary_path)
+            && cleanup_error.kind() != io::ErrorKind::NotFound
+        {
+            log::warn!("could not clean temporary Desktop state: {cleanup_error}");
         }
         return result;
     }
@@ -748,6 +765,7 @@ mod tests {
         MAX_SIDEBAR_WIDTH, MainWindowGeometry, PersistentAppState, QuickCapturePosition,
     };
     use crate::dto::PanelPreferencesDto;
+    use crate::locale::LanguagePreference;
 
     type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
 
@@ -801,6 +819,22 @@ mod tests {
         assert!(store.main_window_geometry().is_none());
         assert!(state.quick_capture.last_project_path.is_none());
         assert!(state.quick_capture.position.is_none());
+        assert_eq!(store.language_preference(), LanguagePreference::System);
+        Ok(())
+    }
+
+    #[test]
+    fn language_preference_should_persist_and_restore() -> TestResult {
+        let temporary = TempDir::new()?;
+        let mut store = AppStateStore::load(temporary.path())?;
+
+        store.set_language_preference(LanguagePreference::SimplifiedChinese)?;
+        let restored = AppStateStore::load(temporary.path())?;
+
+        assert_eq!(
+            restored.language_preference(),
+            LanguagePreference::SimplifiedChinese
+        );
         Ok(())
     }
 

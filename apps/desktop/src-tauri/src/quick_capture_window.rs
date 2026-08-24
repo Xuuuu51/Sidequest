@@ -58,7 +58,9 @@ pub(crate) fn show_quick_capture_window(app: &AppHandle) -> Result<()> {
         .set_focus()
         .map_err(|error| window_error("focus", error))?;
     app.emit(QUICK_CAPTURE_SHOWN_EVENT, ())
-        .map_err(|error| window_error("emit shown event for", error))
+        .map_err(|error| window_error("emit shown event for", error))?;
+    log::info!("Quick Capture Window shown");
+    Ok(())
 }
 
 fn window_error(operation: &'static str, error: impl std::fmt::Display) -> DesktopError {

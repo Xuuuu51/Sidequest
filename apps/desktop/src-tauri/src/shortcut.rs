@@ -124,11 +124,18 @@ impl ShortcutManager {
 
     pub(crate) fn start(app: &AppHandle, configured: ShortcutSpec) -> Self {
         let accelerator = configured.accelerator();
-        let active = app
-            .global_shortcut()
-            .register(accelerator.as_str())
-            .ok()
-            .map(|()| configured.clone());
+        let active = match app.global_shortcut().register(accelerator.as_str()) {
+            Ok(()) => {
+                log::info!("global shortcut registered accelerator={accelerator}");
+                Some(configured.clone())
+            }
+            Err(error) => {
+                log::warn!(
+                    "global shortcut registration conflict accelerator={accelerator}: {error}"
+                );
+                None
+            }
+        };
         Self { active, configured }
     }
 
@@ -162,7 +169,11 @@ impl ShortcutManager {
         {
             if let Some(shortcut) = &previous {
                 let accelerator = shortcut.accelerator();
-                let _restore_result = app.global_shortcut().register(accelerator.as_str());
+                if let Err(restore_error) = app.global_shortcut().register(accelerator.as_str()) {
+                    log::error!(
+                        "global shortcut rollback failed accelerator={accelerator}: {restore_error}"
+                    );
+                }
             }
             self.active = previous;
             return Err(DesktopError::ShortcutConflict {
@@ -177,14 +188,18 @@ impl ShortcutManager {
     pub(crate) fn restore(&mut self, app: &AppHandle, previous: ShortcutSpec) {
         if let Some(active) = self.active.take() {
             let accelerator = active.accelerator();
-            let _unregister_result = app.global_shortcut().unregister(accelerator.as_str());
+            if let Err(error) = app.global_shortcut().unregister(accelerator.as_str()) {
+                log::warn!("could not unregister shortcut during restore: {error}");
+            }
         }
         let accelerator = previous.accelerator();
-        let active = app
-            .global_shortcut()
-            .register(accelerator.as_str())
-            .ok()
-            .map(|()| previous.clone());
+        let active = match app.global_shortcut().register(accelerator.as_str()) {
+            Ok(()) => Some(previous.clone()),
+            Err(error) => {
+                log::error!("could not restore previous global shortcut: {error}");
+                None
+            }
+        };
         self.configured = previous;
         self.active = active;
     }

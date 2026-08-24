@@ -33,6 +33,7 @@ const mocks = vi.hoisted(() => ({
   listenForSettingsInvalidation: vi.fn(),
   listenForIntegrationsInvalidation: vi.fn(),
   listenForOpenSettings: vi.fn(),
+  listenForDebugReloadRequest: vi.fn(),
   updateQuestContent: vi.fn(),
   setQuestStatus: vi.fn(),
   deleteQuest: vi.fn(),
@@ -51,6 +52,7 @@ vi.mock("./shared/tauri/events", () => ({
   listenForSettingsInvalidation: mocks.listenForSettingsInvalidation,
   listenForIntegrationsInvalidation: mocks.listenForIntegrationsInvalidation,
   listenForOpenSettings: mocks.listenForOpenSettings,
+  listenForDebugReloadRequest: mocks.listenForDebugReloadRequest,
 }));
 
 vi.mock("./features/window/use-window-geometry", () => ({
@@ -168,6 +170,9 @@ describe("App", () => {
       .mockReset()
       .mockResolvedValue(() => undefined);
     mocks.listenForOpenSettings.mockReset().mockResolvedValue(() => undefined);
+    mocks.listenForDebugReloadRequest
+      .mockReset()
+      .mockResolvedValue(() => undefined);
     mocks.workspaceInvalidatedHandler = null;
     mocks.updateQuestContent
       .mockReset()
@@ -229,7 +234,11 @@ describe("App", () => {
     expect(
       await screen.findByText("Desktop state recovered"),
     ).toBeInTheDocument();
-    expect(screen.getByText("/data/app.corrupt-1.json")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Sidequest restored the app with safe default settings.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("renders_three_lanes_and_keeps_selection_when_the_drawer_closes", async () => {
@@ -312,9 +321,7 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Inbox quest content")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "View Details" }));
-    expect(
-      screen.getByText("/project/.sidequest/quests/bad.md"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Unreadable Quest file 1")).toBeInTheDocument();
     const card = screen.getByRole("button", { name: /Inbox quest content/ });
     expect(card).toHaveAttribute("draggable", "false");
     fireEvent.click(card);

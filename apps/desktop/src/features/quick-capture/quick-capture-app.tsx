@@ -1,5 +1,6 @@
 import { Check, FolderPlus, X } from "@phosphor-icons/react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   useAddProjectMutation,
@@ -12,7 +13,11 @@ import {
   saveQuickCapturePosition,
   selectProjectDirectory,
 } from "../../shared/tauri/commands";
-import { listenForQuickCaptureShown } from "../../shared/tauri/events";
+import {
+  listenForDebugReloadRequest,
+  listenForQuickCaptureShown,
+} from "../../shared/tauri/events";
+import { logFrontendError } from "../../shared/diagnostics/logger";
 import type { ProjectDto } from "../../shared/tauri/types";
 import {
   listenForCurrentWindowClose,
@@ -26,6 +31,7 @@ const SUCCESS_DELAY_MS = 500;
 const POSITION_DEBOUNCE_MS = 250;
 
 export function QuickCaptureApp() {
+  const { t } = useTranslation(["quick-capture", "common"]);
   useAppStateInvalidation();
   const appState = useAppStateQuery();
   const addProject = useAddProjectMutation();
@@ -74,13 +80,20 @@ export function QuickCaptureApp() {
     void listenForQuickCaptureShown(() => {
       void refetchAppState();
       focusInput();
-    }).then((listener) => {
-      if (active) {
-        unlisten = listener;
-      } else {
-        listener();
-      }
-    });
+    })
+      .then((listener) => {
+        if (active) {
+          unlisten = listener;
+        } else {
+          listener();
+        }
+      })
+      .catch((cause: unknown) =>
+        logFrontendError(
+          "quick-capture-shown listener registration failed",
+          cause,
+        ),
+      );
     return () => {
       active = false;
       unlisten?.();
@@ -102,19 +115,33 @@ export function QuickCaptureApp() {
     let unlistenMove: (() => void) | undefined;
     let positionTimer: number | null = null;
 
-    void listenForCurrentWindowClose(discardAndHide).then((listener) => {
-      if (active) unlistenClose = listener;
-      else listener();
-    });
+    void listenForCurrentWindowClose(discardAndHide)
+      .then((listener) => {
+        if (active) unlistenClose = listener;
+        else listener();
+      })
+      .catch((cause: unknown) =>
+        logFrontendError(
+          "Quick Capture close listener registration failed",
+          cause,
+        ),
+      );
     void listenForCurrentWindowMove(() => {
       if (positionTimer !== null) window.clearTimeout(positionTimer);
       positionTimer = window.setTimeout(() => {
         void saveQuickCapturePosition();
       }, POSITION_DEBOUNCE_MS);
-    }).then((listener) => {
-      if (active) unlistenMove = listener;
-      else listener();
-    });
+    })
+      .then((listener) => {
+        if (active) unlistenMove = listener;
+        else listener();
+      })
+      .catch((cause: unknown) =>
+        logFrontendError(
+          "Quick Capture move listener registration failed",
+          cause,
+        ),
+      );
 
     return () => {
       active = false;
@@ -123,6 +150,29 @@ export function QuickCaptureApp() {
       unlistenMove?.();
     };
   }, [discardAndHide]);
+
+  useEffect(() => {
+    let active = true;
+    let unlisten: (() => void) | undefined;
+    void listenForDebugReloadRequest(() => {
+      if (useQuickCaptureStore.getState().draft.length > 0) {
+        setPhase("error", t("reloadBlocked", { ns: "quick-capture" }));
+        return;
+      }
+      window.location.reload();
+    })
+      .then((listener) => {
+        if (active) unlisten = listener;
+        else listener();
+      })
+      .catch((cause: unknown) =>
+        logFrontendError("debug reload listener registration failed", cause),
+      );
+    return () => {
+      active = false;
+      unlisten?.();
+    };
+  }, [setPhase, t]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -144,10 +194,12 @@ export function QuickCaptureApp() {
     [],
   );
 
-  const disabledReason = useMemo(
-    () => projectDisabledReason(selectedProject),
-    [selectedProject],
-  );
+  const disabledReason = useMemo(() => {
+    if (selectedProject === undefined) return t("selectProject");
+    if (selectedProject.state === "readOnly") return t("readOnly");
+    if (selectedProject.state === "unavailable") return t("unavailable");
+    return null;
+  }, [selectedProject, t]);
   const canCapture =
     selectedProject !== undefined &&
     disabledReason === null &&
@@ -164,36 +216,27 @@ export function QuickCaptureApp() {
       });
       setPhase(
         "saved",
-        result.preferenceWarning === null
-          ? null
-          : "Saved, but the project preference could not be remembered.",
+        result.preferenceWarning === null ? null : t("preferenceWarning"),
       );
       hideTimerRef.current = window.setTimeout(() => {
         clearDraft();
         void hideQuickCapture();
       }, SUCCESS_DELAY_MS);
-    } catch (cause) {
-      setPhase(
-        "error",
-        cause instanceof Error
-          ? cause.message
-          : "Could not capture this Quest.",
-      );
+    } catch {
+      setPhase("error", t("captureFailed"));
     }
-  }, [canCapture, capture, clearDraft, draft, selectedProject, setPhase]);
+  }, [canCapture, capture, clearDraft, draft, selectedProject, setPhase, t]);
 
   const addFirstProject = async () => {
-    const path = await selectProjectDirectory();
+    const path = await selectProjectDirectory(t("addProject"));
     if (path === null) return;
     try {
       const next = await addProject.mutateAsync(path);
       setSelectedProjectPath(next.lastSelectedProject);
       focusInput();
     } catch (cause) {
-      setPhase(
-        "error",
-        cause instanceof Error ? cause.message : "Could not add this project.",
-      );
+      if (import.meta.env.DEV) console.error("add project", cause);
+      setPhase("error", t("addProjectFailed"));
     }
   };
 
@@ -201,19 +244,23 @@ export function QuickCaptureApp() {
     <main className="quick-capture-shell">
       <header className="quick-capture-titlebar" data-tauri-drag-region>
         <label className="project-selector-label">
-          <span className="sr-only">Project</span>
+          <span className="sr-only">{t("project")}</span>
           <select
-            aria-label="Project"
+            aria-label={t("project")}
             value={selectedProjectPath ?? ""}
             onChange={(event) => setSelectedProjectPath(event.target.value)}
             disabled={projects.length === 0 || phase === "saving"}
           >
             {projects.length === 0 ? (
-              <option value="">No projects</option>
+              <option value="">{t("noProjects")}</option>
             ) : null}
             {projects.map((project) => (
               <option key={project.path} value={project.path}>
-                {projectOptionLabel(project)}
+                {projectOptionLabel(
+                  project,
+                  t("projectState.readOnly", { ns: "common" }),
+                  t("projectState.unavailable", { ns: "common" }),
+                )}
               </option>
             ))}
           </select>
@@ -222,7 +269,7 @@ export function QuickCaptureApp() {
         <IconButton
           className="quick-capture-close"
           icon={X}
-          label="Close Quick Capture"
+          label={t("close")}
           onClick={discardAndHide}
           size={15}
         />
@@ -231,17 +278,17 @@ export function QuickCaptureApp() {
       <section className="quick-capture-editor">
         {projects.length === 0 ? (
           <div className="quick-capture-empty">
-            <p>Add a project before capturing your first Quest.</p>
+            <p>{t("empty")}</p>
             <button type="button" onClick={() => void addFirstProject()}>
               <FolderPlus size={15} />
-              Add Project…
+              {t("addProject")}
             </button>
           </div>
         ) : (
           <textarea
             ref={inputRef}
-            aria-label="Quest content"
-            placeholder="What needs attention?"
+            aria-label={t("contentLabel")}
+            placeholder={t("placeholder")}
             value={draft}
             disabled={disabledReason !== null || phase === "saved"}
             onChange={(event) => setDraft(event.target.value)}
@@ -261,10 +308,11 @@ export function QuickCaptureApp() {
 
       <footer className="quick-capture-footer">
         <div className="quick-capture-feedback" role="status">
-          {disabledReason ?? error ?? (phase === "saving" ? "Saving…" : null)}
+          {disabledReason ?? error ?? (phase === "saving" ? t("saving") : null)}
           {phase === "saved" ? (
             <span className="saved-feedback">
-              <Check size={14} weight="bold" /> Saved
+              <Check size={14} weight="bold" />
+              {t("saved")}
             </span>
           ) : null}
         </div>
@@ -274,7 +322,7 @@ export function QuickCaptureApp() {
             type="button"
             onClick={() => void submit()}
           >
-            Retry
+            {t("retry")}
           </button>
         ) : null}
         <span className="quick-capture-shortcut">
@@ -286,22 +334,20 @@ export function QuickCaptureApp() {
           disabled={!canCapture}
           onClick={() => void submit()}
         >
-          Capture
+          {t("capture")}
         </button>
       </footer>
     </main>
   );
 }
 
-function projectDisabledReason(project: ProjectDto | undefined): string | null {
-  if (project === undefined) return "Select a project";
-  if (project.state === "readOnly") return "This project is read-only";
-  if (project.state === "unavailable") return "This project is unavailable";
-  return null;
-}
-
-function projectOptionLabel(project: ProjectDto): string {
-  if (project.state === "readOnly") return `${project.name} — Read Only`;
-  if (project.state === "unavailable") return `${project.name} — Unavailable`;
+function projectOptionLabel(
+  project: ProjectDto,
+  readOnlyLabel: string,
+  unavailableLabel: string,
+): string {
+  if (project.state === "readOnly") return `${project.name} — ${readOnlyLabel}`;
+  if (project.state === "unavailable")
+    return `${project.name} — ${unavailableLabel}`;
   return project.name;
 }

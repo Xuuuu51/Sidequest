@@ -1,5 +1,6 @@
 import { Check, FolderOpen, Lightning, Robot } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 import { useSetOnboardingStepMutation } from "../data/queries";
 import { SettingsPage } from "../settings/settings-page";
@@ -18,6 +19,7 @@ export function OnboardingFlow({
   error,
   onAddProject,
 }: OnboardingFlowProps) {
+  const { t } = useTranslation("onboarding");
   const setStep = useSetOnboardingStepMutation();
   const step =
     appState.projects.length === 0 ? "addProject" : appState.onboardingStep;
@@ -27,19 +29,16 @@ export function OnboardingFlow({
       <OnboardingFrame
         current={1}
         icon={<FolderOpen size={20} />}
-        title="Add your first project"
+        title={t("addProject.title")}
       >
-        <p>
-          Choose a folder. Sidequest keeps its quests in a local{" "}
-          <code>.sidequest</code> directory inside that exact folder.
-        </p>
+        <p>{t("addProject.description")}</p>
         <button
           className="primary-button"
           disabled={addPending}
           onClick={onAddProject}
           type="button"
         >
-          {addPending ? "Adding…" : "Choose Folder…"}
+          {addPending ? t("addProject.adding") : t("addProject.chooseFolder")}
         </button>
         {error !== null && (
           <p className="onboarding-error" role="alert">
@@ -55,12 +54,9 @@ export function OnboardingFlow({
       <OnboardingFrame
         current={2}
         icon={<Lightning size={20} />}
-        title="Set up Quick Capture"
+        title={t("quickCapture.title")}
       >
-        <p>
-          Choose how you want to open Quick Capture. You can change these
-          settings later.
-        </p>
+        <p>{t("quickCapture.description")}</p>
         <SettingsPage compact="quickCapture" onBack={() => undefined} />
         <OnboardingActions
           pending={setStep.isPending}
@@ -75,12 +71,9 @@ export function OnboardingFlow({
     <OnboardingFrame
       current={3}
       icon={<Robot size={20} />}
-      title="Connect coding agents"
+      title={t("agents.title")}
     >
-      <p>
-        Install the Sidequest skill for the coding agents you use. The managed{" "}
-        <code>sq</code> CLI is installed automatically.
-      </p>
+      <p>{t("agents.description")}</p>
       <SettingsPage compact="codingAgents" onBack={() => undefined} />
       <OnboardingActions
         finish
@@ -103,6 +96,7 @@ function OnboardingFrame({
   title: string;
   children: ReactNode;
 }) {
+  const { t } = useTranslation("onboarding");
   return (
     <main className="onboarding-shell">
       <div className="standalone-drag-region" data-tauri-drag-region />
@@ -110,14 +104,16 @@ function OnboardingFrame({
         <div className="onboarding-heading">
           <span className="app-mark">S</span>
           <div>
-            <span className="onboarding-step">Step {current} of 3</span>
+            <span className="onboarding-step">
+              {t("progress", { current })}
+            </span>
             <h1>{title}</h1>
           </div>
           {icon}
         </div>
         <div
           className="onboarding-progress"
-          aria-label={`Step ${current} of 3`}
+          aria-label={t("progress", { current })}
         >
           {[1, 2, 3].map((value) => (
             <span className={value <= current ? "active" : ""} key={value} />
@@ -140,10 +136,11 @@ function OnboardingActions({
   onContinue: () => void;
   onSkip: () => void;
 }) {
+  const { t } = useTranslation(["onboarding", "common"]);
   return (
     <div className="onboarding-actions">
       <button disabled={pending} onClick={onSkip} type="button">
-        Skip
+        {t("actions.skip", { ns: "common" })}
       </button>
       <button
         className="primary-button"
@@ -153,10 +150,10 @@ function OnboardingActions({
       >
         {finish ? (
           <>
-            <Check size={14} /> Finish
+            <Check size={14} /> {t("agents.finish", { ns: "onboarding" })}
           </>
         ) : (
-          "Continue"
+          t("actions.continue", { ns: "common" })
         )}
       </button>
     </div>

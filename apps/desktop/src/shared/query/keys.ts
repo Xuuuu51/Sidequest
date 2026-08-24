@@ -4,5 +4,6 @@ export const queryKeys = {
   search: (projectPath: string, query: string) =>
     ["search", projectPath, query] as const,
   settings: ["settings"] as const,
+  localeSettings: ["locale-settings"] as const,
   integrations: ["integrations"] as const,
 };

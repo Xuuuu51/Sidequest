@@ -1,17 +1,15 @@
 import { DotsThree } from "@phosphor-icons/react";
 import { useEffect, useLayoutEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 
 import { useSetDraggedQuestStatusMutation } from "../data/queries";
 import type { QuestDto, QuestStatus } from "../../shared/tauri/types";
 import { IconButton } from "../../shared/ui/icon-button";
 import { laneScrollKey, useMainWindowStore } from "../../store/main-window";
 import { formatCreatedAt, statusLabel } from "./quest-format";
+import { i18n } from "../../shared/i18n/i18n";
 
-const LANES: ReadonlyArray<{ status: QuestStatus; label: string }> = [
-  { status: "inbox", label: "Inbox" },
-  { status: "ready", label: "Ready" },
-  { status: "done", label: "Done" },
-];
+const LANES: ReadonlyArray<QuestStatus> = ["inbox", "ready", "done"];
 
 interface QuestBoardProps {
   projectPath: string;
@@ -28,6 +26,7 @@ export function QuestBoard({
   writable,
   onSelectQuest,
 }: QuestBoardProps) {
+  const { t } = useTranslation(["main-window", "common"]);
   const drag = useMainWindowStore((state) => state.drag);
   const setDrag = useMainWindowStore((state) => state.setDrag);
 
@@ -48,21 +47,19 @@ export function QuestBoard({
   const draggedQuest = quests.find((quest) => quest.id === drag?.questId);
 
   return (
-    <div className="quest-board" aria-label="Quest board">
-      {LANES.map((lane) => {
-        const laneQuests = quests.filter(
-          (quest) => quest.status === lane.status,
-        );
+    <div className="quest-board" aria-label={t("board.label")}>
+      {LANES.map((status) => {
+        const laneQuests = quests.filter((quest) => quest.status === status);
         return (
           <QuestLane
             draggedQuest={draggedQuest}
-            key={lane.status}
-            label={lane.label}
+            key={status}
+            label={t(`status.${status}`, { ns: "common" })}
             onSelectQuest={onSelectQuest}
             projectPath={projectPath}
             quests={laneQuests}
             selectedQuestId={selectedQuestId}
-            status={lane.status}
+            status={status}
             writable={writable}
           />
         );
@@ -88,6 +85,7 @@ function QuestLane({
   status,
   writable,
 }: QuestLaneProps) {
+  const { t } = useTranslation("main-window");
   const scroller = useRef<HTMLDivElement>(null);
   const drag = useMainWindowStore((state) => state.drag);
   const setDrag = useMainWindowStore((state) => state.setDrag);
@@ -119,14 +117,17 @@ function QuestLane({
         <div className="lane-title">
           <span aria-hidden="true" className="status-dot" />
           <h2>{label}</h2>
-          <span aria-label={`${quests.length} quests`} className="lane-count">
+          <span
+            aria-label={t("board.questCount", { count: quests.length })}
+            className="lane-count"
+          >
             {quests.length}
           </span>
         </div>
         <IconButton
           disabled
           icon={DotsThree}
-          label={`${label} actions are not available yet`}
+          label={t("board.actionsUnavailable", { label })}
           size={16}
         />
       </header>
@@ -154,9 +155,8 @@ function QuestLane({
           }
           void setDraggedQuestStatus(dropped.questId, status).catch(
             (error: unknown) => {
-              showToast(
-                `Status could not be changed: ${toError(error).message}`,
-              );
+              if (import.meta.env.DEV) console.error("quest status", error);
+              showToast(t("board.statusChangeFailed"));
             },
           );
         }}
@@ -188,11 +188,11 @@ function QuestLane({
           >
             {status === "inbox" ? (
               <>
-                <strong>No quests yet</strong>
-                <span>Use ⌘⇧Space to capture one.</span>
+                <strong>{t("board.noQuestsYet")}</strong>
+                <span>{t("board.captureHint")}</span>
               </>
             ) : (
-              <span>No quests</span>
+              <span>{t("board.noQuests")}</span>
             )}
           </div>
         )}
@@ -216,6 +216,7 @@ export function QuestCard({
   projectPath?: string;
   onSelect: () => void;
 }) {
+  useTranslation(["main-window", "common"]);
   const editor = useMainWindowStore((state) => state.editor);
   const drag = useMainWindowStore((state) => state.drag);
   const setDrag = useMainWindowStore((state) => state.setDrag);
@@ -257,7 +258,7 @@ export function QuestCard({
       }}
       title={
         editorBlocksDrag
-          ? "Save or resolve this Quest before dragging"
+          ? i18n.t("board.dragBlocked", { ns: "main-window" })
           : undefined
       }
       type="button"
@@ -287,8 +288,4 @@ function sortedInsertionIndex(quests: QuestDto[], dragged: QuestDto): number {
 function compareQuest(left: QuestDto, right: QuestDto): number {
   const created = right.createdAt.localeCompare(left.createdAt);
   return created === 0 ? right.id.localeCompare(left.id) : created;
-}
-
-function toError(value: unknown): Error {
-  return value instanceof Error ? value : new Error(String(value));
 }
