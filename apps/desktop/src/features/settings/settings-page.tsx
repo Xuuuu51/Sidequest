@@ -3,22 +3,24 @@ import {
   Check,
   Command,
   Copy,
-  TerminalWindow,
-  Warning,
+  SquareTerminal,
+  TriangleAlert,
   X,
-} from "@phosphor-icons/react";
+} from "lucide-react";
 import { useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
-  useIntegrationMutation,
-  useIntegrationsQuery,
   useSetGlobalShortcutMutation,
   useSetLaunchAtLoginMutation,
   useSettingsQuery,
   useLocaleSettingsQuery,
   useSetLocalePreferenceMutation,
-} from "../data/queries";
+} from "./data";
+import {
+  useIntegrationMutation,
+  useIntegrationsQuery,
+} from "../integrations/data";
 import type {
   IntegrationId,
   IntegrationItemDto,
@@ -32,8 +34,11 @@ import {
   revealPath,
 } from "../../shared/tauri/commands";
 import { IconButton } from "../../shared/ui/icon-button";
-import { useMainWindowStore } from "../../store/main-window";
 import { localizedError } from "../../shared/i18n/errors";
+import { Button } from "../../shared/ui/button";
+import { Switch } from "../../shared/ui/switch";
+import { cn } from "../../shared/lib/utils";
+import { useMainWindowStore } from "../../store/main-window/store";
 
 interface SettingsPageProps {
   onBack: () => void;
@@ -49,17 +54,16 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
   const setShortcut = useSetGlobalShortcutMutation();
   const setLaunch = useSetLaunchAtLoginMutation();
   const integrationMutation = useIntegrationMutation();
-  const recording = useMainWindowStore((state) => state.shortcutRecording);
-  const setRecording = useMainWindowStore(
-    (state) => state.setShortcutRecording,
-  );
-  const licenseOpen = useMainWindowStore((state) => state.licenseOpen);
-  const setLicenseOpen = useMainWindowStore((state) => state.setLicenseOpen);
+  const [recording, setRecording] = useState(false);
+  const [licenseOpen, setLicenseOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [diagnosticFeedback, setDiagnosticFeedback] = useState<string | null>(
     null,
   );
   const [confirming, setConfirming] = useState<IntegrationItemDto | null>(null);
+  const sidebarCollapsed = useMainWindowStore(
+    (state) => state.sidebarCollapsed,
+  );
 
   useEffect(() => {
     if (compact === undefined) {
@@ -124,21 +128,34 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
 
   return (
     <section
-      className={
-        compact ? "settings-page onboarding-settings" : "settings-page"
-      }
+      className={cn(
+        "relative flex min-w-0 flex-1 flex-col bg-workspace",
+        compact && "mt-3 w-full flex-none bg-transparent",
+      )}
     >
       {compact === undefined && (
-        <header className="settings-titlebar" data-tauri-drag-region>
+        <header
+          className={cn(
+            "flex h-12 shrink-0 items-center gap-2 border-b pr-3",
+            sidebarCollapsed ? "pl-[126px]" : "pl-3",
+          )}
+          data-tauri-drag-region="deep"
+        >
           <IconButton
+            data-tauri-drag-region="false"
             icon={ArrowLeft}
             label={t("actions.back", { ns: "common" })}
             onClick={onBack}
           />
-          <h1>{t("title")}</h1>
+          <h1 className="text-sm font-semibold">{t("title")}</h1>
         </header>
       )}
-      <div className="settings-scroll">
+      <div
+        className={cn(
+          "w-full max-w-[760px] overflow-y-auto px-6 pb-10 pt-[22px]",
+          compact && "max-w-none overflow-visible p-0",
+        )}
+      >
         {compact !== "codingAgents" && (
           <SettingsSection title={t("sections.general")}>
             {compact === undefined && (
@@ -148,6 +165,7 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
               >
                 <select
                   aria-label={t("language.label")}
+                  className="h-8 rounded-md border border-input bg-surface px-2 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   disabled={
                     localeSettings.data === undefined || setLocale.isPending
                   }
@@ -187,8 +205,7 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
                   startRecording={() => setRecording(true)}
                 />
               )}
-              <button
-                className="text-button"
+              <Button
                 disabled={setShortcut.isPending}
                 onClick={() =>
                   void changeShortcut({
@@ -197,10 +214,11 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
                     display: "⌘⇧Space",
                   })
                 }
-                type="button"
+                size="sm"
+                variant="ghost"
               >
                 {t("shortcut.restoreDefault")}
-              </button>
+              </Button>
             </SettingRow>
             <SettingRow
               label={t("launchAtLogin.label")}
@@ -210,26 +228,21 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
                   : t("launchAtLogin.description")
               }
             >
-              <label className="switch-control">
-                <input
-                  checked={settings.data?.launchAtLogin ?? false}
-                  disabled={
-                    settings.data === undefined ||
-                    !settings.data.launchAtLoginAvailable ||
-                    setLaunch.isPending
-                  }
-                  onChange={(event) => {
-                    setError(null);
-                    void setLaunch
-                      .mutateAsync(event.target.checked)
-                      .catch((cause: unknown) =>
-                        setError(localizedError(cause)),
-                      );
-                  }}
-                  type="checkbox"
-                />
-                <span aria-hidden="true" />
-              </label>
+              <Switch
+                aria-label={t("launchAtLogin.label")}
+                checked={settings.data?.launchAtLogin ?? false}
+                disabled={
+                  settings.data === undefined ||
+                  !settings.data.launchAtLoginAvailable ||
+                  setLaunch.isPending
+                }
+                onCheckedChange={(checked) => {
+                  setError(null);
+                  void setLaunch
+                    .mutateAsync(checked)
+                    .catch((cause: unknown) => setError(localizedError(cause)));
+                }}
+              />
             </SettingRow>
           </SettingsSection>
         )}
@@ -292,7 +305,7 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
                 label="Sidequest"
                 description={t("about.application")}
               >
-                <span className="setting-value">
+                <span className="max-w-full overflow-hidden text-ellipsis text-[11px] leading-4 text-muted-foreground">
                   {t("about.version", {
                     version: settings.data?.appVersion ?? "—",
                   })}
@@ -303,32 +316,50 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
                 description={t("about.diagnosticsDescription")}
               >
                 {diagnosticFeedback !== null && (
-                  <span className="setting-feedback" role="status">
+                  <span
+                    className="whitespace-nowrap text-[11px] text-muted-foreground"
+                    role="status"
+                  >
                     {diagnosticFeedback}
                   </span>
                 )}
-                <button onClick={() => void copyDiagnostics()} type="button">
+                <Button
+                  onClick={() => void copyDiagnostics()}
+                  size="sm"
+                  variant="outline"
+                >
                   {t("about.copyDiagnostics")}
-                </button>
-                <button onClick={() => void revealLogs()} type="button">
+                </Button>
+                <Button
+                  onClick={() => void revealLogs()}
+                  size="sm"
+                  variant="outline"
+                >
                   {t("about.revealLogs")}
-                </button>
+                </Button>
               </SettingRow>
               <SettingRow
                 label={t("about.license")}
                 description={t("about.licenseDescription")}
               >
-                <button onClick={() => setLicenseOpen(true)} type="button">
+                <Button
+                  onClick={() => setLicenseOpen(true)}
+                  size="sm"
+                  variant="outline"
+                >
                   {t("about.viewLicense")}
-                </button>
+                </Button>
               </SettingRow>
             </SettingsSection>
           </>
         )}
 
         {(error !== null || settings.isError || integrations.isError) && (
-          <p className="settings-error" role="alert">
-            <Warning aria-hidden="true" size={14} />
+          <p
+            className="flex items-center gap-1.5 text-[11px] text-destructive"
+            role="alert"
+          >
+            <TriangleAlert aria-hidden="true" size={14} />
             {error ?? localizedError(settings.error ?? integrations.error)}
           </p>
         )}
@@ -338,32 +369,38 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
         <div
           aria-labelledby="integration-confirm-title"
           aria-modal="true"
-          className="modal-scrim"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-background/55"
           role="alertdialog"
         >
-          <div className="compact-dialog">
-            <h2 id="integration-confirm-title">
+          <div className="w-[420px] rounded-xl border bg-elevated p-4 text-elevated-foreground shadow-overlay">
+            <h2
+              className="text-sm font-semibold"
+              id="integration-confirm-title"
+            >
               {t("integration.confirmUninstall", {
                 name: integrationName(confirming.id),
               })}
             </h2>
-            <p>{t("integration.removeManaged")}</p>
-            <code>{confirming.path}</code>
-            <div className="dialog-actions">
-              <button
+            <p className="mt-2 text-sm text-muted-foreground">
+              {t("integration.removeManaged")}
+            </p>
+            <code className="mt-3 block select-text border bg-background p-2 text-xs [overflow-wrap:anywhere]">
+              {confirming.path}
+            </code>
+            <div className="mt-4 flex justify-end gap-2">
+              <Button
                 autoFocus
                 onClick={() => setConfirming(null)}
-                type="button"
+                variant="outline"
               >
                 {t("actions.cancel", { ns: "common" })}
-              </button>
-              <button
-                className="danger-button"
+              </Button>
+              <Button
                 onClick={() => void runIntegration(confirming, "uninstall")}
-                type="button"
+                variant="destructive"
               >
                 {t("actions.uninstall", { ns: "common" })}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -373,19 +410,23 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
         <div
           aria-labelledby="license-title"
           aria-modal="true"
-          className="modal-scrim"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-background/55"
           role="dialog"
         >
-          <div className="license-dialog">
-            <header>
-              <h2 id="license-title">{t("about.licenseTitle")}</h2>
+          <div className="flex max-h-[70vh] w-[580px] flex-col rounded-xl border bg-elevated p-4 text-elevated-foreground shadow-overlay">
+            <header className="flex items-center justify-between border-b pb-2">
+              <h2 className="text-sm font-semibold" id="license-title">
+                {t("about.licenseTitle")}
+              </h2>
               <IconButton
                 icon={X}
                 label={t("about.closeLicense")}
                 onClick={() => setLicenseOpen(false)}
               />
             </header>
-            <pre>{settings.data.licenseText}</pre>
+            <pre className="mt-3 select-text overflow-auto whitespace-pre-wrap font-mono text-xs leading-[18px] text-muted-foreground">
+              {settings.data.licenseText}
+            </pre>
           </div>
         </div>
       )}
@@ -401,9 +442,11 @@ function SettingsSection({
   children: ReactNode;
 }) {
   return (
-    <section className="settings-section">
-      <h2>{title}</h2>
-      <div className="settings-section-body">{children}</div>
+    <section className="mb-[26px] w-full">
+      <h2 className="mb-2 text-xs font-semibold text-muted-foreground">
+        {title}
+      </h2>
+      <div className="border-t">{children}</div>
     </section>
   );
 }
@@ -418,12 +461,14 @@ function SettingRow({
   children: ReactNode;
 }) {
   return (
-    <div className="setting-row">
-      <div className="setting-copy">
-        <strong>{label}</strong>
-        <span>{description}</span>
+    <div className="flex min-h-[58px] items-center gap-3 border-b px-0.5 py-2.5">
+      <div className="flex min-w-0 flex-1 flex-col gap-px">
+        <strong className="text-[13px] font-medium">{label}</strong>
+        <span className="overflow-hidden text-ellipsis text-[11px] leading-4 text-muted-foreground">
+          {description}
+        </span>
       </div>
-      <div className="setting-actions">{children}</div>
+      <div className="flex items-center gap-2">{children}</div>
     </div>
   );
 }
@@ -465,20 +510,23 @@ function ShortcutRecorder({
     });
   }
   return (
-    <div className="shortcut-control">
-      <button
+    <div className="flex flex-col items-end">
+      <Button
         aria-pressed={recording}
-        className={
-          recording ? "shortcut-recorder recording" : "shortcut-recorder"
-        }
+        className={cn(
+          "min-w-[116px] font-mono",
+          recording && "ring-2 ring-ring",
+        )}
         onClick={startRecording}
         onKeyDown={handleKeyDown}
-        type="button"
+        variant="outline"
       >
         <Command aria-hidden="true" size={14} />
         {recording ? t("shortcut.recording") : shortcut.display}
-      </button>
-      {error !== null && <span className="inline-warning">{error}</span>}
+      </Button>
+      {error !== null && (
+        <span className="text-[11px] text-destructive">{error}</span>
+      )}
     </div>
   );
 }
@@ -515,19 +563,21 @@ function IntegrationRow({
           ? t("actions.repair", { ns: "common" })
           : t("actions.install", { ns: "common" });
   return (
-    <div className="setting-row integration-row">
-      <div className="integration-icon">
+    <div className="flex min-h-[52px] items-center gap-3 border-b px-0.5 py-2.5">
+      <div className="inline-flex size-[26px] items-center justify-center rounded-md border bg-elevated text-muted-foreground">
         {id === "cli" ? (
-          <TerminalWindow size={15} />
+          <SquareTerminal size={15} />
         ) : id === "codex" ? (
           <Copy size={15} />
         ) : (
           <Command size={15} />
         )}
       </div>
-      <div className="setting-copy">
-        <strong>{integrationName(id)}</strong>
-        <span>
+      <div className="flex min-w-0 flex-1 flex-col gap-px">
+        <strong className="text-[13px] font-medium">
+          {integrationName(id)}
+        </strong>
+        <span className="overflow-hidden text-ellipsis text-[11px] leading-4 text-muted-foreground">
           {item === undefined
             ? t("integration.loading", { ns: "settings" })
             : integrationDescription(
@@ -539,14 +589,15 @@ function IntegrationRow({
         </span>
       </div>
       <span
-        className={
-          needsAttention ? "integration-status attention" : "integration-status"
-        }
+        className={cn(
+          "inline-flex min-w-[82px] items-center justify-end gap-1 text-[11px] text-muted-foreground",
+          needsAttention && "text-warning",
+        )}
       >
         {installed ? (
           <Check size={13} />
         ) : needsAttention ? (
-          <Warning size={13} />
+          <TriangleAlert size={13} />
         ) : null}
         {installed
           ? t("integration.installed", { ns: "settings" })
@@ -554,13 +605,14 @@ function IntegrationRow({
             ? t("integration.needsAttention", { ns: "settings" })
             : t("integration.notInstalled", { ns: "settings" })}
       </span>
-      <button
+      <Button
         disabled={item === undefined || pending}
         onClick={() => item !== undefined && onAction(item, action)}
-        type="button"
+        size="sm"
+        variant="outline"
       >
         {label}
-      </button>
+      </Button>
     </div>
   );
 }

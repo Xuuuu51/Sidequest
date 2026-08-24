@@ -1,20 +1,17 @@
-import { Warning } from "@phosphor-icons/react";
+import { TriangleAlert } from "lucide-react";
 import { Component, type ReactNode } from "react";
 
 import type { ApplicationKind } from "../../app-entry";
-import { useMainWindowStore } from "../../store/main-window";
-import { useQuickCaptureStore } from "../../store/quick-capture";
-import {
-  getDiagnosticReport,
-  revealDiagnosticLogs,
-  writeClipboardText,
-} from "../tauri/commands";
+import { getDiagnosticReport, revealDiagnosticLogs } from "../tauri/commands";
 import { logFrontendError } from "./logger";
 import { i18n } from "../i18n/i18n";
+import { Button } from "../ui/button";
 
 interface ErrorBoundaryProps {
   applicationKind: ApplicationKind;
   children: ReactNode;
+  getDraft: () => string | null;
+  writeText: (value: string) => Promise<void>;
 }
 
 interface ErrorBoundaryState {
@@ -43,41 +40,47 @@ export class ApplicationErrorBoundary extends Component<
     if (!this.state.failed) {
       return this.props.children;
     }
-    const draft = currentDraft(this.props.applicationKind);
+    const draft = this.props.getDraft();
     return (
       <main
-        className={`fatal-boundary fatal-boundary-${this.props.applicationKind}`}
+        className={`flex h-full w-full flex-col items-start justify-center gap-2.5 bg-background text-muted-foreground ${this.props.applicationKind === "quickCapture" ? "p-6" : "p-8"}`}
       >
-        <Warning aria-hidden="true" size={22} />
-        <h1>{i18n.t("fatal.title", { ns: "errors" })}</h1>
-        <p>{i18n.t("fatal.description", { ns: "errors" })}</p>
+        <TriangleAlert aria-hidden="true" size={22} />
+        <h1 className="max-w-xl text-base font-semibold leading-[22px] text-foreground">
+          {i18n.t("fatal.title", { ns: "errors" })}
+        </h1>
+        <p className="max-w-xl text-xs leading-[18px]">
+          {i18n.t("fatal.description", { ns: "errors" })}
+        </p>
         {draft !== null && (
-          <p className="fatal-draft-warning" role="alert">
+          <p
+            className="max-w-xl text-xs leading-[18px] text-warning"
+            role="alert"
+          >
             {i18n.t("fatal.draftWarning", { ns: "errors" })}
           </p>
         )}
-        <div className="fatal-boundary-actions">
+        <div className="mt-1 flex flex-wrap gap-1.5">
           {draft !== null && (
-            <button onClick={() => void this.copyDraft(draft)} type="button">
+            <Button
+              onClick={() => void this.copyDraft(draft)}
+              variant="outline"
+            >
               {i18n.t("fatal.copyDraft", { ns: "errors" })}
-            </button>
+            </Button>
           )}
-          <button onClick={() => void this.copyDiagnostics()} type="button">
+          <Button onClick={() => void this.copyDiagnostics()} variant="outline">
             {i18n.t("fatal.copyDiagnostics", { ns: "errors" })}
-          </button>
-          <button onClick={() => void this.revealLogs()} type="button">
+          </Button>
+          <Button onClick={() => void this.revealLogs()} variant="outline">
             {i18n.t("fatal.revealLogs", { ns: "errors" })}
-          </button>
-          <button
-            className="primary-button"
-            onClick={() => window.location.reload()}
-            type="button"
-          >
+          </Button>
+          <Button onClick={() => window.location.reload()}>
             {i18n.t("fatal.reload", { ns: "errors" })}
-          </button>
+          </Button>
         </div>
         {this.state.feedback !== null && (
-          <p className="fatal-boundary-feedback" role="status">
+          <p className="text-xs text-muted-foreground" role="status">
             {this.state.feedback}
           </p>
         )}
@@ -87,7 +90,7 @@ export class ApplicationErrorBoundary extends Component<
 
   private async copyDraft(draft: string): Promise<void> {
     try {
-      await this.writeText(draft);
+      await this.props.writeText(draft);
       this.setState({
         feedback: i18n.t("fatal.draftCopied", { ns: "errors" }),
       });
@@ -102,7 +105,7 @@ export class ApplicationErrorBoundary extends Component<
   private async copyDiagnostics(): Promise<void> {
     try {
       const diagnostics = await getDiagnosticReport();
-      await this.writeText(diagnostics.report);
+      await this.props.writeText(diagnostics.report);
       this.setState({
         feedback: i18n.t("fatal.diagnosticsCopied", { ns: "errors" }),
       });
@@ -127,26 +130,4 @@ export class ApplicationErrorBoundary extends Component<
       });
     }
   }
-
-  private writeText(value: string): Promise<void> {
-    if (this.props.applicationKind === "quickCapture") {
-      if (typeof navigator.clipboard?.writeText !== "function") {
-        return Promise.reject(new Error("Browser clipboard is unavailable"));
-      }
-      return navigator.clipboard.writeText(value);
-    }
-    return writeClipboardText(value);
-  }
-}
-
-function currentDraft(applicationKind: ApplicationKind): string | null {
-  if (applicationKind === "quickCapture") {
-    const draft = useQuickCaptureStore.getState().draft;
-    return draft.length > 0 ? draft : null;
-  }
-  const editor = useMainWindowStore.getState().editor;
-  if (editor === null || editor.draftContent === editor.baseContent) {
-    return null;
-  }
-  return editor.draftContent;
 }

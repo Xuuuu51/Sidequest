@@ -28,9 +28,11 @@ import {
   copyDiagnosticReport,
   completeAppQuit,
   CommandError,
+  focusQuickCapture,
   hideMainWindow,
   hideQuickCapture,
   getLocaleSettings,
+  getThemeSettings,
   relocateProject,
   removeProject,
   revealPath,
@@ -41,6 +43,7 @@ import {
   selectReplacementDirectory,
   setPanelPreferences,
   setLocalePreference,
+  setThemePreference,
   setQuestStatus,
   setWatchedProject,
   showQuickCapture,
@@ -82,6 +85,8 @@ describe("typed Tauri commands", () => {
   it("uses_snake_case_commands_with_camel_case_arguments", async () => {
     await getLocaleSettings();
     await setLocalePreference("zh-CN");
+    await getThemeSettings();
+    await setThemePreference("dark");
     await addProject("/project");
     await removeProject("/project", true);
     await updateQuestContent("/project", "sq_id", "Changed");
@@ -96,6 +101,7 @@ describe("typed Tauri commands", () => {
     await saveMainWindowGeometry();
     await hideMainWindow();
     await showQuickCapture();
+    await focusQuickCapture();
     await saveQuickCapturePosition();
     await hideQuickCapture();
     await captureQuest("/project", "Captured");
@@ -104,6 +110,8 @@ describe("typed Tauri commands", () => {
     expect(mocks.invoke.mock.calls).toEqual([
       ["get_locale_settings", undefined],
       ["set_locale_preference", { preference: "zh-CN" }],
+      ["get_theme_settings", undefined],
+      ["set_theme_preference", { preference: "dark" }],
       ["add_project", { projectPath: "/project" }],
       [
         "remove_project",
@@ -135,6 +143,7 @@ describe("typed Tauri commands", () => {
       ["save_main_window_geometry", undefined],
       ["hide_main_window", undefined],
       ["show_quick_capture", undefined],
+      ["focus_quick_capture", undefined],
       ["save_quick_capture_position", undefined],
       ["hide_quick_capture", undefined],
       ["capture_quest", { projectPath: "/project", content: "Captured" }],

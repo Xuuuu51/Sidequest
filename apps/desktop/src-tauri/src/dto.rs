@@ -8,6 +8,7 @@ use sidequest_core::{
 
 use crate::error::DesktopError;
 use crate::locale::{EffectiveLocale, LanguagePreference};
+use crate::theme::ThemePreference;
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -96,6 +97,20 @@ pub(crate) struct LocaleSettingsDto {
     pub(crate) effective_locale: EffectiveLocaleDto,
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum ThemePreferenceDto {
+    System,
+    Light,
+    Dark,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ThemeSettingsDto {
+    pub(crate) preference: ThemePreferenceDto,
+}
+
 impl From<LanguagePreferenceDto> for LanguagePreference {
     fn from(preference: LanguagePreferenceDto) -> Self {
         match preference {
@@ -121,6 +136,26 @@ impl From<EffectiveLocale> for EffectiveLocaleDto {
         match locale {
             EffectiveLocale::English => Self::En,
             EffectiveLocale::SimplifiedChinese => Self::ZhCn,
+        }
+    }
+}
+
+impl From<ThemePreferenceDto> for ThemePreference {
+    fn from(preference: ThemePreferenceDto) -> Self {
+        match preference {
+            ThemePreferenceDto::System => Self::System,
+            ThemePreferenceDto::Light => Self::Light,
+            ThemePreferenceDto::Dark => Self::Dark,
+        }
+    }
+}
+
+impl From<ThemePreference> for ThemePreferenceDto {
+    fn from(preference: ThemePreference) -> Self {
+        match preference {
+            ThemePreference::System => Self::System,
+            ThemePreference::Light => Self::Light,
+            ThemePreference::Dark => Self::Dark,
         }
     }
 }
@@ -400,12 +435,11 @@ mod tests {
 
     use super::{
         CommandErrorDto, EffectiveLocaleDto, LanguagePreferenceDto, LocaleSettingsDto, ProjectDto,
-        ProjectStateDto,
+        ProjectStateDto, ThemePreferenceDto, ThemeSettingsDto,
     };
     use crate::error::DesktopError;
 
     type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
-
     #[test]
     fn dto_serialization_should_use_camel_case_values() -> TestResult {
         let project = ProjectDto {
@@ -443,6 +477,16 @@ mod tests {
 
         assert_eq!(value["preference"], "zh-CN");
         assert_eq!(value["effectiveLocale"], "zh-CN");
+        Ok(())
+    }
+
+    #[test]
+    fn theme_settings_should_serialize_stable_preference_values() -> TestResult {
+        let value = serde_json::to_value(ThemeSettingsDto {
+            preference: ThemePreferenceDto::Dark,
+        })?;
+
+        assert_eq!(value["preference"], "dark");
         Ok(())
     }
 }

@@ -10,16 +10,18 @@ use crate::app_state::{AppStateStore, DesktopState, OnboardingStep};
 use crate::dto::{
     AppStateDto, CommandErrorDto, DeletedQuestDto, IntegrationIdDto, IntegrationItemDto,
     LanguagePreferenceDto, LocaleSettingsDto, OnboardingStepDto, PanelPreferencesDto, QuestDto,
-    QuickCaptureResultDto, SettingsDto, ShortcutSpecDto, WorkspaceSnapshotDto,
+    QuickCaptureResultDto, SettingsDto, ShortcutSpecDto, ThemePreferenceDto, ThemeSettingsDto,
+    WorkspaceSnapshotDto,
 };
 use crate::error::{DesktopError, Result};
 use crate::integration;
 use crate::native_events::{
     emit_app_state_invalidated, emit_integrations_invalidated, emit_locale_changed,
-    emit_settings_invalidated, emit_workspace_invalidated,
+    emit_settings_invalidated, emit_theme_changed, emit_workspace_invalidated,
 };
 use crate::quick_capture_window::{
-    QUICK_CAPTURE_WINDOW_LABEL, capture_quick_capture_position, show_quick_capture_window,
+    QUICK_CAPTURE_WINDOW_LABEL, capture_quick_capture_position, focus_quick_capture_window,
+    hide_quick_capture_window, show_quick_capture_window,
 };
 use crate::runtime_paths::RuntimePaths;
 use crate::shortcut::ShortcutSpec;
@@ -75,6 +77,37 @@ pub(crate) fn set_locale_preference(
     );
     log_event_result(
         "invalidate settings after language update",
+        emit_settings_invalidated(&app_handle),
+    );
+    Ok(settings)
+}
+
+#[tauri::command]
+pub(crate) fn get_theme_settings(
+    state: State<'_, DesktopState>,
+) -> CommandResult<ThemeSettingsDto> {
+    app_state_lock(&state)
+        .map(|store| theme_settings(store.theme_preference()))
+        .map_err(CommandErrorDto::from)
+}
+
+#[tauri::command]
+pub(crate) fn set_theme_preference(
+    app_handle: AppHandle,
+    state: State<'_, DesktopState>,
+    preference: ThemePreferenceDto,
+) -> CommandResult<ThemeSettingsDto> {
+    let preference: crate::theme::ThemePreference = preference.into();
+    app_state_lock(&state)
+        .and_then(|mut store| store.set_theme_preference(preference))
+        .map_err(CommandErrorDto::from)?;
+    let settings = theme_settings(preference);
+    log_event_result(
+        "notify windows after theme update",
+        emit_theme_changed(&app_handle, settings.preference),
+    );
+    log_event_result(
+        "invalidate settings after theme update",
         emit_settings_invalidated(&app_handle),
     );
     Ok(settings)
@@ -402,6 +435,11 @@ pub(crate) fn show_quick_capture(app_handle: AppHandle) -> CommandResult<()> {
 }
 
 #[tauri::command]
+pub(crate) fn focus_quick_capture(app_handle: AppHandle) -> CommandResult<()> {
+    focus_quick_capture_window(&app_handle).map_err(CommandErrorDto::from)
+}
+
+#[tauri::command]
 pub(crate) fn save_quick_capture_position(
     app_handle: AppHandle,
     state: State<'_, DesktopState>,
@@ -427,18 +465,7 @@ pub(crate) fn hide_quick_capture(
     state: State<'_, DesktopState>,
 ) -> CommandResult<()> {
     let position_result = save_quick_capture_position(app_handle.clone(), state);
-    app_handle
-        .get_webview_window(QUICK_CAPTURE_WINDOW_LABEL)
-        .ok_or_else(|| DesktopError::Window {
-            operation: "find Quick Capture Window",
-            message: "Quick Capture Window is unavailable".to_owned(),
-        })?
-        .hide()
-        .map_err(|error| DesktopError::Window {
-            operation: "hide Quick Capture Window",
-            message: error.to_string(),
-        })
-        .map_err(CommandErrorDto::from)?;
+    hide_quick_capture_window(&app_handle).map_err(CommandErrorDto::from)?;
     log::info!("Quick Capture Window hidden");
     position_result
 }
@@ -594,6 +621,12 @@ fn locale_settings(preference: crate::locale::LanguagePreference) -> LocaleSetti
     LocaleSettingsDto {
         preference: preference.into(),
         effective_locale: preference.effective().into(),
+    }
+}
+
+fn theme_settings(preference: crate::theme::ThemePreference) -> ThemeSettingsDto {
+    ThemeSettingsDto {
+        preference: preference.into(),
     }
 }
 

@@ -10,6 +10,7 @@
     "frontendDist": "../dist"
   },
   "app": {
+    "macOSPrivateApi": true,
     "windows": [
       {
         "label": "main",
@@ -24,7 +25,7 @@
         "titleBarStyle": "Overlay",
         "trafficLightPosition": {
           "x": 18,
-          "y": 16
+          "y": 27
         }
       },
       {
@@ -39,7 +40,9 @@
         "visible": false,
         "resizable": false,
         "decorations": false,
-        "alwaysOnTop": true
+        "transparent": true,
+        "alwaysOnTop": true,
+        "visibleOnAllWorkspaces": true
       }
     ],
     "security": {

@@ -73,4 +73,25 @@ export default tseslint.config(
     files: ["src/**/*.test.{ts,tsx}", "src/test/**/*.{ts,tsx}"],
     rules: { "sidequest-i18n/no-user-facing-literals": "off" },
   },
+  {
+    files: ["src/app/**/*.{ts,tsx}", "src/features/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@base-ui/react", "@base-ui/react/*"],
+              message: "Import Base UI through shared/ui primitives.",
+            },
+            {
+              group: ["@tauri-apps/*"],
+              message:
+                "Import native capabilities through shared/tauri wrappers.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 );

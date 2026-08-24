@@ -1,8 +1,11 @@
-import type { Icon } from "@phosphor-icons/react";
+import type { LucideIcon } from "lucide-react";
 import type { ButtonHTMLAttributes } from "react";
 
+import { cn } from "@/shared/lib/utils";
+import { Button } from "@/shared/ui/button";
+
 interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  icon: Icon;
+  icon: LucideIcon;
   label: string;
   size?: number;
 }
@@ -15,14 +18,16 @@ export function IconButton({
   ...props
 }: IconButtonProps) {
   return (
-    <button
+    <Button
       aria-label={label}
-      className={`icon-button ${className}`.trim()}
+      className={cn(className)}
+      size="icon"
       title={label}
       type="button"
+      variant="ghost"
       {...props}
     >
-      <IconComponent aria-hidden="true" size={size} weight="regular" />
-    </button>
+      <IconComponent aria-hidden="true" size={size} />
+    </Button>
   );
 }

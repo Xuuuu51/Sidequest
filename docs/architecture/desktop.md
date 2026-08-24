@@ -33,6 +33,8 @@ Settings 与 integration：`get_settings`、`set_global_shortcut`、`set_launch_
 
 Locale：`get_locale_settings`、`set_locale_preference`。偏好只接受 `system | en | zh-CN`，由 backend 解析有效 locale、持久化并重建原生菜单；成功后通过 `locale-changed` 同步所有窗口。
 
+Theme：`get_theme_settings`、`set_theme_preference`。偏好只接受 `system | light | dark`，默认 `system`；backend 只负责持久化并通过携带最新 preference 的 `theme-changed` 同步全部窗口。每个 WebView 使用 Tauri Window API 设置原生窗口 theme，并在 System mode 下解析和监听有效 appearance，Rust 不维护第二份 effective theme。
+
 Diagnostics：`get_diagnostic_report`、`reveal_diagnostic_logs`。摘要只返回版本、build mode、macOS、CPU 架构、App State schema、项目状态计数、快捷键和 Integration 状态，不返回用户名、绝对项目路径、Quest 数据或日志正文。剪贴板写权限只授予 Main Window。
 
 ```ts
@@ -87,6 +89,7 @@ Tauri backend 将 Desktop-only 数据保存到 app-local `app.json`，例如 mac
   },
   "onboardingStep": "addProject",
   "languagePreference": "system",
+  "themePreference": "system",
   "shortcut": {
     "modifiers": ["command", "shift"],
     "key": "Space"
@@ -121,14 +124,17 @@ Query 管理 app state、workspace snapshot、搜索结果、设置、integratio
 ["search", projectPath, query]
 ["settings"]
 ["locale-settings"]
+["theme-settings"]
 ["integrations"]
 ```
 
 Filesystem 数据禁用网络型默认重试、focus/reconnect refresh 和 cache persistence；只在首次加载、显式 Retry、成功 mutation 或 watcher invalidation 时刷新。
 
-Zustand 管理 route、当前项目、搜索 presentation、选中 Quest/Drawer、滚动位置、编辑 workflow、drag/menu/dialog/toast/banner。不得持久化，也不得复制 Quest collection。组件使用细粒度 selector。
+Main Window 只有一个内存 Zustand store，由 `navigation`、`workspace-ui`、`editor`、`shell-preferences` 四个 slice 组合。Navigation 使用 `restoring | onboarding | workspace | settings` 判别联合，并在 `workspace`/`settings` 分支携带当前项目路径；不引入 Router。Quick Capture 拥有独立 store。Zustand 不得使用 persist，不得复制 Quest collection，组件使用细粒度 selector；只被单个简单组件使用的 menu/dialog/recording 状态保留在组件本地。
 
-同一 Quest 的 mutation 使用相同 scope 串行执行。状态变更不做提前 optimistic update；成功后以 command 返回值更新 cache。自动保存与离开规则由 [Main Window 状态机](../desktop/main-window-state.md)定义，store 内不得调用 React Query hooks。
+Store action 只执行同步、确定性的状态转换，不调用 Tauri command、QueryClient 或 React Query hook。异步操作由 feature hook/provider 编排，完成后显式调用 store action。每个 feature 统一使用一个 `data.ts`，就近拥有 query keys、options/hooks、mutations 和必要 cache helper；不得建立跨 feature 的集中式 `queries.ts`、repository 或 service 层。
+
+同一 Quest 的 mutation 使用相同 scope 串行执行。普通 status action 成功后以 command 返回值更新 cache；Quest drag 是唯一允许的乐观 status update：drop 后立即把该 Quest 投影到目标状态组，失败时按 mutation context 精确回滚并显示 toast。乐观投影不得改变固定排序规则，也不得复制整个 collection 到 Zustand。自动保存与离开规则由 [Main Window 状态机](../desktop/main-window-state.md)定义，store 内不得调用 React Query hooks。
 
 Content editor 以最后一次输入后 `500ms` 自动保存。当前 Quest 的 draft、落盘基准、保存/冲突阶段可以作为 workflow state 保存在 Zustand，但不得把 Workspace collection 复制进去。旧写入响应只推进落盘基准，不覆盖更新的本地 draft。
 
@@ -146,9 +152,28 @@ filesystem event → debounce → workspace-invalidated → query reload
 
 Desktop command 创建 Quest 后也发出同名 `workspace-invalidated`，因此非当前项目的 Query cache 也会失效。项目列表变化通过 `app-state-invalidated` 同步到两个窗口。
 
-Settings 与 integration 分别通过 `settings-invalidated` 和 `integrations-invalidated` 失效。macOS 菜单通过 `open-settings` 请求 Main Window 先执行既有写入保护，再切换 route。
+Settings 与 integration 分别通过 `settings-invalidated` 和 `integrations-invalidated` 失效。Theme 使用独立 `theme-changed` preference payload 驱动每个 WebView 通过 Tauri Window API 解析并同步有效主题，不能依赖只有 Main Window 订阅的 settings invalidation。macOS 菜单通过 `open-settings` 请求 Main Window 先执行既有写入保护，再切换 view。
 
-## 6. 本地化
+## 6. Frontend UI 基础
+
+- Tailwind CSS 4 通过 Vite plugin 接入；CSS-first 配置集中在 `globals.css`。功能组件只使用 Tailwind class/CVA，不保留 feature CSS；全局 CSS 仅包含 theme token、base、字体与平台例外。
+- shadcn/ui 固定使用 Base UI base，`components.json` 必须显式记录 base、TypeScript、Lucide 与 CSS variables。只添加实际使用的 primitive；源码保存在 `shared/ui`，QuestRow、StatusGroup、ProjectSidebar 等组合组件归各 feature。
+- shadcn 通用语义 token 是 Light/Dark theme 的基础；`status-inbox`、`status-ready`、`status-done` 是唯一 Quest 状态扩展。组件不得直接使用 Tailwind palette color。
+- Quest drag 使用新版 `@dnd-kit/react` provider 与 `@dnd-kit/dom` Pointer sensor，只负责 Quest 在状态组间移动；不引入 sortable。Pointer 约 `6px` 后激活，插入位置由固定排序规则计算。
+- Sidebar 与 Drawer resize 继续复用 Pointer Events + pointer capture；Main Window 的完整 titlebar 空白区使用 Tauri `deep` native drag region，并在 capability 中显式允许 `core:window:allow-start-dragging`，不接入 dnd-kit。搜索与按钮等交互控件必须用 `data-tauri-drag-region="false"` 排除。
+- Modal Drawer 使用 shadcn Sheet / Base UI Dialog 提供 backdrop、focus trap、background inert 与 focus restoration。收起后的左侧 Sidebar 使用同一 primitive 的 non-modal 模式，仅提供 hover/focus 预览、外部交互与 focus restoration，不渲染 backdrop 或 inert 主工作区；两者再叠加对应边缘 resize handle。删除使用 Alert Dialog，通知统一使用 Sonner。
+- 图标统一使用 Lucide，直接在 shared primitive 或 feature 中使用；不得保留 Phosphor 或并行维护第二套 icon system。
+
+## 7. Theme 初始化与同步
+
+ThemeProvider 位于 Main Window 与 Quick Capture 共用的 React mount 根部；Onboarding、Settings 与所有 feature 继承同一 provider。应用在首帧前读取 native theme settings，写入 `data-theme` 并设置原生窗口 theme，避免主题闪烁。
+
+- `light` 与 `dark` 使用显式 token mapping。
+- `system` 解析当前系统 appearance，并订阅后续变化。
+- Settings 的 Radio Group mutation 只有 backend atomic persist 成功后才提交 preference；失败保留旧选择。
+- `theme-changed` 到达时只更新 theme 与原生窗口外观，不重建 QueryClient、Zustand store 或丢失 editor / Quick Capture draft。
+
+## 8. 本地化
 
 React 使用编译时打包的 `i18next` / `react-i18next` JSON resources，不使用浏览器语言探测、HTTP backend 或运行时网络。应用在 React mount 前调用 native locale command，避免 fallback 文案闪烁；两个独立窗口通过 `locale-changed` 只切换资源，不重建 QueryClient、Zustand store 或窗口。
 
@@ -156,18 +181,20 @@ React 使用编译时打包的 `i18next` / `react-i18next` JSON resources，不�
 
 日期使用 `Intl.DateTimeFormat` 与 `Intl.RelativeTimeFormat`。UI error code 映射到本地化摘要；原始 native message/path 只允许 Debug DevTools console，持久日志继续只记录 command、耗时和错误码。
 
-## 7. Main Window 生命周期
+## 9. Main Window 生命周期
 
 - 红色关闭按钮由 React 拦截：先 flush pending content 与窗口几何，再隐藏而不是销毁 Main Window。
 - macOS Dock Reopen 由 native `RunEvent::Reopen` 重新显示并聚焦 Main Window。
 - native 退出请求先被阻止并发送 `app-quit-requested`；React 完成 flush 或用户明确放弃本地草稿后调用 `complete_app_quit` 进行一次性退出审批。
 - `app-quit-requested` 与其他 native event 一样，只能通过集中式 typed wrapper 订阅。
 
-## 8. 多窗口
+## 10. 多窗口
 
-Main Window 与 Quick Capture Window 是独立原生窗口，分别拥有 QueryClient 和 Zustand store，不共享 JavaScript memory。Quick Capture Window 固定 `520×300`、不可 resize、无原生标题栏并始终置顶；`quick-capture-shown` 只负责刷新项目状态与恢复输入焦点。重复显示现有窗口，不重建 webview，因此草稿和项目选择得以保留。
+Main Window 与 Quick Capture Window 是独立原生窗口，分别拥有 QueryClient 和 Zustand store，不共享 JavaScript memory。公共 bootstrap 根据 window label 动态 import 对应 application root，Quick Capture bundle 不静态加载 Main Window、Settings 或 Onboarding；Main Window eager load Workspace，lazy load Settings 与 Onboarding。Quick Capture Window 固定 `520×300`、不可 resize、无原生标题栏。macOS 启动时通过 `tauri-nspanel` 将既有 Tauri window 转换为可取得键盘焦点但不成为 main window 的浮动 `NSPanel`，设置 `NonactivatingPanel` style mask，并设置 `CanJoinAllSpaces | FullScreenAuxiliary` collection behavior；显示时通过 panel 的 `show_and_make_key` 原地唤起。`NonactivatingPanel` 必须阻止唤起操作激活 Sidequest 并切离当前全屏 Space；不得通过主动切换 Space 实现。`quick-capture-shown` 只负责刷新项目状态与恢复输入焦点。重复显示现有 panel，不重建 webview，因此草稿和项目选择得以保留。
 
-## 9. 诊断与错误边界
+Quick Capture 的页面标题、native window title 与可见自绘标题使用同一本地化资源，并随 `locale-changed` 同步。React 只通过集中式 window wrapper 更新 native title。
+
+## 11. 诊断与错误边界
 
 Tauri Logging Plugin 是 Desktop 唯一持久日志入口。Debug build 记录 Debug 及以上，普通构建记录 Info 及以上；文件写入 macOS 标准 Logs 目录，单文件上限 1 MiB，仅保留当前文件和一个轮转文件。隔离 Profile 改写到自己的 `logs/`。
 
@@ -177,7 +204,7 @@ Main Window 与 Quick Capture 各自拥有顶层 Error Boundary，并集中捕�
 
 Debug 菜单仅在 `debug_assertions` 下构建。Reload Main Window 必须经过既有写入协调器；Quick Capture 存在草稿时禁止 reload。Release build 不编译 Debug 菜单。
 
-## 10. 隔离 Profile
+## 12. 隔离 Profile
 
 `pnpm desktop:isolated` 只在 debug build 通过 `SIDEQUEST_DEBUG_PROFILE_DIR` 启用仓库内 `target/desktop-debug-profile/`。该目录分别承载 `app-data/`、`logs/` 和模拟 `home/`；CLI、Codex Skill 与 Claude Skill 由模拟 Home 派生。Release build 忽略 override。
 

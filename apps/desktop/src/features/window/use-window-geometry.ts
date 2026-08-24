@@ -1,4 +1,3 @@
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect } from "react";
 
 import {
@@ -7,8 +6,13 @@ import {
   saveMainWindowGeometry,
 } from "../../shared/tauri/commands";
 import { listenForAppQuitRequest } from "../../shared/tauri/events";
-import type { NavigationIntent } from "../../store/main-window";
+import type { NavigationIntent } from "../../store/main-window/types";
 import { logFrontendError } from "../../shared/diagnostics/logger";
+import {
+  listenForCurrentWindowClose,
+  listenForCurrentWindowMove,
+  listenForCurrentWindowResize,
+} from "../../shared/tauri/window";
 
 const SAVE_DELAY_MS = 300;
 
@@ -26,7 +30,6 @@ export function useWindowGeometryPersistence(
   guard: NavigationGuard = immediateGuard,
 ): void {
   useEffect(() => {
-    const window = getCurrentWindow();
     let timeout: ReturnType<typeof setTimeout> | null = null;
     let disposed = false;
     const scheduleSave = () => {
@@ -40,15 +43,14 @@ export function useWindowGeometryPersistence(
     };
 
     const subscriptions = Promise.all([
-      window.onMoved(scheduleSave),
-      window.onResized(scheduleSave),
-      window.onCloseRequested(async (event) => {
-        event.preventDefault();
+      listenForCurrentWindowMove(scheduleSave),
+      listenForCurrentWindowResize(scheduleSave),
+      listenForCurrentWindowClose(() => {
         if (timeout !== null) {
           clearTimeout(timeout);
           timeout = null;
         }
-        await guard(async () => {
+        void guard(async () => {
           await saveMainWindowGeometry();
           await hideMainWindow();
         }, "hide");

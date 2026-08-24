@@ -1,10 +1,11 @@
-import { Check, FolderOpen, Lightning, Robot } from "@phosphor-icons/react";
+import { Bot, Check, FolderOpen, Zap } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useSetOnboardingStepMutation } from "../data/queries";
+import { useSetOnboardingStepMutation } from "./data";
 import { SettingsPage } from "../settings/settings-page";
 import type { AppStateDto } from "../../shared/tauri/types";
+import { Button } from "../../shared/ui/button";
 
 interface OnboardingFlowProps {
   appState: AppStateDto;
@@ -31,17 +32,14 @@ export function OnboardingFlow({
         icon={<FolderOpen size={20} />}
         title={t("addProject.title")}
       >
-        <p>{t("addProject.description")}</p>
-        <button
-          className="primary-button"
-          disabled={addPending}
-          onClick={onAddProject}
-          type="button"
-        >
+        <p className="mb-1 text-muted-foreground">
+          {t("addProject.description")}
+        </p>
+        <Button disabled={addPending} onClick={onAddProject}>
           {addPending ? t("addProject.adding") : t("addProject.chooseFolder")}
-        </button>
+        </Button>
         {error !== null && (
-          <p className="onboarding-error" role="alert">
+          <p className="text-xs text-destructive" role="alert">
             {error}
           </p>
         )}
@@ -53,10 +51,12 @@ export function OnboardingFlow({
     return (
       <OnboardingFrame
         current={2}
-        icon={<Lightning size={20} />}
+        icon={<Zap size={20} />}
         title={t("quickCapture.title")}
       >
-        <p>{t("quickCapture.description")}</p>
+        <p className="mb-1 text-muted-foreground">
+          {t("quickCapture.description")}
+        </p>
         <SettingsPage compact="quickCapture" onBack={() => undefined} />
         <OnboardingActions
           pending={setStep.isPending}
@@ -70,10 +70,10 @@ export function OnboardingFlow({
   return (
     <OnboardingFrame
       current={3}
-      icon={<Robot size={20} />}
+      icon={<Bot size={20} />}
       title={t("agents.title")}
     >
-      <p>{t("agents.description")}</p>
+      <p className="mb-1 text-muted-foreground">{t("agents.description")}</p>
       <SettingsPage compact="codingAgents" onBack={() => undefined} />
       <OnboardingActions
         finish
@@ -98,25 +98,32 @@ function OnboardingFrame({
 }) {
   const { t } = useTranslation("onboarding");
   return (
-    <main className="onboarding-shell">
-      <div className="standalone-drag-region" data-tauri-drag-region />
-      <section className="onboarding-content onboarding-flow">
-        <div className="onboarding-heading">
-          <span className="app-mark">S</span>
+    <main className="relative flex h-full w-full items-center justify-center bg-background text-muted-foreground">
+      <div className="absolute inset-x-0 top-0 h-12" data-tauri-drag-region />
+      <section className="relative z-10 grid w-[min(680px,calc(100%_-_48px))] max-w-[680px] justify-items-start gap-2.5 p-6 text-left">
+        <div className="grid w-full grid-cols-[42px_1fr_auto] items-center gap-3">
+          <span className="inline-flex size-[30px] items-center justify-center rounded-md border border-input bg-elevated text-sm font-semibold text-foreground">
+            S
+          </span>
           <div>
-            <span className="onboarding-step">
+            <span className="text-[11px] text-muted-foreground">
               {t("progress", { current })}
             </span>
-            <h1>{title}</h1>
+            <h1 className="mt-2 text-lg font-semibold leading-6 text-foreground">
+              {title}
+            </h1>
           </div>
           {icon}
         </div>
         <div
-          className="onboarding-progress"
+          className="my-4 grid w-full grid-cols-3 gap-1.5"
           aria-label={t("progress", { current })}
         >
           {[1, 2, 3].map((value) => (
-            <span className={value <= current ? "active" : ""} key={value} />
+            <span
+              className={`h-0.5 ${value <= current ? "bg-ring" : "bg-input"}`}
+              key={value}
+            />
           ))}
         </div>
         {children}
@@ -138,16 +145,11 @@ function OnboardingActions({
 }) {
   const { t } = useTranslation(["onboarding", "common"]);
   return (
-    <div className="onboarding-actions">
-      <button disabled={pending} onClick={onSkip} type="button">
+    <div className="mt-4.5 flex w-full justify-end gap-2">
+      <Button disabled={pending} onClick={onSkip} variant="outline">
         {t("actions.skip", { ns: "common" })}
-      </button>
-      <button
-        className="primary-button"
-        disabled={pending}
-        onClick={onContinue}
-        type="button"
-      >
+      </Button>
+      <Button disabled={pending} onClick={onContinue}>
         {finish ? (
           <>
             <Check size={14} /> {t("agents.finish", { ns: "onboarding" })}
@@ -155,7 +157,7 @@ function OnboardingActions({
         ) : (
           t("actions.continue", { ns: "common" })
         )}
-      </button>
+      </Button>
     </div>
   );
 }

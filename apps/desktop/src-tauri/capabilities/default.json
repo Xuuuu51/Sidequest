@@ -5,6 +5,9 @@
   "windows": ["main", "quick-capture"],
   "permissions": [
     "core:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-set-theme",
+    "core:window:allow-set-title",
     "dialog:allow-open",
     "log:default",
     "opener:allow-reveal-item-in-dir"

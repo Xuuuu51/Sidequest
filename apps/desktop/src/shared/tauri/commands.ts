@@ -20,6 +20,8 @@ import type {
   DiagnosticReportDto,
   LanguagePreference,
   LocaleSettingsDto,
+  ThemePreference,
+  ThemeSettingsDto,
 } from "./types";
 import { logDebug, logFrontendError, logInfo } from "../diagnostics/logger";
 
@@ -67,6 +69,10 @@ export function hideMainWindow(): Promise<void> {
 
 export function showQuickCapture(): Promise<void> {
   return invokeCommand("show_quick_capture");
+}
+
+export function focusQuickCapture(): Promise<void> {
+  return invokeCommand("focus_quick_capture");
 }
 
 export function hideQuickCapture(): Promise<void> {
@@ -147,6 +153,16 @@ export function setLocalePreference(
   preference: LanguagePreference,
 ): Promise<LocaleSettingsDto> {
   return invokeCommand("set_locale_preference", { preference });
+}
+
+export function getThemeSettings(): Promise<ThemeSettingsDto> {
+  return invokeCommand("get_theme_settings");
+}
+
+export function setThemePreference(
+  preference: ThemePreference,
+): Promise<ThemeSettingsDto> {
+  return invokeCommand("set_theme_preference", { preference });
 }
 
 export function setGlobalShortcut(

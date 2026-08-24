@@ -1,5 +1,7 @@
 import type { KeyboardEvent, PointerEvent } from "react";
 
+import { cn } from "../lib/utils";
+
 interface ResizeHandleProps {
   ariaLabel: string;
   value: number;
@@ -70,7 +72,12 @@ export function ResizeHandle({
       aria-valuemax={maximum}
       aria-valuemin={minimum}
       aria-valuenow={value}
-      className="resize-handle"
+      className={cn(
+        "absolute inset-y-0 z-50 w-[5px] touch-none cursor-col-resize outline-none after:absolute after:inset-y-0 after:w-px after:bg-transparent after:content-[''] hover:after:bg-ring focus-visible:after:bg-ring",
+        direction === 1
+          ? "-right-[3px] after:right-0.5"
+          : "-left-[3px] after:left-0.5",
+      )}
       onKeyDown={handleKeyDown}
       onPointerDown={handlePointerDown}
       role="separator"

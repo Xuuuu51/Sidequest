@@ -1,11 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import type { AppStateDto } from "../shared/tauri/types";
-import {
-  currentPanelPreferences,
-  laneScrollKey,
-  useMainWindowStore,
-} from "./main-window";
+import { currentPanelPreferences, laneScrollKey } from "./main-window/types";
+import { useMainWindowStore } from "./main-window/store";
 
 const appState: AppStateDto = {
   projects: [
@@ -26,8 +23,7 @@ const appState: AppStateDto = {
 describe("useMainWindowStore", () => {
   beforeEach(() => {
     useMainWindowStore.setState({
-      route: "restoring",
-      selectedProjectPath: null,
+      view: { name: "restoring" },
       searchQuery: "",
       selectedQuestId: null,
       drawerOpen: false,
@@ -39,9 +35,7 @@ describe("useMainWindowStore", () => {
       issuesExpanded: false,
       projectMenuPath: null,
       recoveryDismissed: false,
-      toast: null,
       editor: null,
-      drag: null,
       statusMenuOpen: false,
       deleteConfirming: false,
       deleteError: null,
@@ -51,18 +45,17 @@ describe("useMainWindowStore", () => {
   });
 
   it("stores_only_route_and_selected_project_workflow_data", () => {
-    useMainWindowStore.getState().synchronizeAppState(appState);
+    useMainWindowStore.getState().restoreAppState(appState);
 
     const state = useMainWindowStore.getState();
-    expect(state.route).toBe("workspace");
-    expect(state.selectedProjectPath).toBe("/second");
+    expect(state.view).toEqual({ name: "workspace", projectPath: "/second" });
     expect(state).not.toHaveProperty("projects");
     expect(state).not.toHaveProperty("quests");
   });
 
   it("returns_to_onboarding_after_the_last_project_is_removed", () => {
-    useMainWindowStore.getState().synchronizeAppState(appState);
-    useMainWindowStore.getState().synchronizeAppState({
+    useMainWindowStore.getState().restoreAppState(appState);
+    useMainWindowStore.getState().restoreAppState({
       projects: [],
       lastSelectedProject: null,
       panelPreferences: appState.panelPreferences,
@@ -71,20 +64,19 @@ describe("useMainWindowStore", () => {
       recoveryWarning: null,
     });
 
-    expect(useMainWindowStore.getState().route).toBe("onboarding");
-    expect(useMainWindowStore.getState().selectedProjectPath).toBeNull();
+    expect(useMainWindowStore.getState().view).toEqual({ name: "onboarding" });
   });
 
   it("clears_project_specific_presentation_when_switching_projects", () => {
     const store = useMainWindowStore.getState();
-    store.synchronizeAppState(appState);
+    store.restoreAppState(appState);
     store.setSearchQuery("query");
     store.selectQuest("sq_selected");
 
-    store.selectProject("/first");
+    store.showWorkspace("/first");
 
     const state = useMainWindowStore.getState();
-    expect(state.selectedProjectPath).toBe("/first");
+    expect(state.view).toEqual({ name: "workspace", projectPath: "/first" });
     expect(state.searchQuery).toBe("");
     expect(state.selectedQuestId).toBeNull();
     expect(state.drawerOpen).toBe(false);
@@ -108,7 +100,7 @@ describe("useMainWindowStore", () => {
     store.setDrawerWidth(20);
     store.setSidebarCollapsed(true);
     store.setLaneScrollPosition("/first", "inbox", 120);
-    store.setLaneScrollPosition("/second", "inbox", 360);
+    store.setLaneScrollPosition("/second", "done", 360);
 
     const state = useMainWindowStore.getState();
     expect(currentPanelPreferences(state)).toEqual({
@@ -119,7 +111,7 @@ describe("useMainWindowStore", () => {
     expect(state.laneScrollPositions[laneScrollKey("/first", "inbox")]).toBe(
       120,
     );
-    expect(state.laneScrollPositions[laneScrollKey("/second", "inbox")]).toBe(
+    expect(state.laneScrollPositions[laneScrollKey("/second", "done")]).toBe(
       360,
     );
   });

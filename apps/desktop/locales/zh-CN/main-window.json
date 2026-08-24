@@ -14,6 +14,8 @@
     "searchPlaceholder": "搜索",
     "clearSearch": "清除搜索",
     "openDetails": "打开详情",
+    "newQuest": "新建 Quest",
+    "newQuestFailed": "无法打开快速记录",
     "searchShortcut": "⌘ F"
   },
   "board": {
@@ -34,6 +36,8 @@
   "drawer": {
     "title": "详情",
     "close": "关闭详情",
+    "previous": "上一条 Quest",
+    "next": "下一条 Quest",
     "resize": "调整详情宽度",
     "editContent": "编辑内容",
     "contentLabel": "内容",

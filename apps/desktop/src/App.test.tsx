@@ -9,10 +9,11 @@ import {
 } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import App from "./App";
+import { MainWindowApp as App } from "./app/main-window-app";
 import { createDesktopQueryClient } from "./shared/query/client";
 import type { AppStateDto, WorkspaceSnapshotDto } from "./shared/tauri/types";
-import { useMainWindowStore } from "./store/main-window";
+import { useMainWindowStore } from "./store/main-window/store";
+import { Toaster } from "./shared/ui/sonner";
 
 const mocks = vi.hoisted(() => ({
   getAppState: vi.fn(),
@@ -115,8 +116,7 @@ const populatedWorkspace: WorkspaceSnapshotDto = {
 describe("App", () => {
   beforeEach(() => {
     useMainWindowStore.setState({
-      route: "restoring",
-      selectedProjectPath: null,
+      view: { name: "restoring" },
       searchQuery: "",
       selectedQuestId: null,
       drawerOpen: false,
@@ -128,9 +128,7 @@ describe("App", () => {
       issuesExpanded: false,
       projectMenuPath: null,
       recoveryDismissed: false,
-      toast: null,
       editor: null,
-      drag: null,
       statusMenuOpen: false,
       deleteConfirming: false,
       deleteError: null,
@@ -241,7 +239,7 @@ describe("App", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders_three_lanes_and_keeps_selection_when_the_drawer_closes", async () => {
+  it("renders_three_groups_and_keeps_selection_when_the_drawer_closes", async () => {
     mocks.getAppState.mockResolvedValue(projectState);
     mocks.loadWorkspace.mockResolvedValue(populatedWorkspace);
 
@@ -269,7 +267,9 @@ describe("App", () => {
     expect(
       screen.getByRole("button", { name: /Inbox quest content/ }),
     ).toHaveAttribute("aria-pressed", "true");
-    fireEvent.click(screen.getByRole("button", { name: "Open Quest details" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Inbox quest content/ }),
+    );
     expect(
       screen.getByRole("heading", { name: "Quest details" }),
     ).toBeInTheDocument();
@@ -292,13 +292,32 @@ describe("App", () => {
       },
     );
 
-    expect(
-      await screen.findByRole("heading", { name: "Search results" }),
-    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(mocks.searchQuests).toHaveBeenCalledWith("/project", "ready"),
+    );
+    expect(screen.getByRole("heading", { name: "Inbox" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Ready" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Done" })).toBeInTheDocument();
     expect(screen.getByText("Ready quest content")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByText("Inbox quest content")).not.toBeInTheDocument(),
+    );
     expect(mocks.searchQuests).toHaveBeenCalledWith("/project", "ready");
     fireEvent.click(screen.getByRole("button", { name: "Clear Search" }));
     expect(screen.getByRole("heading", { name: "Inbox" })).toBeInTheDocument();
+  });
+
+  it("renders_inbox_ready_and_done_as_three_kanban_lanes", async () => {
+    mocks.getAppState.mockResolvedValue(projectState);
+    mocks.loadWorkspace.mockResolvedValue(populatedWorkspace);
+    renderApp();
+
+    const board = await screen.findByLabelText("Quest board");
+    expect(board).toHaveAttribute("data-layout", "kanban");
+    expect(board.querySelectorAll(":scope > [data-status]")).toHaveLength(3);
+    expect(board.querySelector('[data-status="inbox"]')).toBeInTheDocument();
+    expect(board.querySelector('[data-status="ready"]')).toBeInTheDocument();
+    expect(board.querySelector('[data-status="done"]')).toBeInTheDocument();
   });
 
   it("shows_read_only_and_corrupt_file_banners_without_hiding_valid_quests", async () => {
@@ -323,7 +342,8 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "View Details" }));
     expect(screen.getByText("Unreadable Quest file 1")).toBeInTheDocument();
     const card = screen.getByRole("button", { name: /Inbox quest content/ });
-    expect(card).toHaveAttribute("draggable", "false");
+    expect(card).not.toHaveAttribute("draggable");
+    expect(screen.getByRole("button", { name: "New Quest" })).toBeDisabled();
     fireEvent.click(card);
     expect(screen.getByRole("button", { name: "Delete" })).toBeDisabled();
     expect(
@@ -412,7 +432,7 @@ describe("App", () => {
     fireEvent.click(
       await screen.findByRole("button", { name: /Inbox quest content/ }),
     );
-    const drawer = screen.getByRole("complementary", {
+    const drawer = screen.getByRole("dialog", {
       name: "Quest details",
     });
     fireEvent.click(
@@ -444,7 +464,7 @@ describe("App", () => {
     fireEvent.click(
       await screen.findByRole("button", { name: /Inbox quest content/ }),
     );
-    const drawer = screen.getByRole("complementary", {
+    const drawer = screen.getByRole("dialog", {
       name: "Quest details",
     });
     fireEvent.click(
@@ -500,7 +520,7 @@ describe("App", () => {
     fireEvent.click(
       await screen.findByRole("button", { name: /Inbox quest content/ }),
     );
-    const drawer = screen.getByRole("complementary", {
+    const drawer = screen.getByRole("dialog", {
       name: "Quest details",
     });
     fireEvent.click(
@@ -536,7 +556,7 @@ describe("App", () => {
     fireEvent.click(
       await screen.findByRole("button", { name: /Inbox quest content/ }),
     );
-    const drawer = screen.getByRole("complementary", {
+    const drawer = screen.getByRole("dialog", {
       name: "Quest details",
     });
     fireEvent.click(
@@ -577,7 +597,7 @@ describe("App", () => {
     fireEvent.click(
       await screen.findByRole("button", { name: /Inbox quest content/ }),
     );
-    const drawer = screen.getByRole("complementary", {
+    const drawer = screen.getByRole("dialog", {
       name: "Quest details",
     });
     fireEvent.click(
@@ -611,54 +631,33 @@ describe("App", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("moves_a_board_card_to_a_new_lane_after_native_drag_drop", async () => {
+  it("uses_pointer_dnd_instead_of_native_html_drag_attributes", async () => {
     mocks.getAppState.mockResolvedValue(projectState);
     mocks.loadWorkspace.mockResolvedValue(populatedWorkspace);
     renderApp();
     const card = await screen.findByRole("button", {
       name: /Inbox quest content/,
     });
-    const readyLane = screen
-      .getByRole("heading", { name: "Ready" })
-      .closest(".quest-lane");
-    const readyScroller = readyLane?.querySelector(".lane-scroll");
-    const dataTransfer = {
-      effectAllowed: "none",
-      dropEffect: "none",
-      setData: vi.fn(),
-    };
-
-    fireEvent.dragStart(card, { dataTransfer });
-    fireEvent.dragEnter(readyScroller as Element, { dataTransfer });
-    fireEvent.dragOver(readyScroller as Element, { dataTransfer });
-    fireEvent.drop(readyScroller as Element, { dataTransfer });
-
-    await waitFor(() =>
-      expect(mocks.setQuestStatus).toHaveBeenCalledWith(
-        "/project",
-        "sq_inbox",
-        "ready",
-      ),
-    );
+    expect(card).not.toHaveAttribute("draggable");
+    fireEvent.pointerDown(card, { clientX: 10, clientY: 10 });
+    fireEvent.pointerMove(window, { clientX: 14, clientY: 10 });
+    fireEvent.pointerUp(window, { clientX: 14, clientY: 10 });
+    expect(mocks.setQuestStatus).not.toHaveBeenCalled();
   });
 
-  it("does_not_move_a_board_card_when_drag_ends_without_a_drop", async () => {
+  it("does_not_write_status_for_a_plain_row_click", async () => {
     mocks.getAppState.mockResolvedValue(projectState);
     mocks.loadWorkspace.mockResolvedValue(populatedWorkspace);
     renderApp();
     const card = await screen.findByRole("button", {
       name: /Inbox quest content/,
     });
-    const dataTransfer = {
-      effectAllowed: "none",
-      dropEffect: "none",
-      setData: vi.fn(),
-    };
-
-    fireEvent.dragStart(card, { dataTransfer });
-    fireEvent.dragEnd(card, { dataTransfer });
+    fireEvent.click(card);
 
     expect(mocks.setQuestStatus).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("dialog", { name: "Quest details" }),
+    ).toBeInTheDocument();
   });
 });
 
@@ -666,6 +665,7 @@ function renderApp(): void {
   render(
     <QueryClientProvider client={createDesktopQueryClient()}>
       <App />
+      <Toaster />
     </QueryClientProvider>,
   );
 }

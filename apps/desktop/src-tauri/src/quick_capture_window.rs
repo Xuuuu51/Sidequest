@@ -1,8 +1,13 @@
 use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize, WebviewWindow, window::Monitor};
 
+#[cfg(target_os = "macos")]
+use tauri_nspanel::{
+    CollectionBehavior, ManagerExt as _, PanelLevel, StyleMask, WebviewWindowExt as _,
+};
+
 use crate::app_state::QuickCapturePosition;
 use crate::error::{DesktopError, Result};
-use crate::native_events::QUICK_CAPTURE_SHOWN_EVENT;
+use crate::native_events::{QUICK_CAPTURE_CLOSE_REQUESTED_EVENT, QUICK_CAPTURE_SHOWN_EVENT};
 use tauri::Emitter;
 
 pub(crate) const QUICK_CAPTURE_WINDOW_LABEL: &str = "quick-capture";
@@ -16,6 +21,31 @@ struct DisplayArea {
     y: i32,
     width: u32,
     height: u32,
+}
+
+#[cfg(target_os = "macos")]
+tauri_nspanel::tauri_panel! {
+    panel!(QuickCapturePanel {
+        config: {
+            can_become_key_window: true,
+            can_become_main_window: false,
+            is_floating_panel: true,
+            hides_on_deactivate: false
+        }
+    })
+}
+
+#[cfg(target_os = "macos")]
+pub(crate) fn configure_quick_capture_panel(window: &WebviewWindow) -> tauri::Result<()> {
+    let panel = window.to_panel::<QuickCapturePanel>()?;
+    panel.set_level(PanelLevel::Floating.value());
+    panel.set_transparent(true);
+    panel.set_corner_radius(14.0);
+    panel.set_has_shadow(true);
+    panel.set_accepts_mouse_moved_events(true);
+    panel.set_style_mask(fullscreen_style_mask().value());
+    panel.set_collection_behavior(fullscreen_collection_behavior().value());
+    Ok(())
 }
 
 pub(crate) fn restore_quick_capture_window(
@@ -44,23 +74,127 @@ pub(crate) fn capture_quick_capture_position(
 }
 
 pub(crate) fn show_quick_capture_window(app: &AppHandle) -> Result<()> {
-    let window = app
-        .get_webview_window(QUICK_CAPTURE_WINDOW_LABEL)
-        .ok_or_else(|| DesktopError::Window {
-            operation: "find Quick Capture Window",
-            message: "Quick Capture Window is unavailable".to_owned(),
-        })?;
-    window.show().map_err(|error| window_error("show", error))?;
-    window
-        .unminimize()
-        .map_err(|error| window_error("unminimize", error))?;
-    window
-        .set_focus()
-        .map_err(|error| window_error("focus", error))?;
+    #[cfg(target_os = "macos")]
+    {
+        let panel = app
+            .get_webview_panel(QUICK_CAPTURE_WINDOW_LABEL)
+            .map_err(|error| DesktopError::Window {
+                operation: "find Quick Capture Panel",
+                message: format!("{error:?}"),
+            })?;
+        panel.show_and_make_key();
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        let window = app
+            .get_webview_window(QUICK_CAPTURE_WINDOW_LABEL)
+            .ok_or_else(|| DesktopError::Window {
+                operation: "find Quick Capture Window",
+                message: "Quick Capture Window is unavailable".to_owned(),
+            })?;
+        window.show().map_err(|error| window_error("show", error))?;
+        window
+            .unminimize()
+            .map_err(|error| window_error("unminimize", error))?;
+        window
+            .set_focus()
+            .map_err(|error| window_error("focus", error))?;
+    }
     app.emit(QUICK_CAPTURE_SHOWN_EVENT, ())
         .map_err(|error| window_error("emit shown event for", error))?;
     log::info!("Quick Capture Window shown");
     Ok(())
+}
+
+pub(crate) fn toggle_quick_capture_window(app: &AppHandle) -> Result<()> {
+    #[cfg(target_os = "macos")]
+    let is_visible = app
+        .get_webview_panel(QUICK_CAPTURE_WINDOW_LABEL)
+        .map_err(|error| DesktopError::Window {
+            operation: "find Quick Capture Panel",
+            message: format!("{error:?}"),
+        })?
+        .is_visible();
+
+    #[cfg(not(target_os = "macos"))]
+    let is_visible = app
+        .get_webview_window(QUICK_CAPTURE_WINDOW_LABEL)
+        .ok_or_else(|| DesktopError::Window {
+            operation: "find Quick Capture Window",
+            message: "Quick Capture Window is unavailable".to_owned(),
+        })?
+        .is_visible()
+        .map_err(|error| window_error("inspect", error))?;
+
+    if is_visible {
+        app.emit(QUICK_CAPTURE_CLOSE_REQUESTED_EVENT, ())
+            .map_err(|error| window_error("request close for", error))?;
+        log::info!("Quick Capture close requested by global shortcut");
+        Ok(())
+    } else {
+        show_quick_capture_window(app)
+    }
+}
+
+pub(crate) fn focus_quick_capture_window(app: &AppHandle) -> Result<()> {
+    #[cfg(target_os = "macos")]
+    {
+        let panel = app
+            .get_webview_panel(QUICK_CAPTURE_WINDOW_LABEL)
+            .map_err(|error| DesktopError::Window {
+                operation: "find Quick Capture Panel",
+                message: format!("{error:?}"),
+            })?;
+        panel.make_key_window();
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    app.get_webview_window(QUICK_CAPTURE_WINDOW_LABEL)
+        .ok_or_else(|| DesktopError::Window {
+            operation: "find Quick Capture Window",
+            message: "Quick Capture Window is unavailable".to_owned(),
+        })?
+        .set_focus()
+        .map_err(|error| window_error("focus", error))?;
+
+    Ok(())
+}
+
+pub(crate) fn hide_quick_capture_window(app: &AppHandle) -> Result<()> {
+    #[cfg(target_os = "macos")]
+    {
+        let panel = app
+            .get_webview_panel(QUICK_CAPTURE_WINDOW_LABEL)
+            .map_err(|error| DesktopError::Window {
+                operation: "find Quick Capture Panel",
+                message: format!("{error:?}"),
+            })?;
+        panel.hide();
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    app.get_webview_window(QUICK_CAPTURE_WINDOW_LABEL)
+        .ok_or_else(|| DesktopError::Window {
+            operation: "find Quick Capture Window",
+            message: "Quick Capture Window is unavailable".to_owned(),
+        })?
+        .hide()
+        .map_err(|error| window_error("hide", error))?;
+
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+fn fullscreen_collection_behavior() -> CollectionBehavior {
+    CollectionBehavior::new()
+        .can_join_all_spaces()
+        .full_screen_auxiliary()
+}
+
+#[cfg(target_os = "macos")]
+fn fullscreen_style_mask() -> StyleMask {
+    StyleMask::empty().nonactivating_panel()
 }
 
 fn window_error(operation: &'static str, error: impl std::fmt::Display) -> DesktopError {
@@ -69,6 +203,7 @@ fn window_error(operation: &'static str, error: impl std::fmt::Display) -> Deskt
             "show" => "show Quick Capture Window",
             "unminimize" => "unminimize Quick Capture Window",
             "focus" => "focus Quick Capture Window",
+            "hide" => "hide Quick Capture Window",
             _ => "notify Quick Capture Window",
         },
         message: error.to_string(),

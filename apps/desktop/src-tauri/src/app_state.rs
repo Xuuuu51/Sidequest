@@ -17,6 +17,7 @@ use crate::dto::{
 use crate::error::{DesktopError, Result};
 use crate::locale::LanguagePreference;
 use crate::shortcut::{ShortcutManager, ShortcutSpec};
+use crate::theme::ThemePreference;
 use crate::watcher::ProjectWatcher;
 
 const APP_STATE_FILENAME: &str = "app.json";
@@ -79,6 +80,8 @@ struct PersistentAppState {
     integrations: IntegrationPreferences,
     #[serde(default)]
     language_preference: LanguagePreference,
+    #[serde(default)]
+    theme_preference: ThemePreference,
 }
 
 #[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
@@ -171,6 +174,7 @@ impl Default for PersistentAppState {
             shortcut: ShortcutSpec::default(),
             integrations: IntegrationPreferences::default(),
             language_preference: LanguagePreference::default(),
+            theme_preference: ThemePreference::default(),
         }
     }
 }
@@ -435,6 +439,16 @@ impl AppStateStore {
     pub(crate) fn set_language_preference(&mut self, preference: LanguagePreference) -> Result<()> {
         let mut next = self.state.clone();
         next.language_preference = preference;
+        self.persist(next)
+    }
+
+    pub(crate) const fn theme_preference(&self) -> ThemePreference {
+        self.state.theme_preference
+    }
+
+    pub(crate) fn set_theme_preference(&mut self, preference: ThemePreference) -> Result<()> {
+        let mut next = self.state.clone();
+        next.theme_preference = preference;
         self.persist(next)
     }
 
@@ -766,6 +780,7 @@ mod tests {
     };
     use crate::dto::PanelPreferencesDto;
     use crate::locale::LanguagePreference;
+    use crate::theme::ThemePreference;
 
     type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
 
@@ -820,6 +835,7 @@ mod tests {
         assert!(state.quick_capture.last_project_path.is_none());
         assert!(state.quick_capture.position.is_none());
         assert_eq!(store.language_preference(), LanguagePreference::System);
+        assert_eq!(store.theme_preference(), ThemePreference::System);
         Ok(())
     }
 
@@ -835,6 +851,23 @@ mod tests {
             restored.language_preference(),
             LanguagePreference::SimplifiedChinese
         );
+        Ok(())
+    }
+
+    #[test]
+    fn theme_preference_should_persist_and_restore() -> TestResult {
+        let temporary = TempDir::new()?;
+        let mut store = AppStateStore::load(temporary.path())?;
+
+        for preference in [
+            ThemePreference::Light,
+            ThemePreference::Dark,
+            ThemePreference::System,
+        ] {
+            store.set_theme_preference(preference)?;
+            let restored = AppStateStore::load(temporary.path())?;
+            assert_eq!(restored.theme_preference(), preference);
+        }
         Ok(())
     }
 

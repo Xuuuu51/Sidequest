@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createDesktopQueryClient } from "../../shared/query/client";
 import type { IntegrationItemDto, SettingsDto } from "../../shared/tauri/types";
-import { useMainWindowStore } from "../../store/main-window";
+import { useMainWindowStore } from "../../store/main-window/store";
 import { SettingsPage } from "./settings-page";
 
 const mocks = vi.hoisted(() => ({
@@ -68,10 +68,7 @@ const integrations: IntegrationItemDto[] = [
 
 describe("SettingsPage", () => {
   beforeEach(() => {
-    useMainWindowStore.setState({
-      shortcutRecording: false,
-      licenseOpen: false,
-    });
+    useMainWindowStore.setState({});
     mocks.getSettings.mockReset().mockResolvedValue(settings);
     mocks.getLocaleSettings.mockReset().mockResolvedValue({
       preference: "system",
@@ -167,7 +164,7 @@ describe("SettingsPage", () => {
     renderSettings();
     await screen.findByText("Version 0.1.0");
 
-    expect(screen.getByRole("checkbox")).toBeDisabled();
+    expect(screen.getByRole("switch")).toHaveAttribute("aria-disabled", "true");
     expect(
       screen.getByText("Unavailable while using an isolated debug profile."),
     ).toBeInTheDocument();

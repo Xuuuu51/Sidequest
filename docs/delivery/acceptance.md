@@ -33,11 +33,14 @@
 
 依据：[Desktop Product](../desktop/product.md)、[Main Window State](../desktop/main-window-state.md)、[Design System](../desktop/design-system.md)
 
-- [ ] Sidebar、Board 和 Drawer 使用真实 Workspace 数据。
-- [ ] Drawer selection、搜索和列滚动位置遵守状态机。
+- [ ] Sidebar、Grouped Quest List 和 modal Drawer 使用真实 Workspace 数据。
+- [ ] 三个状态组共享单一滚动容器，sticky header、空组 drop target、selection 与滚动位置遵守状态机。
+- [ ] Quest Row 固定高度、两行 content、创建时间与状态组表达符合 Design System。
+- [ ] Toolbar `New Quest` 打开现有 Quick Capture 并聚焦输入，不创建第二套表单。
+- [ ] Modal Drawer 的 backdrop、background inert、focus trap、Previous / Next、resize 和 focus restoration 正确。
 - [ ] Content 自动保存不会让旧响应覆盖新输入。
 - [ ] 需要 flush 的导航在保存成功后自动继续。
-- [ ] Status Button、drag 和 delete 的成功/失败状态正确。
+- [ ] Status Button、dnd-kit 跨组 drag、乐观移动/失败回滚和 delete 的成功/失败状态正确。
 - [ ] Read Only、Unavailable 和 Corrupt Files 状态正确。
 
 ## Search
@@ -45,16 +48,31 @@
 依据：[Quest Storage Contract](../contracts/quest-storage.md)、[Main Window State](../desktop/main-window-state.md)
 
 - [ ] 搜索只作用于当前项目。
-- [ ] 查询、空结果和清除行为正确。
+- [ ] 查询原位过滤三个状态组，匹配数量、空组 drop target、Previous / Next 范围和清除行为正确。
 - [ ] 损坏文件不进入结果，并继续作为 issue 报告。
+
+## Desktop UI 与主题
+
+依据：[Design System](../desktop/design-system.md)、[Desktop Architecture](../architecture/desktop.md)
+
+- [ ] Tailwind CSS 4、shadcn/ui Base UI base、Lucide 与 Sonner 按架构固定；未引入整套 blocks 或第二套 icon/toast system。
+- [ ] 不存在旧 `App.css`、feature CSS、Phosphor import、feature 对 Base UI 的直接 import 或组件内 raw palette color。
+- [ ] Main Window 与 Quick Capture 使用独立动态 application root；Quick Capture chunk 不包含 Main Window、Settings 或 Onboarding 主体。
+- [ ] Main Window 只使用一个由四个 slice 组合的内存 Zustand store；Tauri-backed DTO 只进入 TanStack Query，每个 feature 只有一个 `data.ts`。
+- [ ] System、Light、Dark 偏好可持久化并即时同步 Main Window、Quick Capture、Onboarding、Settings 与原生窗口外观。
+- [ ] Theme mutation 失败保留旧主题；主题切换不重建 QueryClient/Zustand 或丢失任何 draft。
+- [ ] Focus 使用高对比中性 ring；selection 与 focus 可同时表达；Inbox、Ready、Done 状态不只靠颜色。
+- [ ] 人工视觉矩阵覆盖 Main Window、Quick Capture、Onboarding、Settings 的 Light/Dark、默认/最小尺寸、modal、拖拽、键盘焦点、错误、只读与 reduced motion。
 
 ## Quick Capture
 
 依据：[Desktop Product](../desktop/product.md)
 
 - [ ] 全局快捷键可在其他应用前台时打开窗口。
+- [ ] 全局快捷键可在其他应用的原生全屏 Space 上方原地打开窗口，不切换 Space。
 - [ ] 多行输入、保存、关闭和失焦行为正确。
 - [ ] 成功创建 Inbox Quest；失败保留输入。
+- [ ] 标题拖拽、footer 项目菜单、按钮成功反馈与 editor 右下角失败摘要正确。
 - [ ] 上次项目与有效窗口位置得到恢复。
 - [ ] Main Window 可以观察到外部创建。
 
@@ -90,7 +108,7 @@
 - [ ] Release build 不接受隔离 Profile override，也不包含 Debug 菜单。
 - [ ] `desktop:isolated:reset` 只删除精确的仓库内 debug profile，不跟随 symlink。
 - [ ] 隔离 Profile 中 CLI 与 Agent Skill 操作不接触真实 Home；Launch at Login 不可修改。
-- [ ] 红色关闭、Dock/menu reopen、跨列拖拽与 watcher event storm 回归通过。
+- [ ] 红色关闭、Dock/menu reopen、跨组拖拽与 watcher event storm 回归通过。
 
 ## 多语言
 

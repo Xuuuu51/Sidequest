@@ -7,6 +7,8 @@ export type ShortcutModifier = "command" | "control" | "option" | "shift";
 export type IntegrationId = "cli" | "codex" | "claude";
 export type LanguagePreference = "system" | "en" | "zh-CN";
 export type EffectiveLocale = "en" | "zh-CN";
+export type ThemePreference = "system" | "light" | "dark";
+export type EffectiveTheme = "light" | "dark";
 export type IntegrationState =
   | "installed"
   | "notInstalled"
@@ -60,6 +62,10 @@ export interface DiagnosticReportDto {
 export interface LocaleSettingsDto {
   preference: LanguagePreference;
   effectiveLocale: EffectiveLocale;
+}
+
+export interface ThemeSettingsDto {
+  preference: ThemePreference;
 }
 
 export interface IntegrationItemDto {

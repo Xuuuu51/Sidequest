@@ -13,6 +13,7 @@ mod native_events;
 mod quick_capture_window;
 mod runtime_paths;
 mod shortcut;
+mod theme;
 mod watcher;
 mod window_state;
 
@@ -21,8 +22,10 @@ use tauri_plugin_global_shortcut::ShortcutState;
 
 use crate::app_state::{AppStateStore, DesktopState};
 use crate::integration::auto_maintain_cli;
+#[cfg(target_os = "macos")]
+use crate::quick_capture_window::configure_quick_capture_panel;
 use crate::quick_capture_window::{
-    QUICK_CAPTURE_WINDOW_LABEL, restore_quick_capture_window, show_quick_capture_window,
+    QUICK_CAPTURE_WINDOW_LABEL, restore_quick_capture_window, toggle_quick_capture_window,
 };
 use crate::runtime_paths::{RuntimePaths, configured_debug_profile_root};
 use crate::shortcut::ShortcutManager;
@@ -36,7 +39,7 @@ use crate::window_state::restore_main_window;
 pub fn run() -> tauri::Result<()> {
     let profile_root = configured_debug_profile_root().map_err(tauri::Error::Io)?;
     let setup_profile_root = profile_root.clone();
-    let app = tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .menu(app_menu::build)
         .on_menu_event(app_menu::handle_event)
         .plugin(logging::plugin(profile_root.as_deref()))
@@ -50,14 +53,17 @@ pub fn run() -> tauri::Result<()> {
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, _shortcut, event| {
                     if event.state() == ShortcutState::Pressed
-                        && let Err(error) = show_quick_capture_window(app)
+                        && let Err(error) = toggle_quick_capture_window(app)
                     {
-                        log::error!("global shortcut could not show Quick Capture: {error}");
+                        log::error!("global shortcut could not toggle Quick Capture: {error}");
                     }
                 })
                 .build(),
         )
-        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_opener::init());
+    #[cfg(target_os = "macos")]
+    let builder = builder.plugin(tauri_nspanel::init());
+    let app = builder
         .setup(move |app| {
             let paths = RuntimePaths::resolve(app.handle(), setup_profile_root.as_deref())?;
             let store = AppStateStore::load(paths.app_data_directory())?;
@@ -70,6 +76,8 @@ pub fn run() -> tauri::Result<()> {
             let quick_capture = app
                 .get_webview_window(QUICK_CAPTURE_WINDOW_LABEL)
                 .ok_or_else(|| tauri::Error::WindowNotFound)?;
+            #[cfg(target_os = "macos")]
+            configure_quick_capture_panel(&quick_capture)?;
             restore_quick_capture_window(&quick_capture, store.quick_capture_position())?;
             let shortcut = ShortcutManager::start(app.handle(), store.shortcut());
             app.manage(paths.clone());
@@ -82,6 +90,9 @@ pub fn run() -> tauri::Result<()> {
             }
             if !is_hidden_startup(std::env::args_os()) {
                 window.show()?;
+                if let Err(error) = window.set_focus() {
+                    log::warn!("Main Window could not receive startup focus: {error}");
+                }
                 log::info!("Main Window shown at startup");
             } else {
                 log::info!("Sidequest started hidden");
@@ -101,6 +112,8 @@ pub fn run() -> tauri::Result<()> {
             commands::get_app_state,
             commands::get_locale_settings,
             commands::set_locale_preference,
+            commands::get_theme_settings,
+            commands::set_theme_preference,
             commands::add_project,
             commands::remove_project,
             commands::set_last_selected_project,
@@ -109,6 +122,7 @@ pub fn run() -> tauri::Result<()> {
             commands::save_main_window_geometry,
             commands::hide_main_window,
             commands::show_quick_capture,
+            commands::focus_quick_capture,
             commands::hide_quick_capture,
             commands::save_quick_capture_position,
             commands::complete_app_quit,

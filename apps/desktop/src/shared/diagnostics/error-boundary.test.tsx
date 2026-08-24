@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-import { useMainWindowStore } from "../../store/main-window";
+import { useMainWindowStore } from "../../store/main-window/store";
 import { useQuickCaptureStore } from "../../store/quick-capture";
 import { ApplicationErrorBoundary } from "./error-boundary";
 
@@ -60,7 +60,11 @@ it("offers_to_copy_an_unsaved_main_window_draft_after_a_render_failure", async (
   useMainWindowStore.getState().changeDraft("Unsaved content");
 
   render(
-    <ApplicationErrorBoundary applicationKind="main">
+    <ApplicationErrorBoundary
+      applicationKind="main"
+      getDraft={() => "Unsaved content"}
+      writeText={mocks.writeClipboardText}
+    >
       <BrokenView />
     </ApplicationErrorBoundary>,
   );
@@ -73,7 +77,11 @@ it("offers_to_copy_an_unsaved_main_window_draft_after_a_render_failure", async (
 
 it("copies_diagnostics_without_exposing_a_draft_when_none_exists", async () => {
   render(
-    <ApplicationErrorBoundary applicationKind="main">
+    <ApplicationErrorBoundary
+      applicationKind="main"
+      getDraft={() => null}
+      writeText={mocks.writeClipboardText}
+    >
       <BrokenView />
     </ApplicationErrorBoundary>,
   );
@@ -91,7 +99,11 @@ it("uses_the_webview_clipboard_for_a_quick_capture_draft", async () => {
   useQuickCaptureStore.getState().setDraft("Quick unsaved content");
 
   render(
-    <ApplicationErrorBoundary applicationKind="quickCapture">
+    <ApplicationErrorBoundary
+      applicationKind="quickCapture"
+      getDraft={() => "Quick unsaved content"}
+      writeText={mocks.browserWriteText}
+    >
       <BrokenView />
     </ApplicationErrorBoundary>,
   );

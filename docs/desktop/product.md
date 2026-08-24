@@ -50,16 +50,16 @@ Remove Project 默认只移除本机列表记录。用户可以选择同时删�
 结构为：
 
 ```text
-Projects Sidebar | Quest Board | overlay Quest Details Drawer
+Projects Sidebar | Kanban Quest Board | modal Quest Details Drawer
 ```
 
-Sidebar 支持 resize/collapse，显示项目状态并独立滚动。`Projects` 标题右侧是 icon-only Add Project；Settings 以 gear icon + `Settings` 固定在底部。项目上下文菜单承载 Locate、Reveal 与 Remove。
+Sidebar 支持 resize/collapse，显示项目状态并独立滚动。traffic lights 右侧常驻唯一的 ghost `PanelLeft`：展开时点击收起；收起后不保留窄栏，短暂 hover intent 后或 focus 图标时无背板显示可操作的左侧 modal Sidebar，指针移出图标与 Sidebar 后延迟隐藏，点击图标则以连续动画恢复常驻 Sidebar。`Projects` 标题右侧是同规格的 icon-only Add Project；Settings 以 gear icon + `Settings` 固定在底部。项目上下文菜单承载 Locate、Reveal 与 Remove。Toolbar 常驻 Search，并提供 `New Quest`；`New Quest` 打开现有 Quick Capture Window 并聚焦输入，不在 Main Window 维护第二套创建表单。
 
-## 5. Quest Board
+## 5. Kanban Quest Board
 
-看板固定为 Inbox、Ready、Done 三列，始终横向并排；每列独立纵向滚动，卡片按创建时间从新到旧排列。
+主工作区固定显示 Inbox、Ready、Done 三个横向状态列。每列独立纵向滚动，列标题显示状态色点、名称与当前可见数量；空列保留紧凑的 drop target。每列内 Quest 按创建时间从新到旧排列，不提供用户排序。
 
-Quest 卡片以 content 摘要为主信息，创建时间为次级信息，不重复显示所在状态。拖拽卡片或 Drawer 操作均可改变状态。大量数据的虚拟化、分页和完整无障碍替代方案不进入 MVP，但必须保留按钮式状态操作。
+Quest Card 以最多四行的 content 摘要为主信息，创建时间为次级信息，不重复显示所在状态。整张卡片可选择并拖拽，hover/focus 时显示拖拽手柄；拖到其他状态列或使用 Drawer 状态操作均可改变状态。拖拽只表达 status 变化，不提供列内自由排序。大量数据的虚拟化、分页和完整键盘拖拽不进入 MVP，但必须保留 Drawer 中的按钮式状态操作。
 
 空项目提示：
 
@@ -70,7 +70,9 @@ Use ⌘⇧Space to capture one.
 
 ## 6. Quest Details Drawer
 
-点击卡片后从右侧覆盖看板打开 Drawer；不压缩三列、不显示 backdrop、点击外部不关闭。Drawer 支持 resize。关闭后保留卡片 selection，点击另一张卡片切换内容。
+点击 Quest 行后从右侧打开 modal Drawer；Drawer 覆盖主列表、不压缩列表，显示 backdrop，并在打开期间使背景不可交互。点击 backdrop、关闭按钮或按 `Esc` 请求关闭。Drawer 支持 resize；关闭后保留 Quest selection 并把焦点恢复到对应行。
+
+Drawer Header 提供上一项与下一项，顺序跟随当前搜索过滤后的分组列表与固定组内排序；首尾不循环。关闭、上一项、下一项或其他离开动作都遵守同一套 flush 规则，保存失败时保持 Drawer 打开并阻止切换。
 
 Drawer 不显示 Quest ID 和 Content 标题。正文是首要信息；创建时间以 `Created …` 单独展示。正文点击后原位进入多行编辑，修改自动保存，不提供 Save/Cancel。精确 pending、saving、失败、冲突与离开规则见 [Main Window 状态机](./main-window-state.md)。
 
@@ -82,37 +84,41 @@ Drawer 不显示 Quest ID 和 Content 标题。正文是首要信息；创建时
 | Ready | Mark Done | Move to Inbox |
 | Done | Move to Ready | Move to Inbox |
 
-Delete 必须确认，显示 content 摘要并说明对应文件会被删除且应用内不可撤销。成功后关闭 Drawer，不自动选中下一张卡片。
+Delete 必须确认，显示 content 摘要并说明对应文件会被删除且应用内不可撤销。成功后关闭 Drawer，不自动选中下一项。
 
 ## 7. Search
 
-Toolbar 常驻紧凑搜索框，只搜索当前项目。空查询显示三列看板；非空查询实时切换为单列结果，展示 content 摘要、创建时间与文字 status。清除查询后恢复各列原滚动位置。
+Toolbar 常驻紧凑搜索框，只搜索当前项目。非空查询实时过滤当前看板，不切换 presentation；三个状态列、固定排序和拖拽能力继续保留，列标题数量显示当前匹配数。清除查询后恢复未过滤看板和各列原滚动位置。
 
-无结果显示查询词与 Clear Search，不提供“从搜索创建”。损坏文件不参与结果；页面顶部显示可展开警告和匿名文件项，并支持 Reveal in Finder，但不直接展示后端原始路径或错误消息。底层搜索规则见 [Quest 契约](../contracts/quest-storage.md)。
+全部分组均无结果时显示查询词与 Clear Search，不提供“从搜索创建”。损坏文件不参与结果；页面顶部显示可展开警告和匿名文件项，并支持 Reveal in Finder，但不直接展示后端原始路径或错误消息。底层搜索规则见 [Quest 契约](../contracts/quest-storage.md)。
 
 ## 8. Quick Capture Window
 
-Quick Capture 是始终置顶的独立 native window：
+Quick Capture 是始终置顶的独立 native window。通过全局快捷键唤起时，它直接出现在当前 macOS Space，包括其他应用的原生全屏 Space，并取得输入焦点；不得把用户切回 Sidequest 所在 Space。关闭或保存后把焦点还给原应用。
 
-中文界面名称为“快速记录”，提交按钮使用“记录”；Quick Capture 仍是英文产品术语及代码名称。`Quest` 保持不翻译，但上下文明确时可省略并使用量词“条”。
+鼠标进入已显示但未激活的 Quick Capture 时，原生 panel 自动成为 key window 并聚焦 content editor，但不激活整个 Sidequest 应用，使关闭、项目选择和提交操作都能在第一次点击时生效。
 
-- 点击窗口外部不关闭；`Esc` 或 Close 关闭并直接丢弃草稿。
+中文界面名称为“快速记录”，主操作按钮使用“提交”；Quick Capture 仍是英文产品术语及代码名称。`Quest` 保持不翻译，但上下文明确时可省略并使用量词“条”。
+
+- 点击窗口外部不关闭；`Esc` 或 Close 只隐藏 Quick Capture 并直接丢弃草稿，不显示或激活 Main Window。
+- Quick Capture 已显示时再次按全局快捷键，执行与 `Esc` 相同的丢弃草稿并隐藏操作；未显示时仍按正常流程打开。
 - `content` 允许多行；`Enter` 换行，`⌘Enter` 保存。
 - Project Selector 记住上次成功保存的项目。
+- Project Selector 位于窗口底部左侧；只读或不可用项目保留当前草稿、允许切换项目，但禁止保存。
 - 默认出现在主显示器左下角；用户移动后记住位置，显示器失效时回退到默认位置。
-- 保存成功显示 400–600ms 轻量反馈，随后隐藏并把焦点还给原应用。
-- 保存失败时保留窗口与内容。
+- 提交按钮按 `提交 → progress → ✓ 已提交`（英文对应 `Submit → progress → ✓ Submitted`）显示轻量反馈；成功态保持约 `500ms`，随后隐藏并把焦点还给原应用。
+- 保存失败时保留窗口与内容，仅在输入区右下角显示非交互式失败摘要；再次点击保存或按 `⌘Enter` 重试。修改正文或切换项目后清除旧错误。
 - 项目不可用或只读时禁止保存且不自动换项目。
 
 没有项目时输入区不可编辑，提示先添加项目并提供 Add Project…。
 
 ## 9. Settings
 
-Settings 是 Main Window 内的单页状态，不是独立窗口。从 Sidebar、`⌘,` 或菜单进入；返回后恢复项目、搜索和看板滚动位置，但不自动重开 Drawer。设置即时保存，无全局 Save/Cancel。
+Settings 是 Main Window 内的单页状态，不是独立窗口。从 Sidebar、`⌘,` 或菜单进入；返回后恢复项目、搜索和分组列表滚动位置，但不自动重开 Drawer。设置即时保存，无全局 Save/Cancel。
 
 Settings 只包含：
 
-- General：Language、`Shortcut` 与 Launch at Login。Language 默认为跟随系统，也可固定为 English 或简体中文；更改成功保存后立即作用于两个窗口和原生菜单，不重置当前操作状态。点击 Shortcut 后直接录制组合键；必须包含修饰键，`Esc` 取消，冲突不替换旧值，可 Restore Default。
+- General：Appearance、Language、`Shortcut` 与 Launch at Login。Appearance 使用 `System / Light / Dark` 三段式单选，默认 System；更改成功保存后立即作用于所有窗口与原生窗口外观，不重置当前操作状态。Language 默认为跟随系统，也可固定为 English 或简体中文；更改成功保存后立即作用于两个窗口和原生菜单。点击 Shortcut 后直接录制组合键；必须包含修饰键，`Esc` 取消，冲突不替换旧值，可 Restore Default。
 - Coding Agents：Codex、Claude 两行，只显示 Ready、Not Installed、Needs Attention 与对应 Install/Repair/Uninstall。
 - Command Line Tool：只显示 Installed、Not Installed、Needs Attention 与对应 Install/Repair/Uninstall。
 - About：Desktop version、Licenses 与 Diagnostics。Diagnostics 提供 Copy Diagnostics 和 Reveal Logs；摘要不包含 Quest 内容、搜索内容、用户名或项目绝对路径。

@@ -40,6 +40,9 @@ Filesystem
 - Desktop：Tauri 2 + React + TypeScript。
 - Desktop server data：TanStack Query。
 - Desktop UI/workflow state：Zustand。
+- Desktop 页面数量固定且简单，不引入 Router；Main Window view 由 Zustand 判别联合管理。
+- Desktop UI：Tailwind CSS 4 + shadcn/ui（Base UI base）+ Lucide。
+- Desktop Quest drag：`@dnd-kit/react` + `@dnd-kit/dom`；resize 继续使用 Pointer Events，native window movement 继续使用 Tauri drag region。
 - Storage：Markdown、YAML frontmatter、filesystem。
 
 产品范围之外的基础设施以 [MVP Scope](../product/mvp-scope.md)为准；架构不得为这些排除项预建抽象或依赖。

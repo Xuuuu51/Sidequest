@@ -14,6 +14,8 @@
     "searchPlaceholder": "Search",
     "clearSearch": "Clear Search",
     "openDetails": "Open Quest details",
+    "newQuest": "New Quest",
+    "newQuestFailed": "Quick Capture could not be opened",
     "searchShortcut": "⌘ F"
   },
   "board": {
@@ -34,6 +36,8 @@
   "drawer": {
     "title": "Quest details",
     "close": "Close Quest details",
+    "previous": "Previous Quest",
+    "next": "Next Quest",
     "resize": "Resize Quest details",
     "editContent": "Edit Quest content",
     "contentLabel": "Quest content",

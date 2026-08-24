@@ -6,17 +6,16 @@
   "empty": "Add a project before capturing your first Quest.",
   "contentLabel": "Quest content",
   "placeholder": "What needs attention?",
-  "capture": "Capture",
-  "retry": "Retry",
+  "capture": "Submit",
   "addProject": "Add Project…",
   "selectProject": "Select a project",
   "readOnly": "This project is read-only",
   "unavailable": "This project is unavailable",
   "reloadBlocked": "Capture or close this draft before reloading Quick Capture.",
   "preferenceWarning": "Saved, but the project preference could not be remembered.",
-  "captureFailed": "Could not capture this Quest.",
+  "captureFailed": "Submit failed",
   "addProjectFailed": "Could not add this project.",
-  "shortcutHint": "⌘↵",
-  "saving": "Saving…",
-  "saved": "Saved"
+  "shortcutHint": "⌘ Enter",
+  "saving": "Submitting…",
+  "saved": "Submitted"
 }
