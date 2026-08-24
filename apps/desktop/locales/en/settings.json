@@ -2,9 +2,18 @@
   "title": "Settings",
   "sections": {
     "general": "General",
+    "integrations": "Integrations",
+    "tools": "Tools",
     "codingAgents": "Coding Agents",
     "commandLine": "Command Line Tool",
     "about": "About"
+  },
+  "appearance": {
+    "label": "Appearance",
+    "description": "Choose how Sidequest looks across all windows.",
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
   },
   "language": {
     "label": "Language",

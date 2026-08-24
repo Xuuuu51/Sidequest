@@ -94,6 +94,33 @@ describe("useMainWindowStore", () => {
     expect(useMainWindowStore.getState().drawerOpen).toBe(true);
   });
 
+  it("restores_workspace_context_after_settings_without_reopening_the_drawer", () => {
+    const store = useMainWindowStore.getState();
+    store.restoreAppState(appState);
+    store.setSearchQuery("settings context");
+    store.setLaneScrollPosition("/second", "ready", 240);
+    store.selectQuest("sq_selected");
+
+    store.showSettings();
+    expect(useMainWindowStore.getState().view).toEqual({
+      name: "settings",
+      projectPath: "/second",
+    });
+    expect(useMainWindowStore.getState().drawerOpen).toBe(false);
+
+    useMainWindowStore.getState().closeSettings(true);
+    const restored = useMainWindowStore.getState();
+    expect(restored.view).toEqual({
+      name: "workspace",
+      projectPath: "/second",
+    });
+    expect(restored.searchQuery).toBe("settings context");
+    expect(
+      restored.laneScrollPositions[laneScrollKey("/second", "ready")],
+    ).toBe(240);
+    expect(restored.drawerOpen).toBe(false);
+  });
+
   it("clamps_panels_and_keeps_lane_scroll_positions_per_project", () => {
     const store = useMainWindowStore.getState();
     store.setSidebarWidth(999);

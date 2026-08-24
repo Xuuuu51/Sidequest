@@ -1,21 +1,29 @@
 import {
   ArrowLeft,
+  Blocks,
   Check,
   Command,
   Copy,
+  Info,
+  SlidersHorizontal,
   SquareTerminal,
   TriangleAlert,
+  Wrench,
   X,
+  type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
 import {
+  useLocaleSettingsQuery,
   useSetGlobalShortcutMutation,
   useSetLaunchAtLoginMutation,
-  useSettingsQuery,
-  useLocaleSettingsQuery,
   useSetLocalePreferenceMutation,
+  useSetThemePreferenceMutation,
+  useSettingsQuery,
+  useThemeSettingsQuery,
 } from "./data";
 import {
   useIntegrationMutation,
@@ -27,43 +35,60 @@ import type {
   LanguagePreference,
   ShortcutModifier,
   ShortcutSpecDto,
+  ThemePreference,
 } from "../../shared/tauri/types";
 import {
   copyDiagnosticReport,
   revealDiagnosticLogs,
   revealPath,
 } from "../../shared/tauri/commands";
-import { IconButton } from "../../shared/ui/icon-button";
 import { localizedError } from "../../shared/i18n/errors";
-import { Button } from "../../shared/ui/button";
-import { Switch } from "../../shared/ui/switch";
 import { cn } from "../../shared/lib/utils";
-import { useMainWindowStore } from "../../store/main-window/store";
+import { Button } from "../../shared/ui/button";
+import { IconButton } from "../../shared/ui/icon-button";
+import { Switch } from "../../shared/ui/switch";
 
 interface SettingsPageProps {
   onBack: () => void;
   compact?: "quickCapture" | "codingAgents";
 }
 
+type SettingsSectionId = "general" | "integrations" | "tools" | "about";
+
+const SUCCESS_TOAST_DURATION = 3_000;
+const ERROR_TOAST_DURATION = 8_000;
+
+const SETTINGS_SECTIONS: Array<{
+  id: SettingsSectionId;
+  icon: LucideIcon;
+  labelKey:
+    | "sections.general"
+    | "sections.integrations"
+    | "sections.tools"
+    | "sections.about";
+}> = [
+  { id: "general", icon: SlidersHorizontal, labelKey: "sections.general" },
+  { id: "integrations", icon: Blocks, labelKey: "sections.integrations" },
+  { id: "tools", icon: Wrench, labelKey: "sections.tools" },
+  { id: "about", icon: Info, labelKey: "sections.about" },
+];
+
 export function SettingsPage({ onBack, compact }: SettingsPageProps) {
   const { t } = useTranslation(["settings", "common", "errors"]);
   const settings = useSettingsQuery();
   const localeSettings = useLocaleSettingsQuery();
-  const setLocale = useSetLocalePreferenceMutation();
+  const themeSettings = useThemeSettingsQuery();
   const integrations = useIntegrationsQuery();
+  const setLocale = useSetLocalePreferenceMutation();
+  const setTheme = useSetThemePreferenceMutation();
   const setShortcut = useSetGlobalShortcutMutation();
   const setLaunch = useSetLaunchAtLoginMutation();
   const integrationMutation = useIntegrationMutation();
+  const [activeSection, setActiveSection] =
+    useState<SettingsSectionId>("general");
   const [recording, setRecording] = useState(false);
   const [licenseOpen, setLicenseOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [diagnosticFeedback, setDiagnosticFeedback] = useState<string | null>(
-    null,
-  );
   const [confirming, setConfirming] = useState<IntegrationItemDto | null>(null);
-  const sidebarCollapsed = useMainWindowStore(
-    (state) => state.sidebarCollapsed,
-  );
 
   useEffect(() => {
     if (compact === undefined) {
@@ -72,13 +97,42 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
     }
   }, [compact]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (settings.error !== null) {
+      showError(localizedError(settings.error), "settings-load-error");
+    }
+  }, [settings.error]);
+
+  useEffect(() => {
+    if (localeSettings.error !== null) {
+      showError(localizedError(localeSettings.error), "locale-load-error");
+    }
+  }, [localeSettings.error]);
+
+  useEffect(() => {
+    if (themeSettings.error !== null) {
+      showError(localizedError(themeSettings.error), "theme-load-error");
+    }
+  }, [themeSettings.error]);
+
+  useEffect(() => {
+    if (integrations.error !== null) {
+      showError(localizedError(integrations.error), "integrations-load-error");
+    }
+  }, [integrations.error]);
+
+  function selectSection(section: SettingsSectionId): void {
+    if (section === activeSection) return;
+    setRecording(false);
+    setActiveSection(section);
+  }
+
   async function changeShortcut(shortcut: ShortcutSpecDto): Promise<void> {
-    setError(null);
     try {
       await setShortcut.mutateAsync(shortcut);
       setRecording(false);
     } catch (cause) {
-      setError(localizedError(cause));
+      showError(localizedError(cause), "shortcut-save-error");
     }
   }
 
@@ -86,286 +140,321 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
     item: IntegrationItemDto,
     action: "install" | "uninstall",
   ): Promise<void> {
-    setError(null);
     try {
       await integrationMutation.mutateAsync({ id: item.id, action });
       setConfirming(null);
     } catch (cause) {
-      setError(localizedError(cause));
+      showError(localizedError(cause), `integration-${item.id}-error`);
     }
   }
 
   async function revealIntegration(item: IntegrationItemDto): Promise<void> {
-    setError(null);
     try {
       await revealPath(item.path);
     } catch (cause) {
-      setError(localizedError(cause));
+      showError(localizedError(cause), `integration-${item.id}-reveal-error`);
     }
   }
 
   async function copyDiagnostics(): Promise<void> {
-    setError(null);
-    setDiagnosticFeedback(null);
     try {
       await copyDiagnosticReport();
-      setDiagnosticFeedback(t("feedback.copied", { ns: "common" }));
+      toast.success(t("feedback.copied", { ns: "common" }), {
+        duration: SUCCESS_TOAST_DURATION,
+        id: "diagnostics-copied",
+      });
     } catch (cause) {
-      setError(localizedError(cause));
+      showError(localizedError(cause), "diagnostics-copy-error");
     }
   }
 
   async function revealLogs(): Promise<void> {
-    setError(null);
-    setDiagnosticFeedback(null);
     try {
       await revealDiagnosticLogs();
-      setDiagnosticFeedback(t("feedback.revealedInFinder", { ns: "common" }));
+      toast.success(t("feedback.revealedInFinder", { ns: "common" }), {
+        duration: SUCCESS_TOAST_DURATION,
+        id: "logs-revealed",
+      });
     } catch (cause) {
-      setError(localizedError(cause));
+      showError(localizedError(cause), "logs-reveal-error");
     }
+  }
+
+  function handleIntegrationAction(
+    item: IntegrationItemDto,
+    action: "install" | "uninstall" | "reveal",
+  ): void {
+    if (action === "reveal") {
+      void revealIntegration(item);
+    } else if (action === "uninstall") {
+      setConfirming(item);
+    } else {
+      void runIntegration(item, action);
+    }
+  }
+
+  const generalRows = (
+    <>
+      {compact === undefined ? (
+        <SettingRow
+          description={t("appearance.description")}
+          label={t("appearance.label")}
+        >
+          <ThemePreferenceControl
+            disabled={themeSettings.data === undefined || setTheme.isPending}
+            onChange={(preference) => {
+              void setTheme.mutateAsync(preference).catch((cause: unknown) => {
+                showError(localizedError(cause), "theme-save-error");
+              });
+            }}
+            value={themeSettings.data?.preference ?? "system"}
+          />
+        </SettingRow>
+      ) : null}
+      {compact === undefined ? (
+        <SettingRow
+          description={t("language.description")}
+          label={t("language.label")}
+        >
+          <select
+            aria-label={t("language.label")}
+            className="h-8 rounded-md border border-input bg-surface px-2 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            disabled={localeSettings.data === undefined || setLocale.isPending}
+            value={localeSettings.data?.preference ?? "system"}
+            onChange={(event) => {
+              void setLocale
+                .mutateAsync(event.target.value as LanguagePreference)
+                .catch(() => {
+                  showError(
+                    t("languageSaveFailed", { ns: "errors" }),
+                    "language-save-error",
+                  );
+                });
+            }}
+          >
+            <option value="system">{t("language.system")}</option>
+            <option value="en">{t("language.english")}</option>
+            <option value="zh-CN">{t("language.simplifiedChinese")}</option>
+          </select>
+        </SettingRow>
+      ) : null}
+      <SettingRow
+        description={t("shortcut.description")}
+        label={t("shortcut.label")}
+      >
+        {settings.data !== undefined ? (
+          <ShortcutRecorder
+            error={
+              settings.data.shortcutRegistration === "conflict"
+                ? t("shortcut.unavailable")
+                : null
+            }
+            onCancel={() => setRecording(false)}
+            onRecord={(value) => void changeShortcut(value)}
+            recording={recording}
+            shortcut={settings.data.shortcut}
+            startRecording={() => setRecording(true)}
+          />
+        ) : null}
+        <Button
+          disabled={setShortcut.isPending}
+          onClick={() =>
+            void changeShortcut({
+              modifiers: ["command", "shift"],
+              key: "Space",
+              display: "⌘⇧Space",
+            })
+          }
+          size="sm"
+          variant="ghost"
+        >
+          {t("shortcut.restoreDefault")}
+        </Button>
+      </SettingRow>
+      <SettingRow
+        description={
+          settings.data?.debugProfile
+            ? t("launchAtLogin.isolated")
+            : t("launchAtLogin.description")
+        }
+        label={t("launchAtLogin.label")}
+      >
+        <Switch
+          aria-label={t("launchAtLogin.label")}
+          checked={settings.data?.launchAtLogin ?? false}
+          disabled={
+            settings.data === undefined ||
+            !settings.data.launchAtLoginAvailable ||
+            setLaunch.isPending
+          }
+          onCheckedChange={(checked) => {
+            void setLaunch.mutateAsync(checked).catch((cause: unknown) => {
+              showError(localizedError(cause), "launch-at-login-save-error");
+            });
+          }}
+        />
+      </SettingRow>
+    </>
+  );
+
+  const integrationRows = (["codex", "claude"] as const).map((id) => (
+    <IntegrationRow
+      item={integrations.data?.find((item) => item.id === id)}
+      key={id}
+      onAction={handleIntegrationAction}
+      pending={
+        integrationMutation.isPending &&
+        integrationMutation.variables?.id === id
+      }
+    />
+  ));
+
+  const toolRows = (
+    <IntegrationRow
+      item={integrations.data?.find((item) => item.id === "cli")}
+      onAction={handleIntegrationAction}
+      pending={
+        integrationMutation.isPending &&
+        integrationMutation.variables?.id === "cli"
+      }
+    />
+  );
+
+  const aboutRows = (
+    <>
+      <SettingRow description={t("about.application")} label="Sidequest">
+        <span className="max-w-full overflow-hidden text-ellipsis text-[11px] leading-4 text-muted-foreground">
+          {t("about.version", {
+            version: settings.data?.appVersion ?? "—",
+          })}
+        </span>
+      </SettingRow>
+      <SettingRow
+        description={t("about.diagnosticsDescription")}
+        label={t("about.diagnostics")}
+      >
+        <Button
+          onClick={() => void copyDiagnostics()}
+          size="sm"
+          variant="outline"
+        >
+          {t("about.copyDiagnostics")}
+        </Button>
+        <Button onClick={() => void revealLogs()} size="sm" variant="outline">
+          {t("about.revealLogs")}
+        </Button>
+      </SettingRow>
+      <SettingRow
+        description={t("about.licenseDescription")}
+        label={t("about.license")}
+      >
+        <Button
+          onClick={() => setLicenseOpen(true)}
+          size="sm"
+          variant="outline"
+        >
+          {t("about.viewLicense")}
+        </Button>
+      </SettingRow>
+    </>
+  );
+
+  function activeRows(): ReactNode {
+    if (activeSection === "general") return generalRows;
+    if (activeSection === "integrations") return integrationRows;
+    if (activeSection === "tools") return toolRows;
+    return aboutRows;
   }
 
   return (
     <section
       className={cn(
-        "relative flex min-w-0 flex-1 flex-col bg-workspace",
-        compact && "mt-3 w-full flex-none bg-transparent",
+        "relative flex min-h-0 min-w-0 bg-workspace",
+        compact ? "mt-3 w-full flex-none bg-transparent" : "h-full flex-1",
       )}
     >
-      {compact === undefined && (
-        <header
-          className={cn(
-            "flex h-12 shrink-0 items-center gap-2 border-b pr-3",
-            sidebarCollapsed ? "pl-[126px]" : "pl-3",
+      {compact !== undefined ? (
+        <div className="w-full">
+          {compact === "quickCapture" ? (
+            <>
+              <SettingsSection title={t("sections.general")}>
+                {generalRows}
+              </SettingsSection>
+              <SettingsSection title={t("sections.commandLine")}>
+                {toolRows}
+              </SettingsSection>
+            </>
+          ) : (
+            <SettingsSection title={t("sections.codingAgents")}>
+              {integrationRows}
+            </SettingsSection>
           )}
-          data-tauri-drag-region="deep"
-        >
-          <IconButton
-            data-tauri-drag-region="false"
-            icon={ArrowLeft}
-            label={t("actions.back", { ns: "common" })}
-            onClick={onBack}
-          />
-          <h1 className="text-sm font-semibold">{t("title")}</h1>
-        </header>
-      )}
-      <div
-        className={cn(
-          "w-full max-w-[760px] overflow-y-auto px-6 pb-10 pt-[22px]",
-          compact && "max-w-none overflow-visible p-0",
-        )}
-      >
-        {compact !== "codingAgents" && (
-          <SettingsSection title={t("sections.general")}>
-            {compact === undefined && (
-              <SettingRow
-                label={t("language.label")}
-                description={t("language.description")}
-              >
-                <select
-                  aria-label={t("language.label")}
-                  className="h-8 rounded-md border border-input bg-surface px-2 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  disabled={
-                    localeSettings.data === undefined || setLocale.isPending
-                  }
-                  value={localeSettings.data?.preference ?? "system"}
-                  onChange={(event) => {
-                    setError(null);
-                    void setLocale
-                      .mutateAsync(event.target.value as LanguagePreference)
-                      .catch(() =>
-                        setError(t("languageSaveFailed", { ns: "errors" })),
-                      );
-                  }}
-                >
-                  <option value="system">{t("language.system")}</option>
-                  <option value="en">{t("language.english")}</option>
-                  <option value="zh-CN">
-                    {t("language.simplifiedChinese")}
-                  </option>
-                </select>
-              </SettingRow>
-            )}
-            <SettingRow
-              label={t("shortcut.label")}
-              description={t("shortcut.description")}
+        </div>
+      ) : (
+        <>
+          <aside className="flex w-[216px] shrink-0 flex-col border-r bg-sidebar">
+            <div
+              className="flex h-12 shrink-0 items-center pl-[76px] pr-2"
+              data-tauri-drag-region="deep"
             >
-              {settings.data !== undefined && (
-                <ShortcutRecorder
-                  error={
-                    settings.data.shortcutRegistration === "conflict"
-                      ? t("shortcut.unavailable")
-                      : null
-                  }
-                  onCancel={() => setRecording(false)}
-                  onRecord={(value) => void changeShortcut(value)}
-                  recording={recording}
-                  shortcut={settings.data.shortcut}
-                  startRecording={() => setRecording(true)}
-                />
-              )}
               <Button
-                disabled={setShortcut.isPending}
-                onClick={() =>
-                  void changeShortcut({
-                    modifiers: ["command", "shift"],
-                    key: "Space",
-                    display: "⌘⇧Space",
-                  })
-                }
+                data-tauri-drag-region="false"
+                onClick={onBack}
                 size="sm"
                 variant="ghost"
               >
-                {t("shortcut.restoreDefault")}
+                <ArrowLeft aria-hidden="true" size={15} />
+                {t("actions.back", { ns: "common" })}
               </Button>
-            </SettingRow>
-            <SettingRow
-              label={t("launchAtLogin.label")}
-              description={
-                settings.data?.debugProfile
-                  ? t("launchAtLogin.isolated")
-                  : t("launchAtLogin.description")
-              }
+            </div>
+            <nav
+              aria-label={t("title")}
+              className="flex flex-col gap-1 px-2 pt-3"
             >
-              <Switch
-                aria-label={t("launchAtLogin.label")}
-                checked={settings.data?.launchAtLogin ?? false}
-                disabled={
-                  settings.data === undefined ||
-                  !settings.data.launchAtLoginAvailable ||
-                  setLaunch.isPending
-                }
-                onCheckedChange={(checked) => {
-                  setError(null);
-                  void setLaunch
-                    .mutateAsync(checked)
-                    .catch((cause: unknown) => setError(localizedError(cause)));
-                }}
-              />
-            </SettingRow>
-          </SettingsSection>
-        )}
-
-        {compact !== "quickCapture" && (
-          <SettingsSection title={t("sections.codingAgents")}>
-            {(["codex", "claude"] as const).map((id) => (
-              <IntegrationRow
-                item={integrations.data?.find((item) => item.id === id)}
-                key={id}
-                onAction={(item, action) => {
-                  if (action === "reveal") {
-                    void revealIntegration(item);
-                    return;
-                  }
-                  if (action === "uninstall") setConfirming(item);
-                  else void runIntegration(item, action);
-                }}
-                pending={integrationMutation.isPending}
-              />
-            ))}
-          </SettingsSection>
-        )}
-
-        {compact === "quickCapture" && (
-          <SettingsSection title={t("sections.commandLine")}>
-            <IntegrationRow
-              item={integrations.data?.find((item) => item.id === "cli")}
-              onAction={(item, action) => {
-                if (action === "reveal") {
-                  void revealIntegration(item);
-                  return;
-                }
-                if (action === "uninstall") setConfirming(item);
-                else void runIntegration(item, action);
-              }}
-              pending={integrationMutation.isPending}
-            />
-          </SettingsSection>
-        )}
-
-        {compact === undefined && (
-          <>
-            <SettingsSection title={t("sections.commandLine")}>
-              <IntegrationRow
-                item={integrations.data?.find((item) => item.id === "cli")}
-                onAction={(item, action) => {
-                  if (action === "reveal") {
-                    void revealIntegration(item);
-                    return;
-                  }
-                  if (action === "uninstall") setConfirming(item);
-                  else void runIntegration(item, action);
-                }}
-                pending={integrationMutation.isPending}
-              />
-            </SettingsSection>
-            <SettingsSection title={t("sections.about")}>
-              <SettingRow
-                label="Sidequest"
-                description={t("about.application")}
-              >
-                <span className="max-w-full overflow-hidden text-ellipsis text-[11px] leading-4 text-muted-foreground">
-                  {t("about.version", {
-                    version: settings.data?.appVersion ?? "—",
-                  })}
-                </span>
-              </SettingRow>
-              <SettingRow
-                label={t("about.diagnostics")}
-                description={t("about.diagnosticsDescription")}
-              >
-                {diagnosticFeedback !== null && (
-                  <span
-                    className="whitespace-nowrap text-[11px] text-muted-foreground"
-                    role="status"
+              {SETTINGS_SECTIONS.map((section) => {
+                const Icon = section.icon;
+                const selected = activeSection === section.id;
+                return (
+                  <button
+                    aria-current={selected ? "page" : undefined}
+                    className={cn(
+                      "flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-left text-[13px] font-medium text-muted-foreground outline-none transition-[color,background-color,box-shadow] duration-[var(--motion-fast)] hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring",
+                      selected && "bg-accent text-foreground",
+                    )}
+                    key={section.id}
+                    onClick={() => selectSection(section.id)}
+                    type="button"
                   >
-                    {diagnosticFeedback}
-                  </span>
+                    <Icon aria-hidden="true" size={15} strokeWidth={1.8} />
+                    {t(section.labelKey)}
+                  </button>
+                );
+              })}
+            </nav>
+          </aside>
+          <div className="flex min-w-0 flex-1 flex-col bg-workspace">
+            <header
+              className="flex h-12 shrink-0 items-center border-b px-7"
+              data-tauri-drag-region="deep"
+            >
+              <h1 className="text-sm font-semibold">
+                {t(
+                  SETTINGS_SECTIONS.find(
+                    (section) => section.id === activeSection,
+                  )?.labelKey ?? "sections.general",
                 )}
-                <Button
-                  onClick={() => void copyDiagnostics()}
-                  size="sm"
-                  variant="outline"
-                >
-                  {t("about.copyDiagnostics")}
-                </Button>
-                <Button
-                  onClick={() => void revealLogs()}
-                  size="sm"
-                  variant="outline"
-                >
-                  {t("about.revealLogs")}
-                </Button>
-              </SettingRow>
-              <SettingRow
-                label={t("about.license")}
-                description={t("about.licenseDescription")}
-              >
-                <Button
-                  onClick={() => setLicenseOpen(true)}
-                  size="sm"
-                  variant="outline"
-                >
-                  {t("about.viewLicense")}
-                </Button>
-              </SettingRow>
-            </SettingsSection>
-          </>
-        )}
+              </h1>
+            </header>
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <div className="w-full max-w-[760px] px-7 pb-12 pt-6">
+                <SettingsSection>{activeRows()}</SettingsSection>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
-        {(error !== null || settings.isError || integrations.isError) && (
-          <p
-            className="flex items-center gap-1.5 text-[11px] text-destructive"
-            role="alert"
-          >
-            <TriangleAlert aria-hidden="true" size={14} />
-            {error ?? localizedError(settings.error ?? integrations.error)}
-          </p>
-        )}
-      </div>
-
-      {confirming !== null && (
+      {confirming !== null ? (
         <div
           aria-labelledby="integration-confirm-title"
           aria-modal="true"
@@ -404,9 +493,9 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {licenseOpen && settings.data !== undefined && (
+      {licenseOpen && settings.data !== undefined ? (
         <div
           aria-labelledby="license-title"
           aria-modal="true"
@@ -429,23 +518,29 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
             </pre>
           </div>
         </div>
-      )}
+      ) : null}
     </section>
   );
+}
+
+function showError(message: string, id: string): void {
+  toast.error(message, { duration: ERROR_TOAST_DURATION, id });
 }
 
 function SettingsSection({
   title,
   children,
 }: {
-  title: string;
+  title?: string;
   children: ReactNode;
 }) {
   return (
     <section className="mb-[26px] w-full">
-      <h2 className="mb-2 text-xs font-semibold text-muted-foreground">
-        {title}
-      </h2>
+      {title !== undefined ? (
+        <h2 className="mb-2 text-xs font-semibold text-muted-foreground">
+          {title}
+        </h2>
+      ) : null}
       <div className="border-t">{children}</div>
     </section>
   );
@@ -461,14 +556,54 @@ function SettingRow({
   children: ReactNode;
 }) {
   return (
-    <div className="flex min-h-[58px] items-center gap-3 border-b px-0.5 py-2.5">
-      <div className="flex min-w-0 flex-1 flex-col gap-px">
+    <div className="flex min-h-[58px] flex-wrap items-center gap-3 border-b px-0.5 py-2.5">
+      <div className="flex min-w-[260px] flex-1 flex-col gap-px">
         <strong className="text-[13px] font-medium">{label}</strong>
-        <span className="overflow-hidden text-ellipsis text-[11px] leading-4 text-muted-foreground">
+        <span className="text-pretty text-[11px] leading-4 text-muted-foreground">
           {description}
         </span>
       </div>
-      <div className="flex items-center gap-2">{children}</div>
+      <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function ThemePreferenceControl({
+  value,
+  disabled,
+  onChange,
+}: {
+  value: ThemePreference;
+  disabled: boolean;
+  onChange: (preference: ThemePreference) => void;
+}) {
+  const { t } = useTranslation("settings");
+  const options: ThemePreference[] = ["system", "light", "dark"];
+  return (
+    <div
+      aria-label={t("appearance.label")}
+      className="inline-flex rounded-md border border-input bg-surface p-0.5 shadow-control"
+      role="radiogroup"
+    >
+      {options.map((option) => (
+        <Button
+          aria-checked={value === option}
+          className={cn(
+            "h-7 min-w-[64px] px-2 shadow-none",
+            value === option && "bg-accent text-accent-foreground",
+          )}
+          disabled={disabled}
+          key={option}
+          onClick={() => onChange(option)}
+          role="radio"
+          size="sm"
+          variant="ghost"
+        >
+          {t(`appearance.${option}`)}
+        </Button>
+      ))}
     </div>
   );
 }
@@ -524,9 +659,9 @@ function ShortcutRecorder({
         <Command aria-hidden="true" size={14} />
         {recording ? t("shortcut.recording") : shortcut.display}
       </Button>
-      {error !== null && (
+      {error !== null ? (
         <span className="text-[11px] text-destructive">{error}</span>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -563,17 +698,17 @@ function IntegrationRow({
           ? t("actions.repair", { ns: "common" })
           : t("actions.install", { ns: "common" });
   return (
-    <div className="flex min-h-[52px] items-center gap-3 border-b px-0.5 py-2.5">
+    <div className="flex min-h-[52px] flex-wrap items-center gap-3 border-b px-0.5 py-2.5">
       <div className="inline-flex size-[26px] items-center justify-center rounded-md border bg-elevated text-muted-foreground">
         {id === "cli" ? (
-          <SquareTerminal size={15} />
+          <SquareTerminal aria-hidden="true" size={15} />
         ) : id === "codex" ? (
-          <Copy size={15} />
+          <Copy aria-hidden="true" size={15} />
         ) : (
-          <Command size={15} />
+          <Command aria-hidden="true" size={15} />
         )}
       </div>
-      <div className="flex min-w-0 flex-1 flex-col gap-px">
+      <div className="flex min-w-[180px] flex-1 flex-col gap-px">
         <strong className="text-[13px] font-medium">
           {integrationName(id)}
         </strong>
@@ -595,9 +730,9 @@ function IntegrationRow({
         )}
       >
         {installed ? (
-          <Check size={13} />
+          <Check aria-hidden="true" size={13} />
         ) : needsAttention ? (
-          <TriangleAlert size={13} />
+          <TriangleAlert aria-hidden="true" size={13} />
         ) : null}
         {installed
           ? t("integration.installed", { ns: "settings" })

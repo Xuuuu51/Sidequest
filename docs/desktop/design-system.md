@@ -352,9 +352,13 @@ rest → error
 
 ### Settings
 
-- 使用 Sidebar + settings content panel 的连续结构；section 依赖 divider 与标题层级，不堆叠 settings cards。
+- Settings 替换 Main Window 的 Projects Sidebar 与 Quest Board，使用固定 `216px` Settings Sidebar + settings content panel 的连续结构；Sidebar 不支持 resize 或 collapse。
+- Sidebar 顶部只有带文字的 Back，分类使用 Lucide 图标 + 文字；不额外显示 Settings 总标题。General、Integrations、Tools、About 的 active 状态使用同一中性 accent surface，不改变几何尺寸。
+- content panel 顶部只显示当前分类标题；内容列最大宽度 `760px`，靠左对齐。切换分类只替换右侧内容，不使用页内滚动锚点。
+- section 依赖 divider 与标题层级，不堆叠 settings cards。窄窗口下 Sidebar 保持固定，设置行允许从左右布局自然换行为上下布局。
 - 行布局保持左侧 label/description、右侧 compact control/status 的一致网格。
 - Appearance 使用 Radio Group 语义和三段式视觉，选项为 System、Light、Dark。
+- Settings 的全局成功与错误反馈复用 Sonner 右下角 toast，不新增第二套通知组件。
 
 ## 12. 产品与架构边界
 

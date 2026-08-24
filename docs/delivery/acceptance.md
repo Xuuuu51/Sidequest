@@ -61,6 +61,8 @@
 - [ ] Main Window 只使用一个由四个 slice 组合的内存 Zustand store；Tauri-backed DTO 只进入 TanStack Query，每个 feature 只有一个 `data.ts`。
 - [ ] System、Light、Dark 偏好可持久化并即时同步 Main Window、Quick Capture、Onboarding、Settings 与原生窗口外观。
 - [ ] Theme mutation 失败保留旧主题；主题切换不重建 QueryClient/Zustand 或丢失任何 draft。
+- [ ] Settings 进入后替换 Projects Sidebar 与 Quest Board；固定 Sidebar 显示 General、Integrations、Tools、About，每次进入默认 General，Back 恢复原工作区且 `Esc` 不退出。
+- [ ] Settings 分类切换取消 Quick Capture 快捷键录制但不阻止后台 mutation；全局成功与错误复用 Sonner 自动消失 toast。
 - [ ] Focus 使用高对比中性 ring；selection 与 focus 可同时表达；Inbox、Ready、Done 状态不只靠颜色。
 - [ ] 人工视觉矩阵覆盖 Main Window、Quick Capture、Onboarding、Settings 的 Light/Dark、默认/最小尺寸、modal、拖拽、键盘焦点、错误、只读与 reduced motion。
 

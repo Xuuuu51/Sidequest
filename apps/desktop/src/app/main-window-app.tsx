@@ -107,19 +107,6 @@ function MainWindowContent() {
   const state = appState.data;
   return (
     <main className="relative flex h-screen min-h-0 overflow-hidden bg-background text-foreground">
-      <ProjectSidebar
-        addPending={projectActions.addPending}
-        onAdd={() => void projectActions.add()}
-        onLocate={(project) => void projectActions.locate(project)}
-        onPersistPreferences={projectActions.persistPanelPreferences}
-        onSettings={() => void coordinator.guard(async () => showSettings())}
-        onRemove={(project) => void projectActions.remove(project)}
-        onReveal={(path) => void projectActions.reveal(path)}
-        onSelect={(project) => void projectActions.select(project)}
-        projects={state.projects}
-        selectedProjectPath={selectedProjectPath}
-        settingsSelected={view.name === "settings"}
-      />
       {view.name === "settings" ? (
         <Suspense fallback={<ContentPending label={t("shell.restoring")} />}>
           <SettingsPage
@@ -127,16 +114,33 @@ function MainWindowContent() {
           />
         </Suspense>
       ) : (
-        selectedProject !== undefined && (
-          <WorkspaceView
+        <>
+          <ProjectSidebar
+            addPending={projectActions.addPending}
+            onAdd={() => void projectActions.add()}
             onLocate={(project) => void projectActions.locate(project)}
             onPersistPreferences={projectActions.persistPanelPreferences}
-            onRetryAppState={() => void appState.refetch()}
+            onSettings={() =>
+              void coordinator.guard(async () => showSettings())
+            }
+            onRemove={(project) => void projectActions.remove(project)}
             onReveal={(path) => void projectActions.reveal(path)}
-            project={selectedProject}
-            watcherError={watcherError}
+            onSelect={(project) => void projectActions.select(project)}
+            projects={state.projects}
+            selectedProjectPath={selectedProjectPath}
+            settingsSelected={false}
           />
-        )
+          {selectedProject !== undefined ? (
+            <WorkspaceView
+              onLocate={(project) => void projectActions.locate(project)}
+              onPersistPreferences={projectActions.persistPanelPreferences}
+              onRetryAppState={() => void appState.refetch()}
+              onReveal={(path) => void projectActions.reveal(path)}
+              project={selectedProject}
+              watcherError={watcherError}
+            />
+          ) : null}
+        </>
       )}
       {state.recoveryWarning !== null && !recoveryDismissed ? (
         <div

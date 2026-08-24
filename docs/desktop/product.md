@@ -114,14 +114,18 @@ Quick Capture 是始终置顶的独立 native window。通过全局快捷键唤�
 
 ## 9. Settings
 
-Settings 是 Main Window 内的单页状态，不是独立窗口。从 Sidebar、`⌘,` 或菜单进入；返回后恢复项目、搜索和分组列表滚动位置，但不自动重开 Drawer。设置即时保存，无全局 Save/Cancel。
+Settings 是 Main Window 内的全屏页面状态，不是独立窗口。从 Projects Sidebar、`⌘,` 或菜单进入后，Settings 自己的 Sidebar 与内容面板替换 Projects Sidebar 和 Quest Board。左上角返回按钮退出 Settings；`Esc` 不退出。返回后恢复项目、搜索和分组列表滚动位置，但不自动重开 Quest Details Drawer。设置即时保存，无全局 Save/Cancel。
+
+Settings Sidebar 固定显示带图标的 General、Integrations、Tools、About。每次进入默认选择 General，切换后右侧只显示当前分类；切离 General 时取消正在进行的 Quick Capture 快捷键录制。设置操作可以在后台继续，分类切换不被阻止。
 
 Settings 只包含：
 
 - General：Appearance、Language、`Shortcut` 与 Launch at Login。Appearance 使用 `System / Light / Dark` 三段式单选，默认 System；更改成功保存后立即作用于所有窗口与原生窗口外观，不重置当前操作状态。Language 默认为跟随系统，也可固定为 English 或简体中文；更改成功保存后立即作用于两个窗口和原生菜单。点击 Shortcut 后直接录制组合键；必须包含修饰键，`Esc` 取消，冲突不替换旧值，可 Restore Default。
-- Coding Agents：Codex、Claude 两行，只显示 Ready、Not Installed、Needs Attention 与对应 Install/Repair/Uninstall。
-- Command Line Tool：只显示 Installed、Not Installed、Needs Attention 与对应 Install/Repair/Uninstall。
+- Integrations：Codex、Claude 两行，只显示 Ready、Not Installed、Needs Attention 与对应 Install/Repair/Uninstall。
+- Tools：`sq` CLI，只显示 Installed、Not Installed、Needs Attention 与对应 Install/Repair/Uninstall。
 - About：Desktop version、Licenses 与 Diagnostics。Diagnostics 提供 Copy Diagnostics 和 Reveal Logs；摘要不包含 Quest 内容、搜索内容、用户名或项目绝对路径。
+
+Settings 中无法归属到单个控件的反馈使用右下角 toast；成功反馈约 `3s`，错误反馈约 `8s`，均自动消失且允许手动关闭。重复错误更新既有 toast，不连续堆叠。
 
 不提供 Projects、Quick Capture Position、App Data 或更新入口。路径、版本和 hash 只在异常时按需展示。安装技术规则见 [Integration 与分发](../architecture/distribution.md)。
 

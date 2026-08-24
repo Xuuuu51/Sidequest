@@ -38,7 +38,8 @@ stateDiagram-v2
 
 - 单个损坏 Quest 文件不是 `ProjectFatalError`，它只产生非阻塞 warning banner。
 - Read Only 仍属于 `ListReady`，通过 workspace capability 限制写操作。
-- Settings 是 Main Window 内的页面状态，不创建新窗口。
+- Settings 是 Main Window 内的全屏页面状态，不创建新窗口；进入后替换 Projects Sidebar 与 Quest Board，Back 恢复先前工作区，`Esc` 不退出。
+- Settings 每次进入以 General 为初始分类。切换 General / Integrations / Tools / About 只替换右侧内容，并取消正在进行的 Quick Capture 快捷键录制；已经开始的异步设置操作继续执行。
 
 ## 3. 正交状态模型
 

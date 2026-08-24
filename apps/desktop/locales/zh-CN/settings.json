@@ -2,9 +2,18 @@
   "title": "设置",
   "sections": {
     "general": "通用",
+    "integrations": "集成",
+    "tools": "工具",
     "codingAgents": "编程 Agent",
     "commandLine": "命令行工具",
     "about": "关于"
+  },
+  "appearance": {
+    "label": "外观",
+    "description": "选择 Sidequest 所有窗口的外观。",
+    "system": "跟随系统",
+    "light": "浅色",
+    "dark": "深色"
   },
   "language": {
     "label": "语言",

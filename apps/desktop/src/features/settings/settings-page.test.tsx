@@ -21,9 +21,19 @@ const mocks = vi.hoisted(() => ({
   revealPath: vi.fn(),
   getLocaleSettings: vi.fn(),
   setLocalePreference: vi.fn(),
+  getThemeSettings: vi.fn(),
+  setThemePreference: vi.fn(),
+  toastSuccess: vi.fn(),
+  toastError: vi.fn(),
 }));
 
 vi.mock("../../shared/tauri/commands", () => mocks);
+vi.mock("sonner", () => ({
+  toast: {
+    success: mocks.toastSuccess,
+    error: mocks.toastError,
+  },
+}));
 
 const settings: SettingsDto = {
   shortcut: {
@@ -78,6 +88,12 @@ describe("SettingsPage", () => {
       preference: "zh-CN",
       effectiveLocale: "zh-CN",
     });
+    mocks.getThemeSettings.mockReset().mockResolvedValue({
+      preference: "system",
+    });
+    mocks.setThemePreference.mockReset().mockResolvedValue({
+      preference: "dark",
+    });
     mocks.getIntegrationStatus.mockReset().mockResolvedValue(integrations);
     mocks.setGlobalShortcut
       .mockReset()
@@ -98,6 +114,8 @@ describe("SettingsPage", () => {
     });
     mocks.revealDiagnosticLogs.mockReset().mockResolvedValue(undefined);
     mocks.revealPath.mockReset().mockResolvedValue(undefined);
+    mocks.toastSuccess.mockReset();
+    mocks.toastError.mockReset();
   });
 
   it("records_a_supported_shortcut_and_keeps_backend_validation_authoritative", async () => {
@@ -127,12 +145,25 @@ describe("SettingsPage", () => {
     );
   });
 
+  it("persists_an_appearance_preference", async () => {
+    renderSettings();
+    const dark = await screen.findByRole("radio", { name: "Dark" });
+
+    await waitFor(() => expect(dark).toBeEnabled());
+    fireEvent.click(dark);
+
+    await waitFor(() =>
+      expect(mocks.setThemePreference).toHaveBeenCalledWith("dark"),
+    );
+  });
+
   it("shows_compact_integration_status_and_runs_install", async () => {
     renderSettings();
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Integrations" }),
+    );
 
-    expect(
-      (await screen.findAllByText("Needs Attention")).length,
-    ).toBeGreaterThan(0);
+    expect(screen.getAllByText("Needs Attention").length).toBeGreaterThan(0);
     const installButtons = screen.getAllByRole("button", { name: "Install" });
     fireEvent.click(installButtons[0]);
 
@@ -143,6 +174,7 @@ describe("SettingsPage", () => {
 
   it("copies_diagnostics_and_reveals_logs_from_about", async () => {
     renderSettings();
+    fireEvent.click(await screen.findByRole("button", { name: "About" }));
     await screen.findByText("Diagnostics");
 
     fireEvent.click(screen.getByRole("button", { name: "Copy Diagnostics" }));
@@ -152,6 +184,22 @@ describe("SettingsPage", () => {
       expect(mocks.copyDiagnosticReport).toHaveBeenCalledTimes(1),
     );
     expect(mocks.revealDiagnosticLogs).toHaveBeenCalledTimes(1);
+    expect(mocks.toastSuccess).toHaveBeenCalledTimes(2);
+  });
+
+  it("cancels_shortcut_recording_when_the_category_changes", async () => {
+    renderSettings();
+    const recorder = await screen.findByRole("button", { name: "⌘⇧Space" });
+
+    fireEvent.click(recorder);
+    expect(recorder).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Integrations" }));
+    fireEvent.click(screen.getByRole("button", { name: "General" }));
+
+    expect(screen.getByRole("button", { name: "⌘⇧Space" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
   });
 
   it("disables_launch_at_login_in_an_isolated_profile", async () => {
@@ -162,7 +210,9 @@ describe("SettingsPage", () => {
     });
 
     renderSettings();
-    await screen.findByText("Version 0.1.0");
+    await screen.findByText(
+      "Unavailable while using an isolated debug profile.",
+    );
 
     expect(screen.getByRole("switch")).toHaveAttribute("aria-disabled", "true");
     expect(

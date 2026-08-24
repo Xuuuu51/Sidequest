@@ -38,6 +38,20 @@ const mocks = vi.hoisted(() => ({
   updateQuestContent: vi.fn(),
   setQuestStatus: vi.fn(),
   deleteQuest: vi.fn(),
+  getSettings: vi.fn(),
+  getLocaleSettings: vi.fn(),
+  getThemeSettings: vi.fn(),
+  getIntegrationStatus: vi.fn(),
+  setGlobalShortcut: vi.fn(),
+  setLaunchAtLogin: vi.fn(),
+  setLocalePreference: vi.fn(),
+  setThemePreference: vi.fn(),
+  installCli: vi.fn(),
+  uninstallCli: vi.fn(),
+  installAgentSkill: vi.fn(),
+  uninstallAgentSkill: vi.fn(),
+  copyDiagnosticReport: vi.fn(),
+  revealDiagnosticLogs: vi.fn(),
   workspaceInvalidatedHandler: null as
     ((payload: { projectPath: string }) => void) | null,
 }));
@@ -193,6 +207,27 @@ describe("App", () => {
     mocks.deleteQuest
       .mockReset()
       .mockImplementation(async (_path, id) => ({ id }));
+    mocks.getSettings.mockReset().mockResolvedValue({
+      shortcut: {
+        modifiers: ["command", "shift"],
+        key: "Space",
+        display: "⌘⇧Space",
+      },
+      shortcutRegistration: "active",
+      launchAtLogin: false,
+      launchAtLoginAvailable: true,
+      debugProfile: false,
+      appVersion: "0.1.0",
+      licenseText: "MIT License",
+    });
+    mocks.getLocaleSettings.mockReset().mockResolvedValue({
+      preference: "system",
+      effectiveLocale: "en",
+    });
+    mocks.getThemeSettings.mockReset().mockResolvedValue({
+      preference: "system",
+    });
+    mocks.getIntegrationStatus.mockReset().mockResolvedValue([]);
   });
 
   it("shows_onboarding_when_no_projects_are_registered", async () => {
@@ -386,9 +421,19 @@ describe("App", () => {
     mocks.getAppState.mockResolvedValue(projectState);
     renderApp();
 
+    const settingsButton = await screen.findByRole("button", {
+      name: "Settings",
+    });
+    expect(settingsButton).toBeEnabled();
+    fireEvent.click(settingsButton);
+
     expect(
-      await screen.findByRole("button", { name: "Settings" }),
-    ).toBeEnabled();
+      await screen.findByRole("heading", { name: "General" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Settings" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Back" })).toBeEnabled();
   });
 
   it("supports_command_f_and_escape_for_search", async () => {
