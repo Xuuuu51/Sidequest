@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { open } from "@tauri-apps/plugin-dialog";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 
@@ -16,7 +17,11 @@ import type {
   OnboardingStep,
   IntegrationItemDto,
   IntegrationId,
+  DiagnosticReportDto,
+  LanguagePreference,
+  LocaleSettingsDto,
 } from "./types";
+import { logDebug, logFrontendError, logInfo } from "../diagnostics/logger";
 
 export function getAppState(): Promise<AppStateDto> {
   return invokeCommand("get_app_state");
@@ -134,6 +139,16 @@ export function getSettings(): Promise<SettingsDto> {
   return invokeCommand("get_settings");
 }
 
+export function getLocaleSettings(): Promise<LocaleSettingsDto> {
+  return invokeCommand("get_locale_settings");
+}
+
+export function setLocalePreference(
+  preference: LanguagePreference,
+): Promise<LocaleSettingsDto> {
+  return invokeCommand("set_locale_preference", { preference });
+}
+
 export function setGlobalShortcut(
   shortcut: ShortcutSpecDto,
 ): Promise<SettingsDto> {
@@ -172,11 +187,31 @@ export function uninstallAgentSkill(
   return invokeCommand("uninstall_agent_skill", { agent });
 }
 
-export async function selectReplacementDirectory(): Promise<string | null> {
+export function getDiagnosticReport(): Promise<DiagnosticReportDto> {
+  return invokeCommand("get_diagnostic_report");
+}
+
+export function revealDiagnosticLogs(): Promise<void> {
+  return invokeCommand("reveal_diagnostic_logs");
+}
+
+export async function copyDiagnosticReport(): Promise<DiagnosticReportDto> {
+  const report = await getDiagnosticReport();
+  await writeClipboardText(report.report);
+  return report;
+}
+
+export function writeClipboardText(value: string): Promise<void> {
+  return writeText(value);
+}
+
+export async function selectReplacementDirectory(
+  title = "Locate Sidequest Project",
+): Promise<string | null> {
   const selected = await open({
     directory: true,
     multiple: false,
-    title: "Locate Sidequest Project",
+    title,
   });
   return typeof selected === "string" ? selected : null;
 }
@@ -201,10 +236,19 @@ async function invokeCommand<T>(
   command: string,
   args?: Record<string, unknown>,
 ): Promise<T> {
+  const startedAt = performance.now();
+  logDebug(`command started name=${command}`);
   try {
-    return await invoke<T>(command, args);
+    const result = await invoke<T>(command, args);
+    logInfo(
+      `command completed name=${command} duration_ms=${Math.round(performance.now() - startedAt)}`,
+    );
+    return result;
   } catch (error) {
-    throw normalizeCommandError(error);
+    const normalized = normalizeCommandError(error);
+    if (import.meta.env.DEV) console.error(command, normalized);
+    logFrontendError(`command failed name=${command}`, normalized);
+    throw normalized;
   }
 }
 
@@ -230,11 +274,13 @@ function normalizeCommandError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
 }
 
-export async function selectProjectDirectory(): Promise<string | null> {
+export async function selectProjectDirectory(
+  title = "Add Project",
+): Promise<string | null> {
   const selected = await open({
     directory: true,
     multiple: false,
-    title: "Add Project",
+    title,
   });
   return typeof selected === "string" ? selected : null;
 }

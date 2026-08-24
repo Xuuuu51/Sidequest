@@ -16,6 +16,11 @@ const mocks = vi.hoisted(() => ({
   uninstallCli: vi.fn(),
   installAgentSkill: vi.fn(),
   uninstallAgentSkill: vi.fn(),
+  copyDiagnosticReport: vi.fn(),
+  revealDiagnosticLogs: vi.fn(),
+  revealPath: vi.fn(),
+  getLocaleSettings: vi.fn(),
+  setLocalePreference: vi.fn(),
 }));
 
 vi.mock("../../shared/tauri/commands", () => mocks);
@@ -28,6 +33,8 @@ const settings: SettingsDto = {
   },
   shortcutRegistration: "active",
   launchAtLogin: false,
+  launchAtLoginAvailable: true,
+  debugProfile: false,
   appVersion: "0.1.0",
   licenseText: "MIT License",
 };
@@ -66,6 +73,14 @@ describe("SettingsPage", () => {
       licenseOpen: false,
     });
     mocks.getSettings.mockReset().mockResolvedValue(settings);
+    mocks.getLocaleSettings.mockReset().mockResolvedValue({
+      preference: "system",
+      effectiveLocale: "en",
+    });
+    mocks.setLocalePreference.mockReset().mockResolvedValue({
+      preference: "zh-CN",
+      effectiveLocale: "zh-CN",
+    });
     mocks.getIntegrationStatus.mockReset().mockResolvedValue(integrations);
     mocks.setGlobalShortcut
       .mockReset()
@@ -80,6 +95,12 @@ describe("SettingsPage", () => {
     mocks.uninstallAgentSkill.mockReset().mockResolvedValue(integrations);
     mocks.installCli.mockReset().mockResolvedValue(integrations);
     mocks.uninstallCli.mockReset().mockResolvedValue(integrations);
+    mocks.copyDiagnosticReport.mockReset().mockResolvedValue({
+      generatedAt: "2026-08-24T00:00:00Z",
+      report: "Sidequest Diagnostics",
+    });
+    mocks.revealDiagnosticLogs.mockReset().mockResolvedValue(undefined);
+    mocks.revealPath.mockReset().mockResolvedValue(undefined);
   });
 
   it("records_a_supported_shortcut_and_keeps_backend_validation_authoritative", async () => {
@@ -98,16 +119,58 @@ describe("SettingsPage", () => {
     );
   });
 
+  it("persists_a_manual_language_preference", async () => {
+    renderSettings();
+    const language = await screen.findByRole("combobox", { name: "Language" });
+
+    fireEvent.change(language, { target: { value: "zh-CN" } });
+
+    await waitFor(() =>
+      expect(mocks.setLocalePreference).toHaveBeenCalledWith("zh-CN"),
+    );
+  });
+
   it("shows_compact_integration_status_and_runs_install", async () => {
     renderSettings();
 
-    expect(await screen.findByText("Needs Attention")).toBeInTheDocument();
+    expect(
+      (await screen.findAllByText("Needs Attention")).length,
+    ).toBeGreaterThan(0);
     const installButtons = screen.getAllByRole("button", { name: "Install" });
     fireEvent.click(installButtons[0]);
 
     await waitFor(() =>
       expect(mocks.installAgentSkill).toHaveBeenCalledWith("codex"),
     );
+  });
+
+  it("copies_diagnostics_and_reveals_logs_from_about", async () => {
+    renderSettings();
+    await screen.findByText("Diagnostics");
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy Diagnostics" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reveal Logs" }));
+
+    await waitFor(() =>
+      expect(mocks.copyDiagnosticReport).toHaveBeenCalledTimes(1),
+    );
+    expect(mocks.revealDiagnosticLogs).toHaveBeenCalledTimes(1);
+  });
+
+  it("disables_launch_at_login_in_an_isolated_profile", async () => {
+    mocks.getSettings.mockResolvedValue({
+      ...settings,
+      debugProfile: true,
+      launchAtLoginAvailable: false,
+    });
+
+    renderSettings();
+    await screen.findByText("Version 0.1.0");
+
+    expect(screen.getByRole("checkbox")).toBeDisabled();
+    expect(
+      screen.getByText("Unavailable while using an isolated debug profile."),
+    ).toBeInTheDocument();
   });
 });
 

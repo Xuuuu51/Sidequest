@@ -42,8 +42,8 @@ Desktop 仍保存其记录，但路径不存在或无法访问的项目。
 **只读项目（Read-only Project）**  
 当前能够读取 Quest、但不能写入 Sidequest 数据的项目。
 
-**快速捕获窗口（Quick Capture Window）**  
-用于从其他应用上方快速创建 Quest 的独立 Desktop 窗口。避免称为浮层或捕获页面。
+**快速记录窗口（Quick Capture Window）**
+用于从其他应用上方快速创建 Quest 的独立 Desktop 窗口。中文界面显示“快速记录”，英文领域名称和代码标识仍使用 Quick Capture；避免称为浮层、快速捕获或捕获页面。
 
 **当前捕获项目（Capture Project）**  
 Quick Capture Window 当前准备写入 Quest 的项目；它可以不同于当前项目。
@@ -60,3 +60,22 @@ Quest Details Drawer 底部承载删除与状态流转的固定区域。
 **待自动保存内容（Auto-save Pending Content）**  
 用户已经修改、但尚未确认写入完成的短暂界面状态。它不是第二份 Quest 数据或长期草稿。
 
+## 界面译名
+
+以下译名是 Desktop 简体中文资源的 canonical owner；英文 UI 保留英文列中的写法。
+
+| English | 简体中文 |
+|---|---|
+| Projects | 项目 |
+| Workspace | 工作区 |
+| Inbox | 收件箱 |
+| Ready | 就绪 |
+| Done | 已完成 |
+| Quick Capture | 快速记录 |
+| Capture（界面动作） | 记录 |
+| Quest details | 详情 |
+| Settings | 设置 |
+| Read Only | 只读 |
+| Unavailable | 不可用 |
+
+`Sidequest` 与 `Quest` 在两种界面语言中均不翻译。中文界面在上下文明确时省略 `Quest`，并在需要计数时使用量词“条”，例如“3 条”和“删除这条 Quest？”。领域动作 Capture 仍称为“捕获”，但面向用户的操作文案使用更自然的“记录”。

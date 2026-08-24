@@ -6,6 +6,7 @@
   "permissions": [
     "core:default",
     "dialog:allow-open",
+    "log:default",
     "opener:allow-reveal-item-in-dir"
   ]
 }

@@ -1,0 +1,43 @@
+{
+  "appName": "Sidequest",
+  "actions": {
+    "back": "Back",
+    "cancel": "Cancel",
+    "close": "Close",
+    "continue": "Continue",
+    "copy": "Copy",
+    "delete": "Delete",
+    "dismiss": "Dismiss",
+    "done": "Done",
+    "install": "Install",
+    "locateFolder": "Locate Folder…",
+    "remove": "Remove",
+    "repair": "Repair",
+    "retry": "Retry",
+    "reveal": "Reveal",
+    "revealInFinder": "Reveal in Finder",
+    "skip": "Skip",
+    "uninstall": "Uninstall",
+    "update": "Update"
+  },
+  "status": {
+    "inbox": "Inbox",
+    "ready": "Ready",
+    "done": "Done"
+  },
+  "projectState": {
+    "readOnly": "Read only",
+    "unavailable": "Unavailable"
+  },
+  "feedback": {
+    "copied": "Copied",
+    "revealedInFinder": "Revealed in Finder",
+    "saved": "Saved",
+    "saving": "Saving…"
+  },
+  "time": {
+    "created": "Created {{value}}",
+    "justNow": "just now",
+    "unknown": "Created at an unknown time"
+  }
+}

@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   invoke: vi.fn(),
   open: vi.fn(),
   revealItemInDir: vi.fn(),
+  writeText: vi.fn(),
 }));
 
 vi.mock("@tauri-apps/api/core", () => ({ invoke: mocks.invoke }));
@@ -11,22 +12,35 @@ vi.mock("@tauri-apps/plugin-dialog", () => ({ open: mocks.open }));
 vi.mock("@tauri-apps/plugin-opener", () => ({
   revealItemInDir: mocks.revealItemInDir,
 }));
+vi.mock("@tauri-apps/plugin-clipboard-manager", () => ({
+  writeText: mocks.writeText,
+}));
+vi.mock("@tauri-apps/plugin-log", () => ({
+  debug: vi.fn().mockResolvedValue(undefined),
+  error: vi.fn().mockResolvedValue(undefined),
+  info: vi.fn().mockResolvedValue(undefined),
+  warn: vi.fn().mockResolvedValue(undefined),
+}));
 
 import {
   addProject,
   captureQuest,
+  copyDiagnosticReport,
   completeAppQuit,
   CommandError,
   hideMainWindow,
   hideQuickCapture,
+  getLocaleSettings,
   relocateProject,
   removeProject,
   revealPath,
+  revealDiagnosticLogs,
   saveMainWindowGeometry,
   saveQuickCapturePosition,
   selectProjectDirectory,
   selectReplacementDirectory,
   setPanelPreferences,
+  setLocalePreference,
   setQuestStatus,
   setWatchedProject,
   showQuickCapture,
@@ -38,9 +52,36 @@ describe("typed Tauri commands", () => {
     mocks.invoke.mockReset().mockResolvedValue(undefined);
     mocks.open.mockReset().mockResolvedValue(null);
     mocks.revealItemInDir.mockReset().mockResolvedValue(undefined);
+    mocks.writeText.mockReset().mockResolvedValue(undefined);
+  });
+
+  it("copies_the_redacted_diagnostic_report_through_the_clipboard_plugin", async () => {
+    mocks.invoke.mockResolvedValue({
+      generatedAt: "2026-08-24T00:00:00Z",
+      report: "Sidequest Diagnostics",
+    });
+
+    await copyDiagnosticReport();
+
+    expect(mocks.invoke).toHaveBeenCalledWith(
+      "get_diagnostic_report",
+      undefined,
+    );
+    expect(mocks.writeText).toHaveBeenCalledWith("Sidequest Diagnostics");
+  });
+
+  it("reveals_diagnostic_logs_through_a_typed_command", async () => {
+    await revealDiagnosticLogs();
+
+    expect(mocks.invoke).toHaveBeenCalledWith(
+      "reveal_diagnostic_logs",
+      undefined,
+    );
   });
 
   it("uses_snake_case_commands_with_camel_case_arguments", async () => {
+    await getLocaleSettings();
+    await setLocalePreference("zh-CN");
     await addProject("/project");
     await removeProject("/project", true);
     await updateQuestContent("/project", "sq_id", "Changed");
@@ -61,6 +102,8 @@ describe("typed Tauri commands", () => {
     await completeAppQuit();
 
     expect(mocks.invoke.mock.calls).toEqual([
+      ["get_locale_settings", undefined],
+      ["set_locale_preference", { preference: "zh-CN" }],
       ["add_project", { projectPath: "/project" }],
       [
         "remove_project",

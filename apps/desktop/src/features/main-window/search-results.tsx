@@ -1,4 +1,5 @@
 import type { QuestDto } from "../../shared/tauri/types";
+import { useTranslation } from "react-i18next";
 import { QuestCard } from "./quest-board";
 
 interface SearchResultsProps {
@@ -16,18 +17,19 @@ export function SearchResults({
   onClear,
   onSelectQuest,
 }: SearchResultsProps) {
+  const { t } = useTranslation("main-window");
   return (
-    <section className="search-results" aria-label="Search results">
+    <section className="search-results" aria-label={t("search.results")}>
       <header className="search-results-header">
-        <h2>Search results</h2>
+        <h2>{t("search.results")}</h2>
         <span>{quests.length}</span>
       </header>
       {quests.length === 0 ? (
         <div className="search-empty">
-          <strong>No results for “{query}”</strong>
-          <span>Try a different word or clear the search.</span>
+          <strong>{t("search.noResults", { query })}</strong>
+          <span>{t("search.tryAnother")}</span>
           <button className="text-button" onClick={onClear} type="button">
-            Clear Search
+            {t("toolbar.clearSearch")}
           </button>
         </div>
       ) : (

@@ -1,5 +1,6 @@
 import { Trash, X } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   useDeleteQuestMutation,
@@ -16,6 +17,8 @@ import { useMainWindowStore } from "../../store/main-window";
 import { QuestDeleteDialog } from "./quest-delete-dialog";
 import { QuestStatusControl } from "./quest-status-control";
 import { useQuestWriteCoordinator } from "./quest-write-coordinator";
+import { localizedError } from "../../shared/i18n/errors";
+import { i18n } from "../../shared/i18n/i18n";
 
 interface QuestDrawerProps {
   access: WorkspaceAccess;
@@ -34,6 +37,7 @@ export function QuestDrawer({
   onClose,
   onPersistPreferences,
 }: QuestDrawerProps) {
+  const { t } = useTranslation(["main-window", "common"]);
   const drawerWidth = useMainWindowStore((state) => state.drawerWidth);
   const editor = useMainWindowStore((state) => state.editor);
   const statusMenuOpen = useMainWindowStore((state) => state.statusMenuOpen);
@@ -160,7 +164,7 @@ export function QuestDrawer({
       try {
         await statusMutation.mutateAsync(status);
       } catch (error) {
-        setStatusError({ message: toError(error).message, target: status });
+        setStatusError({ message: localizedError(error), target: status });
       }
     });
   }
@@ -177,27 +181,27 @@ export function QuestDrawer({
       setDeleteConfirming(false);
       clearEditor();
       clearSelection();
-      showToast("Quest deleted");
+      showToast(t("drawer.deleted"));
     } catch (error) {
-      setDeleteError(toError(error).message);
+      setDeleteError(localizedError(error));
     }
   }
 
   function discardDeletedDraft(): void {
     clearEditor();
     clearSelection();
-    showToast("The externally deleted Quest was closed");
+    showToast(t("drawer.externalDeletedClosed"));
   }
 
   return (
     <>
       <aside
-        aria-label="Quest details"
+        aria-label={t("drawer.title")}
         className="quest-drawer"
         style={{ width: drawerWidth }}
       >
         <ResizeHandle
-          ariaLabel="Resize Quest details"
+          ariaLabel={t("drawer.resize")}
           direction={-1}
           maximum={560}
           minimum={420}
@@ -206,8 +210,8 @@ export function QuestDrawer({
           value={drawerWidth}
         />
         <header className="drawer-header">
-          <h2>Quest details</h2>
-          <IconButton icon={X} label="Close Quest details" onClick={onClose} />
+          <h2>{t("drawer.title")}</h2>
+          <IconButton icon={X} label={t("drawer.close")} onClick={onClose} />
         </header>
         <div className="drawer-body">
           {readOnly ? (
@@ -218,14 +222,14 @@ export function QuestDrawer({
             <button
               className="drawer-content drawer-content-view"
               onClick={startEditing}
-              title="Edit Quest content"
+              title={t("drawer.editContent")}
               type="button"
             >
               {draft}
             </button>
           ) : (
             <textarea
-              aria-label="Quest content"
+              aria-label={t("drawer.contentLabel")}
               className="drawer-content drawer-content-editor"
               onBlur={stopEditing}
               onChange={(event) => changeDraft(event.target.value)}
@@ -246,9 +250,9 @@ export function QuestDrawer({
             </time>
             <span className="save-status" role="status">
               {editor?.phase === "saving"
-                ? "Saving…"
+                ? t("feedback.saving", { ns: "common" })
                 : editor?.savedVisible
-                  ? "Saved"
+                  ? t("feedback.saved", { ns: "common" })
                   : ""}
             </span>
           </div>
@@ -258,27 +262,28 @@ export function QuestDrawer({
           {editor?.phase === "saveError" && (
             <div className="drawer-inline-error" role="alert">
               <div>
-                <strong>Content could not be saved</strong>
-                <span>{editor.error}</span>
+                <strong>{t("drawer.saveFailed")}</strong>
               </div>
               <div className="drawer-error-actions">
                 <button
                   onClick={() => void coordinator.retrySave()}
                   type="button"
                 >
-                  {navigationIntent === "quit" ? "Retry & Quit" : "Retry"}
+                  {navigationIntent === "quit"
+                    ? t("drawer.retryAndQuit")
+                    : t("actions.retry", { ns: "common" })}
                 </button>
                 <button
                   onClick={() => void coordinator.discardLocalChanges()}
                   type="button"
                 >
                   {navigationIntent === "quit"
-                    ? "Quit Without Saving"
-                    : "Discard Local Changes"}
+                    ? t("drawer.quitWithoutSaving")
+                    : t("drawer.discardLocalChanges")}
                 </button>
                 {navigationPending && (
                   <button onClick={coordinator.cancelNavigation} type="button">
-                    Cancel Current Navigation
+                    {t("drawer.cancelNavigation")}
                   </button>
                 )}
               </div>
@@ -289,19 +294,19 @@ export function QuestDrawer({
               <div>
                 <strong>
                   {editor.conflict === "deleted"
-                    ? "Quest was deleted outside Sidequest"
-                    : "Quest changed outside Sidequest"}
+                    ? t("drawer.deletedExternally")
+                    : t("drawer.changedExternally")}
                 </strong>
                 <span>
                   {editor.conflict === "deleted"
-                    ? "Your local draft is preserved here so you can copy it."
-                    : "Choose which content should be kept."}
+                    ? t("drawer.draftPreserved")
+                    : t("drawer.chooseContent")}
                 </span>
               </div>
               <div className="drawer-error-actions">
                 {editor.conflict === "deleted" ? (
                   <button onClick={discardDeletedDraft} type="button">
-                    Discard Draft
+                    {t("drawer.discardDraft")}
                   </button>
                 ) : (
                   <>
@@ -309,14 +314,14 @@ export function QuestDrawer({
                       onClick={() => loadDiskContent(quest.content)}
                       type="button"
                     >
-                      Load Disk Version
+                      {t("drawer.loadDiskVersion")}
                     </button>
                     <button
                       className="primary-button"
                       onClick={() => void coordinator.overwriteConflict()}
                       type="button"
                     >
-                      Overwrite
+                      {t("drawer.overwrite")}
                     </button>
                   </>
                 )}
@@ -330,10 +335,10 @@ export function QuestDrawer({
                 onClick={() => void changeStatus(statusError.target)}
                 type="button"
               >
-                Retry
+                {t("actions.retry", { ns: "common" })}
               </button>
               <button onClick={() => setStatusError(null)} type="button">
-                Dismiss
+                {t("actions.dismiss", { ns: "common" })}
               </button>
             </div>
           )}
@@ -345,10 +350,13 @@ export function QuestDrawer({
             disabled={actionsDisabled}
             onClick={openDeleteConfirmation}
             ref={deleteButtonRef}
-            title={readOnly ? "Project is read-only" : "Delete Quest"}
+            title={
+              readOnly ? t("statusControl.readOnly") : t("drawer.deleteQuest")
+            }
             type="button"
           >
-            <Trash aria-hidden="true" size={16} weight="regular" /> Delete
+            <Trash aria-hidden="true" size={16} weight="regular" />
+            {t("actions.delete", { ns: "common" })}
           </button>
           <QuestStatusControl
             disabled={actionsDisabled}
@@ -382,14 +390,13 @@ export function QuestDrawer({
 function formatAbsoluteCreatedAt(createdAt: string): string {
   const created = new Date(createdAt);
   if (Number.isNaN(created.getTime())) {
-    return "Created at an unknown time";
+    return i18n.t("time.unknown", { ns: "common" });
   }
-  return `Created ${new Intl.DateTimeFormat("en-US", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(created)}`;
-}
-
-function toError(value: unknown): Error {
-  return value instanceof Error ? value : new Error(String(value));
+  return i18n.t("time.created", {
+    ns: "common",
+    value: new Intl.DateTimeFormat(i18n.language, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(created),
+  });
 }

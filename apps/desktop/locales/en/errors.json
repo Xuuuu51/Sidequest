@@ -1,0 +1,27 @@
+{
+  "generic": "Something went wrong. Try again.",
+  "invalidArguments": "The request is invalid.",
+  "projectNotFound": "The project is no longer registered.",
+  "workspaceUnavailable": "The workspace is unavailable.",
+  "workspaceReadOnly": "The workspace is read-only.",
+  "questNotFound": "The Quest was not found.",
+  "questFileInvalid": "The Quest file is invalid.",
+  "ioError": "A filesystem operation failed.",
+  "internalError": "Sidequest encountered an internal error.",
+  "languageSaveFailed": "The language setting could not be saved.",
+  "fatal": {
+    "title": "Sidequest encountered an unexpected error",
+    "description": "Your project files were not changed by this error. Diagnostic logs can help identify what happened.",
+    "draftWarning": "An unsaved draft is still in memory. Copy it before reloading this window.",
+    "copyDraft": "Copy Unsaved Draft",
+    "copyDiagnostics": "Copy Diagnostics",
+    "revealLogs": "Reveal Logs",
+    "reload": "Reload Window",
+    "draftCopied": "Draft copied.",
+    "draftCopyFailed": "Could not copy the draft.",
+    "diagnosticsCopied": "Diagnostics copied.",
+    "diagnosticsCopyFailed": "Could not copy diagnostics.",
+    "logsRevealed": "Logs revealed in Finder.",
+    "logsRevealFailed": "Could not reveal logs."
+  }
+}

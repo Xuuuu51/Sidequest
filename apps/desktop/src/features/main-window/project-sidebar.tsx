@@ -8,6 +8,7 @@ import {
   Warning,
   DotsThree,
 } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 
 import type { ProjectDto } from "../../shared/tauri/types";
 import { IconButton } from "../../shared/ui/icon-button";
@@ -41,6 +42,7 @@ export function ProjectSidebar({
   onSettings,
   settingsSelected,
 }: ProjectSidebarProps) {
+  const { t } = useTranslation(["main-window", "common"]);
   const sidebarWidth = useMainWindowStore((state) => state.sidebarWidth);
   const collapsed = useMainWindowStore((state) => state.sidebarCollapsed);
   const menuPath = useMainWindowStore((state) => state.projectMenuPath);
@@ -58,7 +60,7 @@ export function ProjectSidebar({
         <IconButton
           className="sidebar-toggle"
           icon={collapsed ? CaretRight : CaretLeft}
-          label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          label={collapsed ? t("sidebar.expand") : t("sidebar.collapse")}
           onClick={() => {
             setCollapsed(!collapsed);
             queueMicrotask(onPersistPreferences);
@@ -67,16 +69,16 @@ export function ProjectSidebar({
       </div>
 
       <div className="sidebar-section-heading">
-        {!collapsed && <span>Projects</span>}
+        {!collapsed && <span>{t("sidebar.projects")}</span>}
         <IconButton
           disabled={addPending}
           icon={Plus}
-          label="Add Project"
+          label={t("sidebar.addProject")}
           onClick={onAdd}
         />
       </div>
 
-      <nav aria-label="Projects" className="project-list">
+      <nav aria-label={t("sidebar.projects")} className="project-list">
         {projects.map((project) => {
           const selected = project.path === selectedProjectPath;
           return (
@@ -98,7 +100,7 @@ export function ProjectSidebar({
                   aria-expanded={menuPath === project.path}
                   className="project-menu-trigger"
                   icon={DotsThree}
-                  label={`Project actions for ${project.name}`}
+                  label={t("sidebar.actionsFor", { name: project.name })}
                   onClick={() =>
                     setMenuPath(menuPath === project.path ? null : project.path)
                   }
@@ -121,7 +123,7 @@ export function ProjectSidebar({
                       role="menuitem"
                       type="button"
                     >
-                      Locate Folder…
+                      {t("actions.locateFolder", { ns: "common" })}
                     </button>
                   )}
                   <button
@@ -132,7 +134,7 @@ export function ProjectSidebar({
                     role="menuitem"
                     type="button"
                   >
-                    Reveal in Finder
+                    {t("actions.revealInFinder", { ns: "common" })}
                   </button>
                   <div className="menu-divider" />
                   <button
@@ -143,7 +145,7 @@ export function ProjectSidebar({
                     role="menuitem"
                     type="button"
                   >
-                    Remove Project
+                    {t("sidebar.removeProject")}
                   </button>
                 </div>
               )}
@@ -162,13 +164,13 @@ export function ProjectSidebar({
           type="button"
         >
           <GearSix aria-hidden="true" size={16} weight="regular" />
-          {!collapsed && <span>Settings</span>}
+          {!collapsed && <span>{t("sidebar.settings")}</span>}
         </button>
       </div>
 
       {!collapsed && (
         <ResizeHandle
-          ariaLabel="Resize project sidebar"
+          ariaLabel={t("sidebar.resize")}
           direction={1}
           maximum={320}
           minimum={180}
@@ -182,10 +184,11 @@ export function ProjectSidebar({
 }
 
 function ProjectIcon({ project }: { project: ProjectDto }) {
+  const { t } = useTranslation("common");
   if (project.state === "unavailable") {
     return (
       <Warning
-        aria-label="Unavailable"
+        aria-label={t("projectState.unavailable")}
         className="project-state-icon warning-icon"
         size={16}
         weight="regular"
@@ -195,7 +198,7 @@ function ProjectIcon({ project }: { project: ProjectDto }) {
   if (project.state === "readOnly") {
     return (
       <LockSimple
-        aria-label="Read only"
+        aria-label={t("projectState.readOnly")}
         className="project-state-icon"
         size={16}
         weight="regular"

@@ -1,0 +1,99 @@
+{
+  "sidebar": {
+    "projects": "项目",
+    "addProject": "添加项目",
+    "expand": "展开侧边栏",
+    "collapse": "收起侧边栏",
+    "actionsFor": "{{name}} 的项目操作",
+    "removeProject": "移除项目",
+    "settings": "设置",
+    "resize": "调整项目侧边栏宽度"
+  },
+  "toolbar": {
+    "searchLabel": "搜索当前项目",
+    "searchPlaceholder": "搜索",
+    "clearSearch": "清除搜索",
+    "openDetails": "打开详情",
+    "searchShortcut": "⌘ F"
+  },
+  "board": {
+    "label": "Quest 看板",
+    "noQuestsYet": "暂无 Quest",
+    "captureHint": "使用 ⌘⇧Space 记录一条 Quest。",
+    "noQuests": "暂无 Quest",
+    "dragBlocked": "请先保存或解决这条 Quest 的冲突",
+    "statusChangeFailed": "无法修改状态",
+    "actionsUnavailable": "{{label}}操作暂不可用",
+    "questCount": "{{count}} 条"
+  },
+  "search": {
+    "results": "搜索结果",
+    "noResults": "没有找到“{{query}}”",
+    "tryAnother": "请尝试其他关键词或清除搜索。"
+  },
+  "drawer": {
+    "title": "详情",
+    "close": "关闭详情",
+    "resize": "调整详情宽度",
+    "editContent": "编辑内容",
+    "contentLabel": "内容",
+    "saveFailed": "无法保存内容",
+    "retryAndQuit": "重试并退出",
+    "quitWithoutSaving": "不保存并退出",
+    "discardLocalChanges": "放弃本地更改",
+    "cancelNavigation": "取消当前导航",
+    "deletedExternally": "Quest 已在 Sidequest 外部被删除",
+    "changedExternally": "Quest 已在 Sidequest 外部被修改",
+    "draftPreserved": "本地草稿已保留，你可以先复制其中的内容。",
+    "chooseContent": "请选择要保留的内容。",
+    "loadDiskVersion": "载入磁盘版本",
+    "overwrite": "覆盖",
+    "discardDraft": "放弃草稿",
+    "deleteQuest": "删除 Quest",
+    "deleted": "Quest 已删除",
+    "externalDeletedClosed": "已关闭在外部删除的 Quest"
+  },
+  "statusControl": {
+    "moreActions": "更多状态操作",
+    "actions": "状态操作",
+    "moveToReady": "移至就绪",
+    "markDone": "标记为已完成",
+    "moveToInbox": "移至收件箱",
+    "readOnly": "项目为只读"
+  },
+  "deleteDialog": {
+    "title": "删除这条 Quest？",
+    "description": "这会永久删除对应的 Markdown 文件，且无法在 Sidequest 中撤销。",
+    "recentDraft": "最近尚未保存的更改也会被放弃。",
+    "deleting": "正在删除…",
+    "confirm": "删除 Quest"
+  },
+  "workspace": {
+    "externalRefreshFailed": "外部更改可能无法自动刷新。",
+    "searchFailed": "搜索失败",
+    "projectUnavailable": "项目不可用",
+    "workspaceUnreadable": "无法读取工作区",
+    "unavailableDraft": "项目不可用，本地更改已保留。",
+    "selectedMissing": "选中的 Quest 已不存在",
+    "hideDetails": "隐藏详情",
+    "viewDetails": "查看详情",
+    "retry": "重试",
+    "removeFromSidequest": "从 Sidequest 移除",
+    "readOnlyBanner": "此项目为只读状态。你仍可浏览和搜索。",
+    "reload": "重新载入",
+    "searching": "正在搜索…",
+    "loading": "正在载入工作区…",
+    "cannotAccessProject": "Sidequest 无法访问此项目文件夹。",
+    "workspaceUnreadableDescription": "无法载入项目数据。",
+    "issueCount": "有 {{count}} 个 Quest 文件无法读取",
+    "issueItem": "无法读取的 Quest 文件 {{index}}"
+  },
+  "shell": {
+    "restoring": "正在恢复 Sidequest…",
+    "startFailed": "Sidequest 无法启动",
+    "stateRecovered": "桌面状态已恢复",
+    "dismissRecovery": "关闭恢复提示",
+    "dismissError": "关闭错误提示",
+    "recoveryDescription": "Sidequest 已使用安全的默认设置恢复应用。"
+  }
+}

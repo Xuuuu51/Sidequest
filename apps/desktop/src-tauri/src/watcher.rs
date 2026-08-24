@@ -27,12 +27,16 @@ impl ProjectWatcher {
         let emitted_app_handle = app_handle.clone();
         self.replace_with_handler(project_path, move || {
             if let Some(project_path) = &emitted_project_path {
-                let _emit_result = emitted_app_handle.emit(
+                if let Err(error) = emitted_app_handle.emit(
                     WORKSPACE_INVALIDATED_EVENT,
                     WorkspaceInvalidatedDto {
                         project_path: display_path(project_path),
                     },
-                );
+                ) {
+                    log::error!("watcher could not emit workspace invalidation: {error}");
+                } else {
+                    log::debug!("watcher emitted workspace invalidation");
+                }
             }
         })
     }
@@ -44,20 +48,23 @@ impl ProjectWatcher {
     ) -> Result<()> {
         self.active = None;
         let Some(project_path) = project_path else {
+            log::debug!("workspace watcher stopped");
             return Ok(());
         };
         let quests_path = project_path.join(".sidequest/quests");
         let watched_path = quests_path.clone();
         let mut watcher =
-            notify::recommended_watcher(move |event: notify::Result<notify::Event>| {
-                if event.is_ok_and(|event| {
-                    event
+            notify::recommended_watcher(move |event: notify::Result<notify::Event>| match event {
+                Ok(event)
+                    if event
                         .paths
                         .iter()
-                        .any(|path| is_relevant_path(path, &watched_path))
-                }) {
-                    handler();
+                        .any(|path| is_relevant_path(path, &watched_path)) =>
+                {
+                    handler()
                 }
+                Ok(_) => {}
+                Err(error) => log::warn!("workspace watcher event failed: {error}"),
             })
             .map_err(|source| DesktopError::Watcher {
                 path: quests_path.clone(),
@@ -70,6 +77,7 @@ impl ProjectWatcher {
                 message: source.to_string(),
             })?;
         self.active = Some(ActiveWatcher { _watcher: watcher });
+        log::info!("workspace watcher started");
         Ok(())
     }
 }

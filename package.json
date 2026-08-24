@@ -10,6 +10,8 @@
   "scripts": {
     "build": "pnpm --filter @sidequest/desktop build",
     "desktop": "pnpm --filter @sidequest/desktop tauri dev",
+    "desktop:isolated": "node scripts/desktop-isolated.mjs run",
+    "desktop:isolated:reset": "node scripts/desktop-isolated.mjs reset",
     "format": "prettier --write . && cargo fmt --all",
     "format:check": "prettier --check . && cargo fmt --all --check",
     "lint": "pnpm --filter @sidequest/desktop lint",

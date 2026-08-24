@@ -3,11 +3,15 @@
 mod app_menu;
 mod app_state;
 mod commands;
+mod diagnostics;
 mod dto;
 mod error;
 mod integration;
+mod locale;
+mod logging;
 mod native_events;
 mod quick_capture_window;
+mod runtime_paths;
 mod shortcut;
 mod watcher;
 mod window_state;
@@ -20,6 +24,7 @@ use crate::integration::auto_maintain_cli;
 use crate::quick_capture_window::{
     QUICK_CAPTURE_WINDOW_LABEL, restore_quick_capture_window, show_quick_capture_window,
 };
+use crate::runtime_paths::{RuntimePaths, configured_debug_profile_root};
 use crate::shortcut::ShortcutManager;
 use crate::window_state::restore_main_window;
 
@@ -29,10 +34,14 @@ use crate::window_state::restore_main_window;
 ///
 /// Returns a Tauri error when application setup or the native event loop fails.
 pub fn run() -> tauri::Result<()> {
+    let profile_root = configured_debug_profile_root().map_err(tauri::Error::Io)?;
+    let setup_profile_root = profile_root.clone();
     let app = tauri::Builder::default()
         .menu(app_menu::build)
         .on_menu_event(app_menu::handle_event)
+        .plugin(logging::plugin(profile_root.as_deref()))
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec!["--hidden"]),
@@ -40,16 +49,20 @@ pub fn run() -> tauri::Result<()> {
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, _shortcut, event| {
-                    if event.state() == ShortcutState::Pressed {
-                        let _show_result = show_quick_capture_window(app);
+                    if event.state() == ShortcutState::Pressed
+                        && let Err(error) = show_quick_capture_window(app)
+                    {
+                        log::error!("global shortcut could not show Quick Capture: {error}");
                     }
                 })
                 .build(),
         )
         .plugin(tauri_plugin_opener::init())
-        .setup(|app| {
-            let app_data_directory = app.path().app_data_dir()?;
-            let store = AppStateStore::load(&app_data_directory)?;
+        .setup(move |app| {
+            let paths = RuntimePaths::resolve(app.handle(), setup_profile_root.as_deref())?;
+            let store = AppStateStore::load(paths.app_data_directory())?;
+            let locale = store.language_preference().effective();
+            app.set_menu(app_menu::build_for_locale(app.handle(), locale)?)?;
             let window = app
                 .get_webview_window("main")
                 .ok_or_else(|| tauri::Error::WindowNotFound)?;
@@ -59,19 +72,35 @@ pub fn run() -> tauri::Result<()> {
                 .ok_or_else(|| tauri::Error::WindowNotFound)?;
             restore_quick_capture_window(&quick_capture, store.quick_capture_position())?;
             let shortcut = ShortcutManager::start(app.handle(), store.shortcut());
+            app.manage(paths.clone());
             app.manage(DesktopState::new(store, shortcut));
             if let Some(state) = app.try_state::<DesktopState>()
                 && let Ok(mut store) = state.app_state.lock()
+                && let Err(error) = auto_maintain_cli(app.handle(), &mut store, &paths)
             {
-                let _maintenance_result = auto_maintain_cli(app.handle(), &mut store);
+                log::warn!("automatic CLI maintenance failed during startup: {error}");
             }
             if !is_hidden_startup(std::env::args_os()) {
                 window.show()?;
+                log::info!("Main Window shown at startup");
+            } else {
+                log::info!("Sidequest started hidden");
             }
+            log::info!(
+                "Sidequest started version={} profile={}",
+                env!("CARGO_PKG_VERSION"),
+                if paths.is_isolated() {
+                    "isolated"
+                } else {
+                    "default"
+                }
+            );
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             commands::get_app_state,
+            commands::get_locale_settings,
+            commands::set_locale_preference,
             commands::add_project,
             commands::remove_project,
             commands::set_last_selected_project,
@@ -100,6 +129,8 @@ pub fn run() -> tauri::Result<()> {
             commands::uninstall_cli,
             commands::install_agent_skill,
             commands::uninstall_agent_skill,
+            diagnostics::get_diagnostic_report,
+            diagnostics::reveal_diagnostic_logs,
         ])
         .build(tauri::generate_context!())?;
 
@@ -111,11 +142,22 @@ pub fn run() -> tauri::Result<()> {
             if !approved {
                 api.prevent_exit();
                 if let Some(window) = app_handle.get_webview_window("main") {
-                    let _ = window.show();
-                    let _ = window.unminimize();
-                    let _ = window.set_focus();
+                    if let Err(error) = window.show() {
+                        log::error!("could not show Main Window for quit approval: {error}");
+                    }
+                    if let Err(error) = window.unminimize() {
+                        log::warn!("could not unminimize Main Window for quit approval: {error}");
+                    }
+                    if let Err(error) = window.set_focus() {
+                        log::warn!("could not focus Main Window for quit approval: {error}");
+                    }
                 }
-                let _ = app_handle.emit("app-quit-requested", ());
+                if let Err(error) = app_handle.emit("app-quit-requested", ()) {
+                    log::error!("could not emit app-quit-requested: {error}");
+                }
+                log::info!("application quit requested; waiting for write guard");
+            } else {
+                log::info!("application quit approved");
             }
         }
         #[cfg(target_os = "macos")]
@@ -124,13 +166,21 @@ pub fn run() -> tauri::Result<()> {
             ..
         } => {
             if !has_visible_windows && let Some(window) = app_handle.get_webview_window("main") {
-                let _ = window.show();
-                let _ = window.unminimize();
-                let _ = window.set_focus();
+                if let Err(error) = window.show() {
+                    log::error!("could not show Main Window on Dock reopen: {error}");
+                }
+                if let Err(error) = window.unminimize() {
+                    log::warn!("could not unminimize Main Window on Dock reopen: {error}");
+                }
+                if let Err(error) = window.set_focus() {
+                    log::warn!("could not focus Main Window on Dock reopen: {error}");
+                }
+                log::info!("Main Window restored from Dock reopen");
             }
         }
         _ => {}
     });
+    log::info!("Sidequest event loop exited code={exit_code}");
     if exit_code == 0 {
         Ok(())
     } else {

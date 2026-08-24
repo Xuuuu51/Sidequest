@@ -1,7 +1,9 @@
 import { ArrowRight, CaretDown, Check } from "@phosphor-icons/react";
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 
 import type { QuestStatus } from "../../shared/tauri/types";
+import { i18n } from "../../shared/i18n/i18n";
 
 interface QuestStatusControlProps {
   disabled: boolean;
@@ -22,13 +24,14 @@ export function QuestStatusControl({
   onChangeStatus,
   onMenuOpenChange,
 }: QuestStatusControlProps) {
+  const { t } = useTranslation("main-window");
   const menuButton = useRef<HTMLButtonElement>(null);
   const action = statusActions(status);
 
   return (
     <div
       className="status-split"
-      title={readOnly ? "Project is read-only" : undefined}
+      title={readOnly ? t("statusControl.readOnly") : undefined}
     >
       <button
         className="status-primary"
@@ -46,7 +49,7 @@ export function QuestStatusControl({
       <button
         aria-expanded={menuOpen}
         aria-haspopup="menu"
-        aria-label="More status actions"
+        aria-label={t("statusControl.moreActions")}
         className="status-menu-trigger"
         disabled={disabled}
         onClick={() => onMenuOpenChange(!menuOpen)}
@@ -78,6 +81,7 @@ function StatusMenu({
   onClose: () => void;
   onSelect: () => void;
 }) {
+  const { t } = useTranslation("main-window");
   const item = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -96,7 +100,7 @@ function StatusMenu({
 
   return (
     <div
-      aria-label="Status actions"
+      aria-label={t("statusControl.actions")}
       className="status-menu"
       onKeyDown={(event) => {
         if (event.key === "Escape") {
@@ -126,23 +130,31 @@ function statusActions(status: QuestStatus): {
   switch (status) {
     case "inbox":
       return {
-        primaryLabel: "Move to Ready",
+        primaryLabel: i18n.t("statusControl.moveToReady", {
+          ns: "main-window",
+        }),
         primaryStatus: "ready",
-        secondaryLabel: "Mark Done",
+        secondaryLabel: i18n.t("statusControl.markDone", { ns: "main-window" }),
         secondaryStatus: "done",
       };
     case "ready":
       return {
-        primaryLabel: "Mark Done",
+        primaryLabel: i18n.t("statusControl.markDone", { ns: "main-window" }),
         primaryStatus: "done",
-        secondaryLabel: "Move to Inbox",
+        secondaryLabel: i18n.t("statusControl.moveToInbox", {
+          ns: "main-window",
+        }),
         secondaryStatus: "inbox",
       };
     case "done":
       return {
-        primaryLabel: "Move to Ready",
+        primaryLabel: i18n.t("statusControl.moveToReady", {
+          ns: "main-window",
+        }),
         primaryStatus: "ready",
-        secondaryLabel: "Move to Inbox",
+        secondaryLabel: i18n.t("statusControl.moveToInbox", {
+          ns: "main-window",
+        }),
         secondaryStatus: "inbox",
       };
   }

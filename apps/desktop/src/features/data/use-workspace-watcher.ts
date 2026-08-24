@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../../shared/query/keys";
 import { setWatchedProject } from "../../shared/tauri/commands";
 import { listenForWorkspaceInvalidation } from "../../shared/tauri/events";
+import { logDebug, logFrontendError } from "../../shared/diagnostics/logger";
 
 const INVALIDATION_DEBOUNCE_MS = 150;
 
@@ -20,6 +21,7 @@ export function useWorkspaceWatcher(projectPath: string | null): Error | null {
         }
       })
       .catch((error: unknown) => {
+        logFrontendError("workspace watcher update failed", error);
         if (!disposed) {
           setWatcherError(toError(error));
         }
@@ -31,7 +33,9 @@ export function useWorkspaceWatcher(projectPath: string | null): Error | null {
 
   useEffect(
     () => () => {
-      void setWatchedProject(null).catch(() => undefined);
+      void setWatchedProject(null).catch((cause: unknown) =>
+        logFrontendError("workspace watcher shutdown failed", cause),
+      );
     },
     [],
   );
@@ -50,6 +54,7 @@ export function useWorkspaceWatcher(projectPath: string | null): Error | null {
         invalidatedPath,
         setTimeout(() => {
           timers.delete(invalidatedPath);
+          logDebug("workspace invalidation debounce completed");
           void queryClient.invalidateQueries({
             queryKey: queryKeys.workspace(invalidatedPath),
           });
@@ -61,13 +66,20 @@ export function useWorkspaceWatcher(projectPath: string | null): Error | null {
           });
         }, INVALIDATION_DEBOUNCE_MS),
       );
-    }).then((unsubscribe) => {
-      if (disposed) {
-        unsubscribe();
-      } else {
-        unlisten = unsubscribe;
-      }
-    });
+    })
+      .then((unsubscribe) => {
+        if (disposed) {
+          unsubscribe();
+        } else {
+          unlisten = unsubscribe;
+        }
+      })
+      .catch((cause: unknown) =>
+        logFrontendError(
+          "workspace invalidation listener registration failed",
+          cause,
+        ),
+      );
 
     return () => {
       disposed = true;

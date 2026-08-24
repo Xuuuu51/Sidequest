@@ -5,6 +5,8 @@ export type OnboardingStep =
   "addProject" | "quickCapture" | "codingAgents" | "complete";
 export type ShortcutModifier = "command" | "control" | "option" | "shift";
 export type IntegrationId = "cli" | "codex" | "claude";
+export type LanguagePreference = "system" | "en" | "zh-CN";
+export type EffectiveLocale = "en" | "zh-CN";
 export type IntegrationState =
   | "installed"
   | "notInstalled"
@@ -44,8 +46,20 @@ export interface SettingsDto {
   shortcut: ShortcutSpecDto;
   shortcutRegistration: "active" | "conflict";
   launchAtLogin: boolean;
+  launchAtLoginAvailable: boolean;
+  debugProfile: boolean;
   appVersion: string;
   licenseText: string;
+}
+
+export interface DiagnosticReportDto {
+  generatedAt: string;
+  report: string;
+}
+
+export interface LocaleSettingsDto {
+  preference: LanguagePreference;
+  effectiveLocale: EffectiveLocale;
 }
 
 export interface IntegrationItemDto {

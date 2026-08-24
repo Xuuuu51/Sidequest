@@ -1,7 +1,7 @@
 # Sidequest MVP 实现计划
 
 > 状态：已确认实现顺序  
-> 更新日期：2026-08-23
+> 更新日期：2026-08-24
 
 实现严格按依赖顺序推进。每一阶段满足完成门槛后再进入下一阶段。
 
@@ -68,9 +68,19 @@
 
 完成门槛：只操作 Sidequest-owned 文件；用户卸载意图得到保留；Integration 失败不阻塞本地 Quest 功能。
 
-## 8. 发布前加固
+## 8. 稳定性、诊断与隔离调试
 
-- 全量错误状态、macOS build、bundle 与新用户环境 smoke test。
-- 文档、CLI、Skill 和 Desktop 版本校准。
+- 冻结产品功能与视觉，补齐本机轮转日志、隐私过滤、诊断摘要和 React Error Boundary。
+- Debug build 提供 DevTools、受保护 reload、日志入口和仓库内隔离 Profile。
+- 审计窗口生命周期、Watcher、Quick Capture、拖拽和 Integration 的异步失败路径。
+- 增加英文与简体中文 Desktop resources、系统/手动语言选择、原生菜单同步及本地化回归门禁。
 
-完成门槛：通过 [MVP Acceptance](./acceptance.md) 中唯一维护的 Release Gate 与人工 smoke test。
+完成门槛：完整工程门禁通过；隔离 Profile smoke test 无阻断使用或可能造成数据丢失的问题，所有失败均有用户反馈或可定位日志。
+
+## 9. macOS 发布与更新
+
+- 通过 GitHub Releases 发布 Universal Apple Silicon + Intel 单包，最低支持 macOS 13。
+- 配置 Developer ID 签名、公证、DMG 与 Tauri Updater。
+- 建立发布 workflow、更新 endpoint、产物校验和干净用户环境发布验收。
+
+完成门槛：通过 [MVP Acceptance](./acceptance.md) 中唯一维护的 Release Gate 与发布 smoke test。实现遵循 Tauri 官方 [GitHub 发布流程](https://v2.tauri.app/distribute/pipelines/github/)及 [macOS 签名与公证流程](https://v2.tauri.app/distribute/sign/macos/)。

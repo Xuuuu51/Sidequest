@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 
 interface QuestDeleteDialogProps {
   content: string;
@@ -17,6 +18,7 @@ export function QuestDeleteDialog({
   onCancel,
   onConfirm,
 }: QuestDeleteDialogProps) {
+  const { t } = useTranslation(["main-window", "common"]);
   const dialog = useRef<HTMLDivElement>(null);
   const cancel = useRef<HTMLButtonElement>(null);
 
@@ -60,11 +62,11 @@ export function QuestDeleteDialog({
         ref={dialog}
         role="alertdialog"
       >
-        <h2 id="delete-title">Delete this Quest?</h2>
+        <h2 id="delete-title">{t("deleteDialog.title")}</h2>
         <p className="delete-preview">{content}</p>
         <p id="delete-description">
-          This deletes its Markdown file. This can’t be undone in Sidequest.
-          {hasUnsavedDraft && " Your recent edits will also be discarded."}
+          {t("deleteDialog.description")}
+          {hasUnsavedDraft && ` ${t("deleteDialog.recentDraft")}`}
         </p>
         {error !== null && (
           <p className="dialog-error" role="alert">
@@ -78,7 +80,7 @@ export function QuestDeleteDialog({
             ref={cancel}
             type="button"
           >
-            Cancel
+            {t("actions.cancel", { ns: "common" })}
           </button>
           <button
             className="danger-button"
@@ -86,7 +88,7 @@ export function QuestDeleteDialog({
             onClick={onConfirm}
             type="button"
           >
-            {deleting ? "Deleting…" : "Delete Quest"}
+            {deleting ? t("deleteDialog.deleting") : t("deleteDialog.confirm")}
           </button>
         </div>
       </div>

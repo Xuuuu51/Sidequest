@@ -1,7 +1,7 @@
 # Desktop 技术架构
 
 > 状态：实现基线  
-> 更新日期：2026-08-23
+> 更新日期：2026-08-24
 
 本文只定义 Tauri、React、状态管理与多窗口的技术边界。用户行为见 [Desktop 产品设计](../desktop/product.md)与 [Main Window 状态机](../desktop/main-window-state.md)。
 
@@ -30,6 +30,10 @@ Quick Capture：`show_quick_capture`、`hide_quick_capture`、`save_quick_captur
 Workspace 与 Quest：`load_workspace`、`create_quest`、`update_quest_content`、`set_quest_status`、`delete_quest`、`search_quests`、`set_watched_project`。
 
 Settings 与 integration：`get_settings`、`set_global_shortcut`、`set_launch_at_login`、`set_onboarding_step`、`get_integration_status`、`install_cli`、`uninstall_cli`、`install_agent_skill`、`uninstall_agent_skill`。
+
+Locale：`get_locale_settings`、`set_locale_preference`。偏好只接受 `system | en | zh-CN`，由 backend 解析有效 locale、持久化并重建原生菜单；成功后通过 `locale-changed` 同步所有窗口。
+
+Diagnostics：`get_diagnostic_report`、`reveal_diagnostic_logs`。摘要只返回版本、build mode、macOS、CPU 架构、App State schema、项目状态计数、快捷键和 Integration 状态，不返回用户名、绝对项目路径、Quest 数据或日志正文。剪贴板写权限只授予 Main Window。
 
 ```ts
 interface ProjectDto {
@@ -82,6 +86,7 @@ Tauri backend 将 Desktop-only 数据保存到 app-local `app.json`，例如 mac
     "position": null
   },
   "onboardingStep": "addProject",
+  "languagePreference": "system",
   "shortcut": {
     "modifiers": ["command", "shift"],
     "key": "Space"
@@ -115,6 +120,7 @@ Query 管理 app state、workspace snapshot、搜索结果、设置、integratio
 ["workspace", projectPath]
 ["search", projectPath, query]
 ["settings"]
+["locale-settings"]
 ["integrations"]
 ```
 
@@ -142,13 +148,37 @@ Desktop command 创建 Quest 后也发出同名 `workspace-invalidated`，因此
 
 Settings 与 integration 分别通过 `settings-invalidated` 和 `integrations-invalidated` 失效。macOS 菜单通过 `open-settings` 请求 Main Window 先执行既有写入保护，再切换 route。
 
-## 6. Main Window 生命周期
+## 6. 本地化
+
+React 使用编译时打包的 `i18next` / `react-i18next` JSON resources，不使用浏览器语言探测、HTTP backend 或运行时网络。应用在 React mount 前调用 native locale command，避免 fallback 文案闪烁；两个独立窗口通过 `locale-changed` 只切换资源，不重建 QueryClient、Zustand store 或窗口。
+
+资源按 `common`、`main-window`、`quick-capture`、`settings`、`onboarding`、`errors`、`native` namespace 分层，英文为 canonical fallback，测试强制校验简体中文 key 与插值占位符完全一致。新 JSX 可见文字由 ESLint 禁止直接写 literal。
+
+日期使用 `Intl.DateTimeFormat` 与 `Intl.RelativeTimeFormat`。UI error code 映射到本地化摘要；原始 native message/path 只允许 Debug DevTools console，持久日志继续只记录 command、耗时和错误码。
+
+## 7. Main Window 生命周期
 
 - 红色关闭按钮由 React 拦截：先 flush pending content 与窗口几何，再隐藏而不是销毁 Main Window。
 - macOS Dock Reopen 由 native `RunEvent::Reopen` 重新显示并聚焦 Main Window。
 - native 退出请求先被阻止并发送 `app-quit-requested`；React 完成 flush 或用户明确放弃本地草稿后调用 `complete_app_quit` 进行一次性退出审批。
 - `app-quit-requested` 与其他 native event 一样，只能通过集中式 typed wrapper 订阅。
 
-## 7. 多窗口
+## 8. 多窗口
 
 Main Window 与 Quick Capture Window 是独立原生窗口，分别拥有 QueryClient 和 Zustand store，不共享 JavaScript memory。Quick Capture Window 固定 `520×300`、不可 resize、无原生标题栏并始终置顶；`quick-capture-shown` 只负责刷新项目状态与恢复输入焦点。重复显示现有窗口，不重建 webview，因此草稿和项目选择得以保留。
+
+## 9. 诊断与错误边界
+
+Tauri Logging Plugin 是 Desktop 唯一持久日志入口。Debug build 记录 Debug 及以上，普通构建记录 Info 及以上；文件写入 macOS 标准 Logs 目录，单文件上限 1 MiB，仅保留当前文件和一个轮转文件。隔离 Profile 改写到自己的 `logs/`。
+
+日志只记录生命周期、command 名称与耗时/错误码、watcher、快捷键、菜单和 Integration 结果。React 不把 command 参数或 error message 写入日志；native formatter 将 Home 前缀统一替换为 `~`。禁止记录 Quest content、搜索词和剪贴板内容。
+
+Main Window 与 Quick Capture 各自拥有顶层 Error Boundary，并集中捕获 render error、window error 与 unhandled rejection。Fatal fallback 不自动 reload；内存中存在草稿时必须先明确警告并提供复制途径。
+
+Debug 菜单仅在 `debug_assertions` 下构建。Reload Main Window 必须经过既有写入协调器；Quick Capture 存在草稿时禁止 reload。Release build 不编译 Debug 菜单。
+
+## 10. 隔离 Profile
+
+`pnpm desktop:isolated` 只在 debug build 通过 `SIDEQUEST_DEBUG_PROFILE_DIR` 启用仓库内 `target/desktop-debug-profile/`。该目录分别承载 `app-data/`、`logs/` 和模拟 `home/`；CLI、Codex Skill 与 Claude Skill 由模拟 Home 派生。Release build 忽略 override。
+
+隔离 Profile 禁止修改 Launch at Login，但全局快捷键继续使用真实系统注册。`pnpm desktop:isolated:reset` 必须校验精确目标、拒绝 target/profile symlink，且不得触碰真实 Application Support 或 Home。

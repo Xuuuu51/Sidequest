@@ -1,0 +1,49 @@
+{
+  "title": "Settings",
+  "sections": {
+    "general": "General",
+    "codingAgents": "Coding Agents",
+    "commandLine": "Command Line Tool",
+    "about": "About"
+  },
+  "language": {
+    "label": "Language",
+    "description": "Choose the language used by Sidequest.",
+    "system": "System Default",
+    "english": "English",
+    "simplifiedChinese": "简体中文"
+  },
+  "shortcut": {
+    "label": "Shortcut",
+    "description": "Open Quick Capture from any app.",
+    "unavailable": "Shortcut is currently unavailable",
+    "restoreDefault": "Restore Default",
+    "recording": "Type shortcut…"
+  },
+  "launchAtLogin": {
+    "label": "Launch at Login",
+    "description": "Start Sidequest hidden and keep Quick Capture available.",
+    "isolated": "Unavailable while using an isolated debug profile."
+  },
+  "about": {
+    "application": "Desktop application",
+    "version": "Version {{version}}",
+    "diagnostics": "Diagnostics",
+    "diagnosticsDescription": "Copy a private-safe system summary or reveal local logs.",
+    "copyDiagnostics": "Copy Diagnostics",
+    "revealLogs": "Reveal Logs",
+    "license": "License",
+    "licenseDescription": "Sidequest is released under the MIT License.",
+    "viewLicense": "View License",
+    "closeLicense": "Close license",
+    "licenseTitle": "MIT License"
+  },
+  "integration": {
+    "installed": "Installed",
+    "needsAttention": "Needs Attention",
+    "notInstalled": "Not Installed",
+    "loading": "Loading…",
+    "removeManaged": "Sidequest will remove the managed file at:",
+    "confirmUninstall": "Uninstall {{name}}?"
+  }
+}

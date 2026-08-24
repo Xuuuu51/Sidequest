@@ -7,6 +7,7 @@ use sidequest_core::{
 };
 
 use crate::error::DesktopError;
+use crate::locale::{EffectiveLocale, LanguagePreference};
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -58,8 +59,70 @@ pub(crate) struct SettingsDto {
     pub(crate) shortcut: ShortcutSpecDto,
     pub(crate) shortcut_registration: ShortcutRegistrationDto,
     pub(crate) launch_at_login: bool,
+    pub(crate) launch_at_login_available: bool,
+    pub(crate) debug_profile: bool,
     pub(crate) app_version: String,
     pub(crate) license_text: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct DiagnosticReportDto {
+    pub(crate) generated_at: String,
+    pub(crate) report: String,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum LanguagePreferenceDto {
+    System,
+    En,
+    #[serde(rename = "zh-CN")]
+    ZhCn,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum EffectiveLocaleDto {
+    En,
+    #[serde(rename = "zh-CN")]
+    ZhCn,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct LocaleSettingsDto {
+    pub(crate) preference: LanguagePreferenceDto,
+    pub(crate) effective_locale: EffectiveLocaleDto,
+}
+
+impl From<LanguagePreferenceDto> for LanguagePreference {
+    fn from(preference: LanguagePreferenceDto) -> Self {
+        match preference {
+            LanguagePreferenceDto::System => Self::System,
+            LanguagePreferenceDto::En => Self::English,
+            LanguagePreferenceDto::ZhCn => Self::SimplifiedChinese,
+        }
+    }
+}
+
+impl From<LanguagePreference> for LanguagePreferenceDto {
+    fn from(preference: LanguagePreference) -> Self {
+        match preference {
+            LanguagePreference::System => Self::System,
+            LanguagePreference::English => Self::En,
+            LanguagePreference::SimplifiedChinese => Self::ZhCn,
+        }
+    }
+}
+
+impl From<EffectiveLocale> for EffectiveLocaleDto {
+    fn from(locale: EffectiveLocale) -> Self {
+        match locale {
+            EffectiveLocale::English => Self::En,
+            EffectiveLocale::SimplifiedChinese => Self::ZhCn,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -335,7 +398,10 @@ mod tests {
     use std::io;
     use std::path::PathBuf;
 
-    use super::{CommandErrorDto, ProjectDto, ProjectStateDto};
+    use super::{
+        CommandErrorDto, EffectiveLocaleDto, LanguagePreferenceDto, LocaleSettingsDto, ProjectDto,
+        ProjectStateDto,
+    };
     use crate::error::DesktopError;
 
     type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
@@ -366,5 +432,17 @@ mod tests {
 
         assert_eq!(dto.code, "workspace_read_only");
         assert_eq!(dto.path.as_deref(), Some("/project/.sidequest"));
+    }
+
+    #[test]
+    fn locale_settings_should_serialize_stable_locale_values() -> TestResult {
+        let value = serde_json::to_value(LocaleSettingsDto {
+            preference: LanguagePreferenceDto::ZhCn,
+            effective_locale: EffectiveLocaleDto::ZhCn,
+        })?;
+
+        assert_eq!(value["preference"], "zh-CN");
+        assert_eq!(value["effectiveLocale"], "zh-CN");
+        Ok(())
     }
 }

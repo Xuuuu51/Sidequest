@@ -1,0 +1,19 @@
+{
+  "addProject": {
+    "title": "Add your first project",
+    "description": "Choose a folder. Sidequest keeps its Quests in a local .sidequest directory inside that exact folder.",
+    "chooseFolder": "Choose Folder…",
+    "adding": "Adding…"
+  },
+  "quickCapture": {
+    "title": "Set up Quick Capture",
+    "description": "Capture a Quest from any app without interrupting your flow. You can change these settings later.",
+    "skip": "Skip for now"
+  },
+  "agents": {
+    "title": "Connect coding agents",
+    "description": "Install the Sidequest skill for the coding agents you use. The managed sq CLI is installed automatically.",
+    "finish": "Finish"
+  },
+  "progress": "Step {{current}} of 3"
+}

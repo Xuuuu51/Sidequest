@@ -78,6 +78,30 @@
 - [ ] modified 或 external installation 不被静默覆盖或删除。
 - [ ] Integration 失败不阻塞本地 Quest 功能。
 
+## 稳定性与隔离调试
+
+依据：[Desktop Architecture](../architecture/desktop.md)
+
+- [ ] Debug 与普通构建使用正确日志级别，日志按 1 MiB 轮转且只保留一个历史文件。
+- [ ] 日志不包含 Quest content、搜索词、剪贴板内容或未脱敏的 Home 路径。
+- [ ] 诊断摘要不包含用户名、项目绝对路径、Quest 数据或完整日志。
+- [ ] Main Window 与 Quick Capture render error、未处理 Promise 和 listener 失败可定位。
+- [ ] Main Window reload 经过写入保护；Quick Capture 有草稿时阻止 reload。
+- [ ] Release build 不接受隔离 Profile override，也不包含 Debug 菜单。
+- [ ] `desktop:isolated:reset` 只删除精确的仓库内 debug profile，不跟随 symlink。
+- [ ] 隔离 Profile 中 CLI 与 Agent Skill 操作不接触真实 Home；Launch at Login 不可修改。
+- [ ] 红色关闭、Dock/menu reopen、跨列拖拽与 watcher event storm 回归通过。
+
+## 多语言
+
+依据：[Desktop Product](../desktop/product.md)、[Desktop Architecture](../architecture/desktop.md)、[术语表](../CONTEXT.md)
+
+- [ ] 首次渲染使用 native 确定的有效 locale，不出现英文 fallback 闪烁。
+- [ ] 跟随系统、English 与简体中文偏好可以持久化；保存失败时保持原界面和菜单。
+- [ ] Main Window、Quick Capture、Onboarding、Settings 与原生菜单使用一致语言，切换时保留草稿和 UI workflow state。
+- [ ] 英文与简体中文资源 key/插值占位符一致；英文 fallback、简体中文 smoke、日期与错误映射测试通过。
+- [ ] UI 不展示原始 backend message/path，CLI contract、Quest content、日志与诊断摘要不被翻译。
+
 ## Release Gate
 
 依据：[Implementation Plan](./implementation-plan.md)
@@ -92,5 +116,4 @@ pnpm test
 pnpm tauri build
 ```
 
-发布前还必须完成干净 macOS 用户环境、项目异常、CLI/Desktop 并行修改、Quick Capture 多显示器和 Integration lifecycle 的人工 smoke test。
-
+阶段 8 使用隔离 Profile 完成同等范围的调试 smoke test。阶段 9 发布前还必须完成干净 macOS 用户环境、项目异常、CLI/Desktop 并行修改、Quick Capture 多显示器、Integration lifecycle、签名、公证、Universal DMG 与 Updater 的人工 smoke test。
