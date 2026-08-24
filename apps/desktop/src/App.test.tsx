@@ -389,6 +389,42 @@ describe("App", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("renders_markdown_then_edits_the_raw_content_with_status_colored_actions", async () => {
+    const markdownContent = "# Release notes\n\n- [x] Shipped";
+    mocks.getAppState.mockResolvedValue(projectState);
+    mocks.loadWorkspace.mockResolvedValue({
+      ...populatedWorkspace,
+      quests: [
+        { ...populatedWorkspace.quests[0], content: markdownContent },
+        ...populatedWorkspace.quests.slice(1),
+      ],
+    });
+
+    renderApp();
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Release notes/ }),
+    );
+
+    const drawer = screen.getByRole("dialog", { name: "Quest details" });
+    expect(
+      within(drawer).getByRole("heading", { name: "Release notes" }),
+    ).toBeInTheDocument();
+    expect(drawer.querySelector('input[type="checkbox"]')).toBeDisabled();
+    expect(
+      within(drawer).getByRole("button", { name: "Move to Ready" }),
+    ).toHaveClass("text-status-ready");
+    expect(drawer.querySelector("time")).toHaveClass("ml-auto", "text-right");
+
+    fireEvent.click(
+      within(drawer).getByRole("button", { name: /Release notes Shipped/ }),
+    );
+
+    expect(
+      within(drawer).getByRole("textbox", { name: "Quest content" }),
+    ).toHaveValue(markdownContent);
+    expect(within(drawer).getByText("Markdown")).toBeInTheDocument();
+  });
+
   it("offers_locate_for_an_unavailable_project_without_loading_it", async () => {
     mocks.getAppState.mockResolvedValue({
       ...projectState,

@@ -41,6 +41,8 @@
     "resize": "Resize Quest details",
     "editContent": "Edit Quest content",
     "contentLabel": "Quest content",
+    "markdown": "Markdown",
+    "saveShortcut": "⌘ S",
     "saveFailed": "Content could not be saved",
     "retryAndQuit": "Retry & Quit",
     "quitWithoutSaving": "Quit Without Saving",

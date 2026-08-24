@@ -41,6 +41,8 @@
     "resize": "调整详情宽度",
     "editContent": "编辑内容",
     "contentLabel": "内容",
+    "markdown": "Markdown",
+    "saveShortcut": "⌘ S",
     "saveFailed": "无法保存内容",
     "retryAndQuit": "重试并退出",
     "quitWithoutSaving": "不保存并退出",

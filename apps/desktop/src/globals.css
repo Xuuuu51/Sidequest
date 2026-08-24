@@ -194,6 +194,135 @@
     color: var(--foreground);
     background: var(--brand-subtle);
   }
+
+  .quest-markdown {
+    color: var(--foreground);
+    font-size: 14px;
+    line-height: 1.65;
+    overflow-wrap: anywhere;
+    user-select: text;
+  }
+
+  .quest-markdown > :first-child {
+    margin-top: 0;
+  }
+
+  .quest-markdown > :last-child {
+    margin-bottom: 0;
+  }
+
+  .quest-markdown h1,
+  .quest-markdown h2,
+  .quest-markdown h3 {
+    margin: 1.25em 0 0.55em;
+    color: var(--foreground);
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+  }
+
+  .quest-markdown h1 {
+    font-size: 20px;
+  }
+
+  .quest-markdown h2 {
+    font-size: 17px;
+  }
+
+  .quest-markdown h3 {
+    font-size: 15px;
+  }
+
+  .quest-markdown p,
+  .quest-markdown ul,
+  .quest-markdown ol,
+  .quest-markdown blockquote,
+  .quest-markdown pre,
+  .quest-markdown table {
+    margin: 0 0 0.85em;
+  }
+
+  .quest-markdown ul,
+  .quest-markdown ol {
+    padding-left: 1.4rem;
+  }
+
+  .quest-markdown ul {
+    list-style: disc;
+  }
+
+  .quest-markdown ol {
+    list-style: decimal;
+  }
+
+  .quest-markdown li + li {
+    margin-top: 0.22em;
+  }
+
+  .quest-markdown li::marker {
+    color: var(--muted-foreground);
+  }
+
+  .quest-markdown blockquote {
+    border-left: 2px solid color-mix(in srgb, var(--brand) 55%, transparent);
+    padding-left: 0.85rem;
+    color: var(--muted-foreground);
+  }
+
+  .quest-markdown code {
+    border-radius: 4px;
+    background: var(--muted);
+    padding: 0.12rem 0.32rem;
+    font-family: "SF Mono", ui-monospace, monospace;
+    font-size: 0.88em;
+  }
+
+  .quest-markdown pre {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--muted);
+    padding: 0.8rem 0.9rem;
+  }
+
+  .quest-markdown pre code {
+    border-radius: 0;
+    background: transparent;
+    padding: 0;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .quest-markdown hr {
+    margin: 1.2rem 0;
+    border: 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .quest-markdown table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  .quest-markdown th,
+  .quest-markdown td {
+    border: 1px solid var(--border);
+    padding: 0.38rem 0.55rem;
+    text-align: left;
+  }
+
+  .quest-markdown th {
+    background: var(--muted);
+    font-weight: 600;
+  }
+
+  .quest-markdown input[type="checkbox"] {
+    margin: 0 0.4rem 0 0;
+    accent-color: var(--status-done);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

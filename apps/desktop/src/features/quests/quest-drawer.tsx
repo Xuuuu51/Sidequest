@@ -1,4 +1,11 @@
-import { ChevronLeft, ChevronRight, Trash2, X } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  PencilLine,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -12,6 +19,7 @@ import type {
 import { Button } from "../../shared/ui/button";
 import { Sheet as Dialog } from "../../shared/ui/sheet";
 import { Textarea } from "../../shared/ui/textarea";
+import { ShortcutHint } from "../../shared/ui/shortcut-hint";
 import { ResizeHandle } from "../../shared/ui/resize-handle";
 import { useMainWindowStore } from "../../store/main-window/store";
 import { QuestDeleteDialog } from "./quest-delete-dialog";
@@ -19,6 +27,7 @@ import { QuestStatusControl } from "./quest-status-control";
 import { useQuestWriteCoordinator } from "./quest-write-coordinator";
 import { localizedError } from "../../shared/i18n/errors";
 import { i18n } from "../../shared/i18n/i18n";
+import { MarkdownContent } from "./markdown-content";
 
 interface QuestDrawerProps {
   access: WorkspaceAccess;
@@ -255,47 +264,63 @@ export function QuestDrawer({
           </header>
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-[22px] pb-4 pt-[18px]">
             {readOnly ? (
-              <div
-                className="block min-h-[200px] w-full flex-1 select-text whitespace-pre-wrap rounded-sm bg-transparent p-0 text-left text-sm leading-[22px] text-foreground outline-none [overflow-wrap:anywhere]"
+              <MarkdownContent
+                className="min-h-[200px] w-full flex-1 rounded-lg px-1 py-0.5 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                content={draft}
                 tabIndex={0}
-              >
-                {draft}
-              </div>
+              />
             ) : editor?.phase === "viewing" ? (
-              <button
-                className="block min-h-[200px] w-full flex-1 select-text whitespace-pre-wrap rounded-sm border-0 bg-transparent p-0 text-left text-sm leading-[22px] text-foreground outline-none hover:bg-accent/40 focus-visible:ring-2 focus-visible:ring-ring [overflow-wrap:anywhere]"
+              <div
+                className="group relative min-h-[200px] w-full flex-1 cursor-text rounded-lg border border-transparent px-1 py-0.5 text-left outline-none transition-[background-color,border-color,box-shadow] duration-[var(--motion-fast)] hover:border-border/70 hover:bg-surface/45 focus-visible:ring-2 focus-visible:ring-ring"
                 onClick={startEditing}
-                title={t("drawer.editContent")}
-                type="button"
-              >
-                {draft}
-              </button>
-            ) : (
-              <Textarea
-                aria-label={t("drawer.contentLabel")}
-                className="block min-h-[200px] w-full flex-1 resize-none select-text whitespace-pre-wrap rounded-sm border-0 bg-transparent p-0 text-left text-sm leading-[22px] text-foreground shadow-none outline-none focus-visible:ring-2 focus-visible:ring-ring [overflow-wrap:anywhere]"
-                onBlur={stopEditing}
-                onChange={(event) => changeDraft(event.target.value)}
                 onKeyDown={(event) => {
-                  if (event.metaKey && event.key.toLowerCase() === "s") {
+                  if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
-                    void coordinator.flush();
+                    startEditing();
                   }
                 }}
-                readOnly={conflict}
-                ref={textareaRef}
-                value={draft}
-              />
+                role="button"
+                tabIndex={0}
+                title={t("drawer.editContent")}
+              >
+                <PencilLine
+                  aria-hidden="true"
+                  className="pointer-events-none absolute right-2 top-2 rounded-md bg-elevated p-1 text-muted-foreground opacity-0 shadow-control transition-opacity group-hover:opacity-80 group-focus-visible:opacity-80"
+                  size={22}
+                />
+                <MarkdownContent content={draft} />
+              </div>
+            ) : (
+              <div className="flex min-h-[240px] w-full flex-1 flex-col overflow-hidden rounded-lg border border-input/80 bg-surface/65 shadow-[inset_0_1px_0_rgb(255_255_255/0.025)] focus-within:ring-2 focus-within:ring-ring">
+                <div className="flex h-9 shrink-0 items-center gap-2 border-b border-border/70 px-3 text-[11px] font-medium text-muted-foreground">
+                  <FileText aria-hidden="true" size={13} />
+                  <span>{t("drawer.markdown")}</span>
+                  <ShortcutHint
+                    className="ml-auto"
+                    density="compact"
+                    shortcut={t("drawer.saveShortcut")}
+                  />
+                </div>
+                <Textarea
+                  aria-label={t("drawer.contentLabel")}
+                  className="block min-h-[200px] w-full flex-1 resize-none select-text whitespace-pre-wrap rounded-none border-0 bg-transparent px-3.5 py-3 font-mono text-[13px] leading-[21px] text-foreground shadow-none outline-none focus-visible:ring-0 [overflow-wrap:anywhere]"
+                  onBlur={stopEditing}
+                  onChange={(event) => changeDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.metaKey && event.key.toLowerCase() === "s") {
+                      event.preventDefault();
+                      void coordinator.flush();
+                    }
+                  }}
+                  readOnly={conflict}
+                  ref={textareaRef}
+                  value={draft}
+                />
+              </div>
             )}
             <div className="flex min-h-9 items-end justify-between gap-4 pt-3.5">
-              <time
-                className="text-xs text-muted-foreground"
-                dateTime={quest.createdAt}
-              >
-                {formatAbsoluteCreatedAt(quest.createdAt)}
-              </time>
               <span
-                className="min-w-[54px] text-right text-xs text-muted-foreground"
+                className="min-w-[54px] text-left text-xs text-muted-foreground"
                 role="status"
               >
                 {editor?.phase === "saving"
@@ -304,6 +329,12 @@ export function QuestDrawer({
                     ? t("feedback.saved", { ns: "common" })
                     : ""}
               </span>
+              <time
+                className="ml-auto text-right text-xs text-muted-foreground"
+                dateTime={quest.createdAt}
+              >
+                {formatAbsoluteCreatedAt(quest.createdAt)}
+              </time>
             </div>
           </div>
 
