@@ -1,53 +1,51 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="390" viewBox="0 0 1200 390" role="img" aria-labelledby="title desc">
-  <title id="title">Sidequest</title>
-  <desc id="desc">A local-first memory layer that saves side ideas without interrupting the developer's main flow.</desc>
-  <defs>
-    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#FAFAF8"/>
-      <stop offset="0.58" stop-color="#F3F3F0"/>
-      <stop offset="1" stop-color="#ECEDEA"/>
-    </linearGradient>
-  </defs>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="430" viewBox="0 0 1200 430" role="img" aria-labelledby="title desc">
+  <title id="title">Sidequest — stay on the main quest</title>
+  <desc id="desc">Project memory for AI coding. Capture side work without interrupting the current flow, keep it with the project, and let a coding agent pick it up later.</desc>
 
-  <rect x="1" y="1" width="1198" height="388" rx="28" fill="url(#background)" stroke="#D4D6D2"/>
+  <rect x="1" y="1" width="1198" height="428" rx="28" fill="#F7F7F4" stroke="#D4D6D2"/>
 
-  <g transform="translate(64 55)">
-    <text fill="#527ACD" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="600" letter-spacing="2">LOCAL-FIRST PROJECT MEMORY</text>
-    <text y="89" fill="#202124" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="72" font-weight="700" letter-spacing="-2">Side</text>
-    <text x="154" y="89" fill="#202124" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="67" font-weight="650" letter-spacing="-3">quest</text>
-    <text y="143" fill="#4C5055" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="27" font-weight="450">Keep building without losing the ideas</text>
-    <text y="181" fill="#4C5055" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="27" font-weight="450">worth coming back to.</text>
-
-    <g transform="translate(0 231)" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">
-      <text fill="#73777D">macOS</text>
-      <circle cx="78" cy="-6" r="3" fill="#B4B7B3"/>
-      <text x="96" fill="#73777D">plain Markdown</text>
-      <circle cx="262" cy="-6" r="3" fill="#B4B7B3"/>
-      <text x="280" fill="#73777D">Rust core</text>
-      <circle cx="394" cy="-6" r="3" fill="#B4B7B3"/>
-      <text x="412" fill="#73777D">sq CLI</text>
-    </g>
+  <g id="title-block" transform="translate(64 57)">
+    <text fill="#527ACD" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="650" letter-spacing="2">PROJECT MEMORY FOR AI CODING</text>
+    <text y="91" fill="#202124" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="76" font-weight="730" letter-spacing="-3">Side</text>
+    <text x="164" y="91" fill="#202124" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="70" font-weight="700" letter-spacing="-4">quest</text>
+    <text y="148" fill="#2F3337" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="31" font-weight="650" letter-spacing="-0.5">Stay on the main quest.</text>
+    <text y="190" fill="#64696F" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="22">Capture it now. Let your coding agent</text>
+    <text y="222" fill="#64696F" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="22">pick it up whenever you are ready.</text>
   </g>
 
-  <g transform="translate(724 54)">
-    <text x="22" y="18" fill="#73777D" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" letter-spacing="1.4">CURRENT FLOW</text>
+  <g id="project-flow" transform="translate(626 48)">
+    <text x="18" y="20" fill="#777C82" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="600" letter-spacing="1.5">KEEP THE FLOW · KEEP THE WORK</text>
 
-    <path d="M44 54 C44 103 186 103 186 154 C186 205 76 205 76 260 C76 283 96 296 132 296 L388 296" fill="none" stroke="#527ACD" stroke-width="12" stroke-linecap="round"/>
-    <circle cx="44" cy="54" r="10" fill="#527ACD"/>
-    <circle cx="388" cy="296" r="10" fill="#527ACD"/>
+    <path d="M40 76 C40 130 438 112 438 180 C438 247 48 221 48 308 C48 332 67 344 100 344 H460" fill="none" stroke="#527ACD" stroke-width="12" stroke-linecap="round"/>
+    <circle cx="40" cy="76" r="10" fill="#527ACD"/>
+    <circle cx="460" cy="344" r="10" fill="#527ACD"/>
 
-    <path d="M182 154 C235 154 250 205 308 205" fill="none" stroke="#A66F28" stroke-width="12" stroke-linecap="round"/>
-    <circle cx="308" cy="205" r="11" fill="#A66F28"/>
+    <path d="M205 123 C205 176 248 176 248 221 C248 264 302 272 348 272" fill="none" stroke="#A66F28" stroke-width="12" stroke-linecap="round"/>
+    <circle cx="205" cy="123" r="10" fill="#A66F28"/>
+    <circle cx="348" cy="272" r="10" fill="#A66F28"/>
 
-    <g transform="translate(220 50)">
-      <rect width="206" height="62" rx="14" fill="#FFFFFF" stroke="#D2D5D1"/>
-      <text x="20" y="27" fill="#73777D" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="17">MAIN QUEST</text>
-      <text x="20" y="49" fill="#202124" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="20">Keep building</text>
+    <g transform="translate(58 62)">
+      <rect width="181" height="70" rx="14" fill="#FFFFFF" stroke="#D2D5D1"/>
+      <text x="18" y="28" fill="#777C82" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">AI CODING</text>
+      <text x="18" y="54" fill="#202124" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="20" font-weight="650">Main quest</text>
     </g>
 
-    <g transform="translate(234 218)">
-      <text fill="#A66F28" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="17" font-weight="600">SIDEQUEST SAVED</text>
-      <text y="28" fill="#595D62" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">.sidequest/quests/…md</text>
+    <g transform="translate(232 146)">
+      <rect width="270" height="76" rx="14" fill="#FFF9F0" stroke="#D6B27D"/>
+      <text x="18" y="29" fill="#A66F28" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="650">⌘⇧SPACE · CAPTURE</text>
+      <text x="18" y="57" fill="#363A3E" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="20">Save the sidequest</text>
+    </g>
+
+    <g transform="translate(112 238)">
+      <rect width="267" height="76" rx="14" fill="#FFFFFF" stroke="#D2D5D1"/>
+      <text x="18" y="29" fill="#A66F28" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="650">PROJECT MEMORY</text>
+      <text x="18" y="57" fill="#53585E" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="19">.sidequest/quests/…md</text>
+    </g>
+
+    <g transform="translate(306 304)">
+      <rect width="218" height="72" rx="14" fill="#EEF3FF" stroke="#AFC3ED"/>
+      <text x="18" y="28" fill="#527ACD" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="650">CODING AGENT</text>
+      <text x="18" y="55" fill="#2F3337" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="20" font-weight="650">Pick it up later</text>
     </g>
   </g>
 </svg>

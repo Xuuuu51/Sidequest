@@ -5,43 +5,78 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="./assets/readme/hero-dark.svg">
-    <img src="./assets/readme/hero-light.svg" width="100%" alt="Sidequest — local-first project memory that saves side ideas without interrupting your main flow">
+    <img src="./assets/readme/hero-light.svg" width="100%" alt="Sidequest — project memory for AI coding that captures side work now and lets coding agents pick it up later">
   </picture>
 </p>
 
 <p align="center">
-  <a href="#stay-on-the-main-quest">Why Sidequest</a> ·
-  <a href="#how-it-works">How it works</a> ·
+  <a href="#capture-it-now-pick-it-up-later">Why Sidequest</a> ·
+  <a href="#one-project-memory-every-interface">How it works</a> ·
   <a href="#get-started">Get started</a> ·
   <a href="#command-line">CLI</a> ·
   <a href="./docs/README.md">Docs</a>
 </p>
 
+## Capture it now. Pick it up later.
+
+AI coding constantly reveals work that matters but does not belong in the current prompt: a refactor, an edge case, a UX improvement, or something worth validating later.
+
+Following it now derails the main goal. Leaving it in chat makes it hard to find in another session. Sidequest gives it a project-native place to wait.
+
+1. Press <kbd>⌘</kbd><kbd>⇧</kbd><kbd>Space</kbd> from any app.
+2. Capture the thought without stopping to organize it.
+3. When the time is right, ask your coding agent to find the Quest and pick it up.
+
+```text
+Today
+  "Quest details should support keyboard navigation."
+  → saved to this project
+
+Later, in a coding session
+  You: Find the keyboard-navigation Sidequest and implement it.
+  Agent: Found it. I'll inspect the Quest details flow first.
+```
+
+Natural-language recall is available today through the managed Codex and Claude skills. Sidequest gives agents a stable way to find and manage project memory; it does not schedule agents or execute Quests automatically.
+
+<p align="center">
+  <img src="./assets/readme/workflow.svg" width="100%" alt="A side task discovered during AI coding is captured with Quick Capture, stored as project Markdown, and later recalled by a coding agent">
+</p>
+
+## See the project, not another task manager
+
 ![Sidequest for macOS showing multiple projects, the Inbox, Ready, and Done board, and an editable Quest details drawer](./docs/assets/sidequest-application-shell-dark-v6.png)
 
-<p align="center"><sub>One project. Three states. Every idea stays close to the code that inspired it.</sub></p>
+Sidequest is deliberately scoped to project-level development intent:
 
-## Stay on the main quest
-
-While building one thing, you notice another: a refactor, an edge case, a UX improvement, or a follow-up worth validating.
-
-Doing it now breaks your flow. A project-management tool is too heavy. Chat history is hard to rediscover, and a code TODO is often the wrong home for project-level intent.
-
-Sidequest gives those thoughts a quiet place to wait:
-
-- **Capture in seconds.** Open Quick Capture from anywhere with <kbd>⌘</kbd><kbd>⇧</kbd><kbd>Space</kbd>, write the thought, and return to work.
-- **Recall in context.** Browse and search the Quests attached to the current project, then move them through `Inbox`, `Ready`, and `Done`.
-- **Own the memory.** Every Quest is plain Markdown on your filesystem—no account, database, daemon, or cloud dependency.
+- **Capture without context switching.** Quick Capture stays above the current app, saves in seconds, and returns focus to the work already in progress.
+- **Re-evaluate when ready.** Browse and search Quests in the current project, then move them through `Inbox`, `Ready`, and `Done`.
+- **Hand work back to an agent.** Installed Codex or Claude skills can recall and manage Quests from natural-language requests.
+- **Keep ownership of the memory.** Every Quest is plain Markdown on your filesystem—no account, database, daemon, or cloud dependency.
 
 Sidequest is for individual developers working in local code projects. It is intentionally not a team issue tracker or a general-purpose to-do app.
 
-## How it works
+## One project memory, every interface
 
-<p align="center">
-  <img src="./assets/readme/workflow.svg" width="100%" alt="Quick Capture, the desktop app, the CLI, and coding agents share one Rust core and local Markdown store for later recall">
-</p>
+Quick Capture, the desktop app, the `sq` CLI, and coding-agent skills all go through the same Rust core. Storage, validation, workspace resolution, search, and safe writes therefore have one implementation and one source of truth.
 
-The desktop app, `sq` CLI, and installed Codex or Claude skills all go through the same Rust core. Storage, validation, workspace resolution, search, and safe writes therefore have one implementation—not a separate source of truth for every interface.
+For you, the agent interaction stays natural:
+
+```text
+"Show me the Sidequests about keyboard navigation."
+"Pick up the accessibility Quest."
+"Mark that Quest as done."
+```
+
+Underneath, the installed skill uses the versioned machine-readable CLI instead of reading hidden files or calling a private service:
+
+```bash
+sq --json search "keyboard navigation"
+sq --json show sq_01KABC1234567890ABCDEFGHJK
+sq --json status sq_01KABC1234567890ABCDEFGHJK done
+```
+
+The [`sq` CLI contract](./docs/contracts/cli.md) defines the stable arguments, JSON shapes, errors, and exit codes used by scripts and coding agents.
 
 ### Files are the source of truth
 
@@ -60,14 +95,25 @@ created_at: 2026-08-22T22:30:00+08:00
 status: inbox
 ---
 
-Handle the read-only workspace state.
+Quest details should support keyboard navigation.
 ```
 
 The files are portable, inspectable, easy to back up, and Git-friendly when you choose to version them. Sidequest never runs `git add`, `git commit`, or `git push` for you.
 
+## What is included
+
+- Multi-project macOS desktop app
+- Global, always-on-top Quick Capture window
+- `Inbox`, `Ready`, and `Done` Quest board
+- Current-project search and editable Quest details
+- Project-local Markdown storage with safe atomic writes
+- Malformed-file isolation so one damaged Quest cannot block a workspace
+- Native `sq` CLI with human-readable and stable JSON output
+- Desktop-managed Codex and Claude skill integrations
+
 ## Get started
 
-Sidequest is currently an early macOS MVP that runs from source.
+> **Early macOS MVP:** Sidequest currently runs from source. A signed public release and automatic updates are not yet documented as available.
 
 ### Prerequisites
 
@@ -85,17 +131,7 @@ pnpm install
 pnpm desktop
 ```
 
-On first run, add a project and choose whether to configure Quick Capture and coding-agent integrations. The app can install its bundled `sq` CLI for you.
-
-## What is included
-
-- Multi-project macOS desktop app
-- `Inbox`, `Ready`, and `Done` Quest board
-- Global, always-on-top Quick Capture window
-- Current-project search and editable Quest details
-- Safe atomic writes and malformed-file isolation
-- Native `sq` CLI with human-readable and stable JSON output
-- Managed Codex and Claude skill integrations
+On first run, add a project and choose whether to configure Quick Capture and coding-agent integrations. The app can install its bundled `sq` CLI and managed Codex or Claude skill for you.
 
 ## Command line
 
@@ -127,11 +163,11 @@ sq status    Move a Quest between states
 sq delete    Delete one Quest
 ```
 
-Use `sq --json <COMMAND>` for the versioned machine-readable interface used by scripts and coding agents. The [`sq` CLI contract](./docs/contracts/cli.md) defines its arguments, JSON shapes, errors, and exit codes.
+Use `sq --json <COMMAND>` for the versioned machine-readable interface used by scripts and coding agents.
 
 ## Scope
 
-The MVP deliberately stays small. It does not include Windows or Linux apps, cloud sync, team collaboration, external issue-tracker integrations, semantic search, or automatic Quest execution. Signed public releases and automatic updates are not yet documented as available.
+The MVP deliberately stays small. It does not include Windows or Linux apps, cloud sync, team collaboration, external issue-tracker integrations, semantic search, automatic Quest execution, or automatic detection of the project behind the current IDE, terminal, or chat.
 
 See the [MVP scope](./docs/product/mvp-scope.md) for the exact product boundary and the [documentation map](./docs/README.md) for product, contracts, architecture, desktop behavior, and delivery guidance.
 
@@ -146,6 +182,13 @@ See the [MVP scope](./docs/product/mvp-scope.md) for the exact product boundary 
 | UI state | Zustand |
 | Storage | Markdown + YAML frontmatter |
 
+Run the desktop app during development:
+
+```bash
+pnpm install
+pnpm desktop
+```
+
 Run the common checks from the workspace root:
 
 ```bash
@@ -157,7 +200,7 @@ pnpm typecheck
 pnpm test
 ```
 
-The complete release gate and manual smoke-test requirements live in the [acceptance checklist](./docs/delivery/acceptance.md).
+Start with the [documentation map](./docs/README.md). The [architecture overview](./docs/architecture/overview.md), [stable contracts](./docs/contracts/), and [acceptance checklist](./docs/delivery/acceptance.md) cover implementation boundaries and the complete delivery gate.
 
 ## License
 

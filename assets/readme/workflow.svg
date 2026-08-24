@@ -1,58 +1,63 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="430" viewBox="0 0 1200 430" role="img" aria-labelledby="title desc">
-  <title id="title">How Sidequest connects capture, local storage, and recall</title>
-  <desc id="desc">The desktop app, Quick Capture, CLI, and coding agents all use one Rust core to safely store Markdown Quest files that can be recalled through the board, search, or CLI.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="460" viewBox="0 0 1200 460" role="img" aria-labelledby="title desc">
+  <title id="title">Capture now, let a coding agent pick it up later</title>
+  <desc id="desc">During AI coding, a developer discovers a side task, saves it with Quick Capture, keeps it as Markdown in the project, and later asks a coding agent to find and implement it.</desc>
 
-  <rect x="1" y="1" width="1198" height="428" rx="26" fill="#151A20" stroke="#363E47"/>
-  <text x="56" y="60" fill="#8C929B" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" letter-spacing="1.6">ONE MEMORY · EVERY INTERFACE</text>
+  <rect x="1" y="1" width="1198" height="458" rx="26" fill="#151A20" stroke="#363E47"/>
 
-  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
-    <g transform="translate(56 98)">
-      <text y="25" fill="#ECECEF" font-size="26" font-weight="650">Capture</text>
-      <text y="58" fill="#9CA2AA" font-size="19">Leave the current flow intact.</text>
-      <g transform="translate(0 91)" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">
-        <rect width="270" height="52" rx="12" fill="#20262D" stroke="#3C444E"/>
-        <circle cx="25" cy="26" r="6" fill="#7AA2F7"/>
-        <text x="45" y="33" fill="#D7D9DD">Quick Capture</text>
-        <rect y="64" width="270" height="52" rx="12" fill="#20262D" stroke="#3C444E"/>
-        <circle cx="25" cy="90" r="6" fill="#7AA2F7"/>
-        <text x="45" y="97" fill="#D7D9DD">Desktop app</text>
-        <rect y="128" width="270" height="52" rx="12" fill="#20262D" stroke="#3C444E"/>
-        <circle cx="25" cy="154" r="6" fill="#7AA2F7"/>
-        <text x="45" y="161" fill="#D7D9DD">sq CLI · agents</text>
-      </g>
-    </g>
+  <text x="56" y="58" fill="#8C929B" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="600" letter-spacing="1.6">CAPTURE → KEEP → RECALL → HAND OFF</text>
+  <text x="56" y="104" fill="#ECECEF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="34" font-weight="680">The thought leaves your head—not your project.</text>
 
-    <path d="M356 238 H416" stroke="#59636E" stroke-width="3" stroke-linecap="round"/>
-    <path d="M406 228 L416 238 L406 248" fill="none" stroke="#59636E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M76 278 H1124" fill="none" stroke="#343C45" stroke-width="4" stroke-linecap="round"/>
+  <path d="M76 278 H355" fill="none" stroke="#7AA2F7" stroke-width="8" stroke-linecap="round"/>
+  <path d="M355 278 C390 278 390 335 425 335 H954 C989 335 989 278 1024 278 H1124" fill="none" stroke="#C6944B" stroke-width="8" stroke-linecap="round"/>
 
-    <g transform="translate(442 98)">
-      <text y="25" fill="#ECECEF" font-size="26" font-weight="650">Store locally</text>
-      <text y="58" fill="#9CA2AA" font-size="19">One Rust core, one source of truth.</text>
-      <rect y="91" width="316" height="180" rx="18" fill="#20262D" stroke="#3C444E"/>
-      <text x="24" y="128" fill="#7AA2F7" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="600">sidequest-core</text>
-      <path d="M24 148 H292" stroke="#343C45"/>
-      <text x="24" y="181" fill="#D7D9DD" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">validate → atomic write</text>
-      <rect x="24" y="204" width="268" height="43" rx="10" fill="#171C22" stroke="#343C45"/>
-      <text x="42" y="232" fill="#C6944B" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">.sidequest/quests/*.md</text>
-    </g>
-
-    <path d="M788 238 H848" stroke="#59636E" stroke-width="3" stroke-linecap="round"/>
-    <path d="M838 228 L848 238 L838 248" fill="none" stroke="#59636E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-
-    <g transform="translate(874 98)">
-      <text y="25" fill="#ECECEF" font-size="26" font-weight="650">Recall</text>
-      <text y="58" fill="#9CA2AA" font-size="19">Return when the timing is right.</text>
-      <g transform="translate(0 91)" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">
-        <rect width="270" height="52" rx="12" fill="#20262D" stroke="#3C444E"/>
-        <circle cx="25" cy="26" r="6" fill="#C6944B"/>
-        <text x="45" y="33" fill="#D7D9DD">Board · search</text>
-        <rect y="64" width="270" height="52" rx="12" fill="#20262D" stroke="#3C444E"/>
-        <circle cx="25" cy="90" r="6" fill="#C6944B"/>
-        <text x="45" y="97" fill="#D7D9DD">Inbox → Ready</text>
-        <rect y="128" width="270" height="52" rx="12" fill="#20262D" stroke="#3C444E"/>
-        <circle cx="25" cy="154" r="6" fill="#C6944B"/>
-        <text x="45" y="161" fill="#D7D9DD">CLI · coding agents</text>
-      </g>
-    </g>
+  <g id="discover" transform="translate(56 144)">
+    <rect width="250" height="190" rx="18" fill="#20262D" stroke="#3C444E"/>
+    <text x="22" y="36" fill="#7AA2F7" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="650">01 · DISCOVER</text>
+    <text x="22" y="76" fill="#ECECEF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="23" font-weight="650">Stay with the</text>
+    <text x="22" y="106" fill="#ECECEF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="23" font-weight="650">current prompt</text>
+    <path d="M22 126 H228" stroke="#343C45"/>
+    <text x="22" y="155" fill="#A8AEB6" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18">A side task appears</text>
+    <text x="22" y="180" fill="#A8AEB6" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18">during AI coding.</text>
   </g>
+
+  <g id="capture" transform="translate(338 144)">
+    <rect width="250" height="190" rx="18" fill="#29241D" stroke="#735A35"/>
+    <text x="22" y="36" fill="#D6A55C" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="650">02 · CAPTURE</text>
+    <text x="22" y="76" fill="#ECECEF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="23" font-weight="650">⌘⇧Space</text>
+    <text x="22" y="106" fill="#ECECEF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="23" font-weight="650">and keep moving</text>
+    <path d="M22 126 H228" stroke="#4B3E2D"/>
+    <text x="22" y="155" fill="#C8B79E" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18">No planning session.</text>
+    <text x="22" y="180" fill="#C8B79E" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18">No context switch.</text>
+  </g>
+
+  <g id="keep" transform="translate(620 144)">
+    <rect width="250" height="190" rx="18" fill="#20262D" stroke="#3C444E"/>
+    <text x="22" y="36" fill="#D6A55C" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="650">03 · KEEP</text>
+    <text x="22" y="76" fill="#ECECEF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="23" font-weight="650">Memory stays</text>
+    <text x="22" y="106" fill="#ECECEF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="23" font-weight="650">with the project</text>
+    <path d="M22 126 H228" stroke="#343C45"/>
+    <text x="22" y="156" fill="#C6944B" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">.sidequest/quests/</text>
+    <text x="22" y="181" fill="#A8AEB6" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">sq_…md</text>
+  </g>
+
+  <g id="handoff" transform="translate(902 144)">
+    <rect width="250" height="190" rx="18" fill="#1D2940" stroke="#506DAB"/>
+    <text x="22" y="36" fill="#7AA2F7" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="650">04 · HAND OFF</text>
+    <text x="22" y="76" fill="#ECECEF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="23" font-weight="650">Ask your agent</text>
+    <text x="22" y="106" fill="#ECECEF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="23" font-weight="650">to pick it up</text>
+    <path d="M22 126 H228" stroke="#34496F"/>
+    <text x="22" y="155" fill="#B8C9EE" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18">Natural-language recall,</text>
+    <text x="22" y="180" fill="#B8C9EE" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18">available today.</text>
+  </g>
+
+  <circle cx="76" cy="278" r="9" fill="#7AA2F7"/>
+  <circle cx="355" cy="278" r="9" fill="#C6944B"/>
+  <circle cx="425" cy="335" r="9" fill="#C6944B"/>
+  <circle cx="954" cy="335" r="9" fill="#C6944B"/>
+  <circle cx="1024" cy="278" r="9" fill="#7AA2F7"/>
+  <circle cx="1124" cy="278" r="9" fill="#7AA2F7"/>
+
+  <text x="56" y="408" fill="#8C929B" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">MAIN QUEST CONTINUES</text>
+  <text x="937" y="408" fill="#7AA2F7" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="650">WORK REJOINS THE FLOW</text>
 </svg>
