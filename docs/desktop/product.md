@@ -114,7 +114,7 @@ Quick Capture 是始终置顶的独立 native window。通过全局快捷键唤�
 
 ## 9. Settings
 
-Settings 是 Main Window 内的全屏页面状态，不是独立窗口。从 Projects Sidebar、`⌘,` 或菜单进入后，Settings 自己的 Sidebar 与内容面板替换 Projects Sidebar 和 Quest Board。左上角返回按钮退出 Settings；`Esc` 不退出。返回后恢复项目、搜索和分组列表滚动位置，但不自动重开 Quest Details Drawer。设置即时保存，无全局 Save/Cancel。
+Settings 是 Main Window 内的全屏页面状态，不是独立窗口。从 Projects Sidebar、`⌘,` 或菜单进入后，Settings 自己的 Sidebar 与内容面板替换 Projects Sidebar 和 Quest Board。traffic lights 下方的返回项退出 Settings；`Esc` 不退出。返回后恢复项目、搜索和分组列表滚动位置，但不自动重开 Quest Details Drawer。设置即时保存，无全局 Save/Cancel。
 
 Settings Sidebar 固定显示带图标的 General、Integrations、Tools、About。每次进入默认选择 General，切换后右侧只显示当前分类；切离 General 时取消正在进行的 Quick Capture 快捷键录制。设置操作可以在后台继续，分类切换不被阻止。
 

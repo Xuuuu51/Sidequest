@@ -353,7 +353,7 @@ rest → error
 ### Settings
 
 - Settings 替换 Main Window 的 Projects Sidebar 与 Quest Board，使用固定 `216px` Settings Sidebar + settings content panel 的连续结构；Sidebar 不支持 resize 或 collapse。
-- Sidebar 顶部只有带文字的 Back，分类使用 Lucide 图标 + 文字；不额外显示 Settings 总标题。General、Integrations、Tools、About 的 active 状态使用同一中性 accent surface，不改变几何尺寸。
+- Sidebar 顶部先保留完整 `48px` traffic lights 安全区；Back 位于其下方，与分类项同宽并共享尺寸、间距、hover 与 focus 样式。Back 下方使用轻量 Settings 小标题组织分类；General、Integrations、Tools、About 使用 Lucide 图标 + 文字，active 状态采用同一中性 accent surface，不改变几何尺寸。
 - content panel 顶部只显示当前分类标题；内容列最大宽度 `760px`，靠左对齐。切换分类只替换右侧内容，不使用页内滚动锚点。
 - section 依赖 divider 与标题层级，不堆叠 settings cards。窄窗口下 Sidebar 保持固定，设置行允许从左右布局自然换行为上下布局。
 - 行布局保持左侧 label/description、右侧 compact control/status 的一致网格。

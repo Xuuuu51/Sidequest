@@ -73,6 +73,9 @@ const SETTINGS_SECTIONS: Array<{
   { id: "about", icon: Info, labelKey: "sections.about" },
 ];
 
+const SETTINGS_NAV_ITEM_CLASS =
+  "flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-left text-[13px] font-medium text-muted-foreground outline-none transition-[color,background-color,box-shadow] duration-[var(--motion-fast)] hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring";
+
 export function SettingsPage({ onBack, compact }: SettingsPageProps) {
   const { t } = useTranslation(["settings", "common", "errors"]);
   const settings = useSettingsQuery();
@@ -393,23 +396,26 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
       ) : (
         <>
           <aside className="flex w-[216px] shrink-0 flex-col border-r bg-sidebar">
-            <div
-              className="flex h-12 shrink-0 items-center pl-[76px] pr-2"
-              data-tauri-drag-region="deep"
-            >
-              <Button
-                data-tauri-drag-region="false"
+            <div className="h-12 shrink-0" data-tauri-drag-region="deep" />
+            <div className="px-2 pt-2">
+              <button
+                className={SETTINGS_NAV_ITEM_CLASS}
                 onClick={onBack}
-                size="sm"
-                variant="ghost"
+                type="button"
               >
                 <ArrowLeft aria-hidden="true" size={15} />
                 {t("actions.back", { ns: "common" })}
-              </Button>
+              </button>
+              <h2
+                className="mb-1.5 mt-5 px-2.5 text-[11px] font-semibold text-muted-foreground"
+                id="settings-navigation-title"
+              >
+                {t("title")}
+              </h2>
             </div>
             <nav
-              aria-label={t("title")}
-              className="flex flex-col gap-1 px-2 pt-3"
+              aria-labelledby="settings-navigation-title"
+              className="flex flex-col gap-1 px-2"
             >
               {SETTINGS_SECTIONS.map((section) => {
                 const Icon = section.icon;
@@ -418,7 +424,7 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
                   <button
                     aria-current={selected ? "page" : undefined}
                     className={cn(
-                      "flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-left text-[13px] font-medium text-muted-foreground outline-none transition-[color,background-color,box-shadow] duration-[var(--motion-fast)] hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring",
+                      SETTINGS_NAV_ITEM_CLASS,
                       selected && "bg-accent text-foreground",
                     )}
                     key={section.id}

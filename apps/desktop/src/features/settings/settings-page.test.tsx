@@ -118,6 +118,18 @@ describe("SettingsPage", () => {
     mocks.toastError.mockReset();
   });
 
+  it("places_back_navigation_below_the_window_controls_and_labels_the_menu", async () => {
+    renderSettings();
+
+    expect(await screen.findByRole("button", { name: "Back" })).toBeEnabled();
+    expect(
+      screen.getByRole("heading", { name: "Settings", level: 2 }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("navigation", { name: "Settings" }),
+    ).toBeInTheDocument();
+  });
+
   it("records_a_supported_shortcut_and_keeps_backend_validation_authoritative", async () => {
     renderSettings();
     const recorder = await screen.findByRole("button", { name: "⌘⇧Space" });
