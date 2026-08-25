@@ -139,3 +139,5 @@ pnpm tauri build
 ```
 
 阶段 8 使用隔离 Profile 完成同等范围的调试 smoke test。阶段 9 发布前还必须完成干净 macOS 用户环境、项目异常、CLI/Desktop 并行修改、Quick Capture 多显示器、Integration lifecycle、签名、公证、Universal DMG 与 Updater 的人工 smoke test。
+
+社区预发布允许在正式阶段 9 完成前按 [Community Release](./community-release.md)提供测试包，但还必须满足：tag 与三处版本一致；arm64/x64 DMG 各自包含同架构 Desktop 与 `sq`；ad-hoc signature 校验通过；提供 SHA-256；在干净 macOS 用户环境验证 Gatekeeper 单次例外流程；Release 保持 Prerelease，且不得宣称经过 Apple 公证或支持自动更新。

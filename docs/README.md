@@ -17,6 +17,7 @@
 | 改 Desktop UI | [`desktop/design-system.md`](./desktop/design-system.md)；若涉及行为，再读上一路径 |
 | 改 Tauri/React 数据流 | [`architecture/overview.md`](./architecture/overview.md) → [`architecture/desktop.md`](./architecture/desktop.md) |
 | 改 CLI/Skill 安装 | [`architecture/distribution.md`](./architecture/distribution.md) → [`contracts/cli.md`](./contracts/cli.md) |
+| 发布社区 macOS 安装包 | [`delivery/community-release.md`](./delivery/community-release.md) → [`delivery/acceptance.md`](./delivery/acceptance.md) |
 | 实施与验收 | [`delivery/implementation-plan.md`](./delivery/implementation-plan.md) → [`delivery/acceptance.md`](./delivery/acceptance.md) |
 
 ## 分层目录
@@ -34,4 +35,3 @@ docs/
 ```
 
 每个规范只有一个 owner，完整映射和写作规则见当前目录的 [`AGENTS.md`](./AGENTS.md)。遇到冲突时，稳定 contract 优先于实现说明；当前 canonical 文档优先于 history。
-
