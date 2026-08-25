@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sidequest Quick Capture context</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      }
+
+      * { box-sizing: border-box; }
+
+      html,
+      body {
+        width: 1200px;
+        height: 720px;
+        margin: 0;
+        overflow: hidden;
+        background: #101419;
+      }
+
+      .canvas {
+        position: relative;
+        width: 1200px;
+        height: 720px;
+        overflow: hidden;
+        background: #151a20;
+      }
+
+      .app {
+        position: absolute;
+        inset: 32px;
+        overflow: hidden;
+        border: 1px solid #3b434d;
+        border-radius: 26px;
+        background: #191f26;
+      }
+
+      .chrome {
+        position: absolute;
+        inset: 0 0 auto;
+        height: 54px;
+        border-bottom: 1px solid #303842;
+        background: #20262d;
+      }
+
+      .traffic-lights {
+        position: absolute;
+        top: 20px;
+        left: 22px;
+        display: flex;
+        gap: 9px;
+      }
+
+      .traffic-lights span {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+      }
+
+      .traffic-lights span:nth-child(1) { background: #ff5f57; }
+      .traffic-lights span:nth-child(2) { background: #febc2e; }
+      .traffic-lights span:nth-child(3) { background: #28c840; }
+
+      .window-title {
+        position: absolute;
+        top: 17px;
+        left: 50%;
+        color: #9299a2;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 14px;
+        letter-spacing: 0.12em;
+        transform: translateX(-50%);
+      }
+
+      .sidebar {
+        position: absolute;
+        top: 54px;
+        bottom: 0;
+        left: 0;
+        width: 242px;
+        padding: 28px 22px;
+        border-right: 1px solid #303842;
+        background: #171c22;
+      }
+
+      .sidebar-label,
+      .eyebrow {
+        color: #7aa2f7;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+      }
+
+      .project {
+        margin-top: 18px;
+        padding: 13px 14px;
+        border: 1px solid #425064;
+        border-radius: 11px;
+        color: #edf0f3;
+        background: #222a34;
+        font-size: 16px;
+        font-weight: 650;
+      }
+
+      .files {
+        margin-top: 24px;
+        color: #818994;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 14px;
+        line-height: 2;
+      }
+
+      .main {
+        position: absolute;
+        top: 54px;
+        right: 0;
+        bottom: 0;
+        left: 242px;
+        padding: 34px 40px;
+      }
+
+      h1 {
+        width: 600px;
+        margin: 12px 0 10px;
+        color: #f2f3f4;
+        font-size: 30px;
+        letter-spacing: -0.02em;
+      }
+
+      .subhead {
+        width: 610px;
+        margin: 0;
+        color: #9da4ad;
+        font-size: 17px;
+        line-height: 1.55;
+      }
+
+      .message {
+        position: absolute;
+        right: 40px;
+        bottom: 38px;
+        left: 40px;
+        min-height: 118px;
+        padding: 20px 22px;
+        border: 1px solid #3a4552;
+        border-radius: 16px;
+        background: #1d242c;
+      }
+
+      .message-title {
+        color: #7aa2f7;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .message p {
+        margin: 10px 0 0;
+        color: #b9c0c8;
+        font-size: 16px;
+      }
+
+      .caret {
+        display: inline-block;
+        width: 2px;
+        height: 19px;
+        margin-left: 4px;
+        vertical-align: -3px;
+        background: #7aa2f7;
+      }
+
+      .dim {
+        position: absolute;
+        inset: 32px;
+        z-index: 2;
+        border-radius: 26px;
+        background: rgba(8, 11, 14, 0.32);
+      }
+
+      .flow {
+        position: absolute;
+        inset: 0;
+        z-index: 3;
+        width: 1200px;
+        height: 720px;
+        pointer-events: none;
+      }
+
+      .capture-window {
+        position: absolute;
+        z-index: 4;
+        top: 170px;
+        left: 395px;
+        width: 700px;
+        border: 1px solid rgba(255, 255, 255, 0.75);
+        border-radius: 25px;
+        box-shadow: 0 28px 70px rgba(0, 0, 0, 0.34), 0 4px 14px rgba(0, 0, 0, 0.2);
+      }
+
+      .callout {
+        position: absolute;
+        z-index: 5;
+        border: 1px solid;
+        border-radius: 14px;
+        backdrop-filter: blur(18px);
+      }
+
+      .shortcut-callout {
+        top: 178px;
+        left: 66px;
+        width: 260px;
+        padding: 17px 18px;
+        border-color: #8e6a35;
+        color: #f1dfbf;
+        background: rgba(54, 43, 27, 0.93);
+      }
+
+      .keys {
+        display: flex;
+        gap: 7px;
+        margin-bottom: 11px;
+      }
+
+      kbd {
+        min-width: 34px;
+        padding: 5px 8px;
+        border: 1px solid #b98b47;
+        border-radius: 8px;
+        color: #f4d7a5;
+        background: #2b241b;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 18px;
+        text-align: center;
+      }
+
+      .callout strong {
+        display: block;
+        font-size: 18px;
+      }
+
+      .callout small {
+        display: block;
+        margin-top: 5px;
+        color: #c5aa7f;
+        font-size: 14px;
+      }
+
+      .return-callout {
+        right: 68px;
+        bottom: 56px;
+        width: 332px;
+        padding: 16px 18px;
+        border-color: #506dab;
+        color: #e7edfb;
+        background: rgba(27, 42, 69, 0.95);
+      }
+
+      .return-callout small { color: #afc3ed; }
+
+      .step {
+        display: inline-block;
+        margin-right: 8px;
+        color: #7aa2f7;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 14px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+      }
+
+      .footer-label {
+        position: absolute;
+        z-index: 5;
+        bottom: 71px;
+        left: 74px;
+        color: #9299a2;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 14px;
+        letter-spacing: 0.1em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="canvas">
+      <section class="app" aria-label="AI Coding session in progress">
+        <div class="chrome">
+          <div class="traffic-lights"><span></span><span></span><span></span></div>
+          <div class="window-title">AI CODING SESSION</div>
+        </div>
+        <aside class="sidebar">
+          <div class="sidebar-label">CURRENT PROJECT</div>
+          <div class="project">Sidequest</div>
+          <div class="files">README.zh-CN.md<br>quest-details.tsx<br>quick-capture-app.tsx<br>docs/product.md</div>
+        </aside>
+        <main class="main">
+          <div class="eyebrow">MAIN QUEST · IN PROGRESS</div>
+          <h1>优化 Quest 详情体验</h1>
+          <p class="subhead">Agent 正在检查当前实现。此时发现一条值得以后处理、但不应该打断当前目标的旁支。</p>
+          <div class="message">
+            <div class="message-title">AGENT</div>
+            <p>我会继续完成当前目标，并保持现有交互状态。<span class="caret"></span></p>
+          </div>
+        </main>
+      </section>
+
+      <div class="dim"></div>
+
+      <svg class="flow" viewBox="0 0 1200 720" aria-hidden="true">
+        <path d="M104 568 C250 568 276 512 374 512" fill="none" stroke="#7AA2F7" stroke-width="9" stroke-linecap="round"/>
+        <path d="M305 254 C350 254 350 292 398 292" fill="none" stroke="#C6944B" stroke-width="9" stroke-linecap="round"/>
+        <path d="M1026 560 C1026 610 936 622 872 622" fill="none" stroke="#7AA2F7" stroke-width="9" stroke-linecap="round"/>
+        <circle cx="104" cy="568" r="9" fill="#7AA2F7"/>
+        <circle cx="398" cy="292" r="9" fill="#C6944B"/>
+        <circle cx="872" cy="622" r="9" fill="#7AA2F7"/>
+      </svg>
+
+      <img class="capture-window" src="../sidequest-quick-capture-zh-cn.png" alt="Sidequest 快速记录窗口">
+
+      <div class="callout shortcut-callout">
+        <div class="keys"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>Space</kbd></div>
+        <strong><span class="step">01</span>从任意应用唤起</strong>
+        <small>不离开当前 AI Coding 上下文</small>
+      </div>
+
+      <div class="callout return-callout">
+        <strong><span class="step">02</span>提交后回到原应用</strong>
+        <small>Quick Capture 关闭，输入焦点回到当前工作</small>
+      </div>
+
+      <div class="footer-label">MAIN QUEST CONTINUES</div>
+    </div>
+  </body>
+</html>

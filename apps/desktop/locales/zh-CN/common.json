@@ -21,7 +21,7 @@
     "update": "更新"
   },
   "status": {
-    "inbox": "收件箱",
+    "inbox": "待整理",
     "ready": "就绪",
     "done": "已完成"
   },

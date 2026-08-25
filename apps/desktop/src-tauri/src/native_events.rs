@@ -7,6 +7,7 @@ pub(crate) const APP_STATE_INVALIDATED_EVENT: &str = "app-state-invalidated";
 pub(crate) const QUICK_CAPTURE_CLOSE_REQUESTED_EVENT: &str = "quick-capture-close-requested";
 pub(crate) const QUICK_CAPTURE_SHOWN_EVENT: &str = "quick-capture-shown";
 pub(crate) const OPEN_SETTINGS_EVENT: &str = "open-settings";
+pub(crate) const HIDE_MAIN_WINDOW_REQUESTED_EVENT: &str = "hide-main-window-requested";
 pub(crate) const SETTINGS_INVALIDATED_EVENT: &str = "settings-invalidated";
 pub(crate) const INTEGRATIONS_INVALIDATED_EVENT: &str = "integrations-invalidated";
 pub(crate) const LOCALE_CHANGED_EVENT: &str = "locale-changed";

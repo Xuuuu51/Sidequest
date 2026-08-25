@@ -52,7 +52,7 @@ import { Switch } from "../../shared/ui/switch";
 
 interface SettingsPageProps {
   onBack: () => void;
-  compact?: "quickCapture" | "codingAgents";
+  compact?: "quickCapture" | "codingAgents" | "onboardingIntegrations";
 }
 
 type SettingsSectionId =
@@ -453,6 +453,15 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
               </SettingsSection>
               <SettingsSection title={t("sections.commandLine")}>
                 {toolRows}
+              </SettingsSection>
+            </>
+          ) : compact === "onboardingIntegrations" ? (
+            <>
+              <SettingsSection title={t("sections.commandLine")}>
+                {toolRows}
+              </SettingsSection>
+              <SettingsSection title={t("sections.agentSkillsSetup")}>
+                {integrationRows}
               </SettingsSection>
             </>
           ) : (
@@ -874,6 +883,21 @@ function IntegrationRow({
         : item?.state === "repairRequired"
           ? t("actions.repair", { ns: "common" })
           : t("actions.install", { ns: "common" });
+  const description =
+    item === undefined
+      ? t("integration.loading", { ns: "settings" })
+      : id === "cli"
+        ? integrationDescription(
+            item,
+            t("integration.installed", { ns: "settings" }),
+            t("integration.notInstalled", { ns: "settings" }),
+            t("integration.needsAttention", { ns: "settings" }),
+          )
+        : item.state === "installed"
+          ? t("integration.agentSkillInstalled")
+          : item.state === "notInstalled"
+            ? t("integration.agentSkillNotInstalled")
+            : t("integration.agentSkillNeedsAttention");
   return (
     <div className="grid min-h-[64px] grid-cols-[auto_minmax(180px,1fr)_auto_auto] items-center gap-x-3 gap-y-2 rounded-lg bg-surface/45 px-4 py-3">
       <div className="inline-flex size-8 items-center justify-center rounded-md bg-background/45 text-muted-foreground">
@@ -890,14 +914,7 @@ function IntegrationRow({
           {integrationName(id)}
         </strong>
         <span className="overflow-hidden text-ellipsis text-xs leading-[18px] text-muted-foreground">
-          {item === undefined
-            ? t("integration.loading", { ns: "settings" })
-            : integrationDescription(
-                item,
-                t("integration.installed", { ns: "settings" }),
-                t("integration.notInstalled", { ns: "settings" }),
-                t("integration.needsAttention", { ns: "settings" }),
-              )}
+          {description}
         </span>
       </div>
       <span

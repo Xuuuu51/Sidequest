@@ -7,6 +7,7 @@
     "actionsFor": "Project actions for {{name}}",
     "removeProject": "Remove Project",
     "settings": "Settings",
+    "settingsShortcut": "⌘ ,",
     "resize": "Resize project sidebar"
   },
   "toolbar": {
@@ -74,6 +75,17 @@
     "deleting": "Deleting…",
     "confirm": "Delete Quest"
   },
+  "removeProjectDialog": {
+    "title": "Remove “{{name}}”?",
+    "description": "This project will be removed from Sidequest. Its files will be kept unless you select the option below.",
+    "deleteQuests": "Remove all Quests",
+    "deleteQuestsDescription": "Permanently delete this project's .sidequest data. This cannot be undone.",
+    "deleteQuestsUnavailable": "Quest data cannot be inspected, so it will be left unchanged.",
+    "questSummary": "{{quests}} valid Quests · {{issues}} unreadable files",
+    "inspecting": "Inspecting Quest data…",
+    "cannotInspect": "Quest data could not be inspected",
+    "confirm": "Remove Project"
+  },
   "workspace": {
     "externalRefreshFailed": "External changes may not refresh automatically.",
     "searchFailed": "Search failed",
@@ -95,7 +107,9 @@
     "issueItem": "Unreadable Quest file {{index}}"
   },
   "shell": {
-    "restoring": "Restoring Sidequest…",
+    "opening": "Opening Sidequest…",
+    "preparingSidequest": "Preparing Sidequest…",
+    "openingSettings": "Opening Settings…",
     "startFailed": "Sidequest could not start",
     "stateRecovered": "Desktop state recovered",
     "dismissRecovery": "Dismiss recovery warning",

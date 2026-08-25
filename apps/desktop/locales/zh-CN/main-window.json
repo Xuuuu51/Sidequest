@@ -7,6 +7,7 @@
     "actionsFor": "{{name}} 的项目操作",
     "removeProject": "移除项目",
     "settings": "设置",
+    "settingsShortcut": "⌘ ,",
     "resize": "调整项目侧边栏宽度"
   },
   "toolbar": {
@@ -64,7 +65,7 @@
     "actions": "状态操作",
     "moveToReady": "移至就绪",
     "markDone": "标记为已完成",
-    "moveToInbox": "移至收件箱",
+    "moveToInbox": "移至待整理",
     "readOnly": "项目为只读"
   },
   "deleteDialog": {
@@ -73,6 +74,17 @@
     "recentDraft": "最近尚未保存的更改也会被放弃。",
     "deleting": "正在删除…",
     "confirm": "删除 Quest"
+  },
+  "removeProjectDialog": {
+    "title": "移除“{{name}}”？",
+    "description": "该项目将从 Sidequest 中移除。除非勾选下方选项，否则项目文件会保留。",
+    "deleteQuests": "移除所有 Quests",
+    "deleteQuestsDescription": "永久删除该项目的 .sidequest 数据，此操作无法撤销。",
+    "deleteQuestsUnavailable": "无法检查 Quest 数据，因此不会改动项目文件。",
+    "questSummary": "{{quests}} 条有效 Quest · {{issues}} 个无法读取的文件",
+    "inspecting": "正在检查 Quest 数据…",
+    "cannotInspect": "无法检查 Quest 数据",
+    "confirm": "移除项目"
   },
   "workspace": {
     "externalRefreshFailed": "外部更改可能无法自动刷新。",
@@ -95,7 +107,9 @@
     "issueItem": "无法读取的 Quest 文件 {{index}}"
   },
   "shell": {
-    "restoring": "正在恢复 Sidequest…",
+    "opening": "正在打开 Sidequest…",
+    "preparingSidequest": "正在准备 Sidequest…",
+    "openingSettings": "正在打开设置…",
     "startFailed": "Sidequest 无法启动",
     "stateRecovered": "桌面状态已恢复",
     "dismissRecovery": "关闭恢复提示",

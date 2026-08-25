@@ -164,12 +164,22 @@ pub(crate) fn build_for_locale(
 }
 
 pub(crate) fn handle_event(app: &AppHandle, event: tauri::menu::MenuEvent) {
+    #[cfg(target_os = "macos")]
+    if crate::status_item::handle_menu_event(app, &event) {
+        return;
+    }
     match event.id().as_ref() {
         OPEN_SIDEQUEST_MENU_ID => {
             if let Some(window) = app.get_webview_window("main") {
                 if let Err(error) = show_and_focus(&window) {
                     log::error!("Open Sidequest menu failed: {error}");
                 } else {
+                    #[cfg(target_os = "macos")]
+                    if let Err(error) =
+                        crate::status_item::update_main_window_state(app, true, true)
+                    {
+                        log::warn!("status item could not track Main Window open: {error}");
+                    }
                     log::info!("Main Window opened from menu");
                 }
             } else {
@@ -185,10 +195,16 @@ pub(crate) fn handle_event(app: &AppHandle, event: tauri::menu::MenuEvent) {
             if let Some(window) = app.get_webview_window("main") {
                 if let Err(error) = show_and_focus(&window) {
                     log::error!("Settings menu could not show Main Window: {error}");
-                } else if let Err(error) =
-                    window.emit(crate::native_events::OPEN_SETTINGS_EVENT, ())
-                {
-                    log::error!("Settings menu could not notify Main Window: {error}");
+                } else {
+                    #[cfg(target_os = "macos")]
+                    if let Err(error) =
+                        crate::status_item::update_main_window_state(app, true, true)
+                    {
+                        log::warn!("status item could not track Settings open: {error}");
+                    }
+                    if let Err(error) = window.emit(crate::native_events::OPEN_SETTINGS_EVENT, ()) {
+                        log::error!("Settings menu could not notify Main Window: {error}");
+                    }
                 }
             } else {
                 log::error!("Settings menu could not find Main Window");
@@ -224,7 +240,7 @@ pub(crate) fn handle_event(app: &AppHandle, event: tauri::menu::MenuEvent) {
     }
 }
 
-fn show_and_focus(window: &tauri::WebviewWindow) -> tauri::Result<()> {
+pub(crate) fn show_and_focus(window: &tauri::WebviewWindow) -> tauri::Result<()> {
     window.show()?;
     window.unminimize()?;
     window.set_focus()

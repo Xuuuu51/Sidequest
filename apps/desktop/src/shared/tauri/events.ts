@@ -8,6 +8,7 @@ import type {
 
 export const WORKSPACE_INVALIDATED_EVENT = "workspace-invalidated";
 export const APP_QUIT_REQUESTED_EVENT = "app-quit-requested";
+export const HIDE_MAIN_WINDOW_REQUESTED_EVENT = "hide-main-window-requested";
 export const APP_STATE_INVALIDATED_EVENT = "app-state-invalidated";
 export const QUICK_CAPTURE_CLOSE_REQUESTED_EVENT =
   "quick-capture-close-requested";
@@ -49,6 +50,12 @@ export function listenForAppQuitRequest(
   handler: () => void,
 ): Promise<UnlistenFn> {
   return listen(APP_QUIT_REQUESTED_EVENT, handler);
+}
+
+export function listenForHideMainWindowRequest(
+  handler: () => void,
+): Promise<UnlistenFn> {
+  return listen(HIDE_MAIN_WINDOW_REQUESTED_EVENT, handler);
 }
 
 export function listenForAppStateInvalidation(

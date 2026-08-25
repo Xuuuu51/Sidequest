@@ -66,7 +66,7 @@ function MainWindowContent() {
   const watcherError = useWorkspaceWatcher(watchedPath);
 
   if (appState.isPending || view.name === "restoring") {
-    return <WindowPending label={t("shell.restoring")} />;
+    return <WindowPending label={t("shell.opening")} />;
   }
 
   if (appState.isError) {
@@ -89,7 +89,9 @@ function MainWindowContent() {
 
   if (view.name === "onboarding") {
     return (
-      <Suspense fallback={<WindowPending label={t("shell.restoring")} />}>
+      <Suspense
+        fallback={<WindowPending label={t("shell.preparingSidequest")} />}
+      >
         <OnboardingFlow
           appState={appState.data}
           addPending={projectActions.addPending}
@@ -98,7 +100,7 @@ function MainWindowContent() {
               ? null
               : localizedError(projectActions.error)
           }
-          onAddProject={() => void projectActions.add()}
+          onAddProject={() => void projectActions.add({ openWorkspace: false })}
         />
       </Suspense>
     );
@@ -108,7 +110,9 @@ function MainWindowContent() {
   return (
     <main className="relative flex h-screen min-h-0 overflow-hidden bg-background text-foreground">
       {view.name === "settings" ? (
-        <Suspense fallback={<ContentPending label={t("shell.restoring")} />}>
+        <Suspense
+          fallback={<ContentPending label={t("shell.openingSettings")} />}
+        >
           <SettingsPage
             onBack={() => closeSettings(state.projects.length > 0)}
           />
@@ -123,7 +127,9 @@ function MainWindowContent() {
             onSettings={() =>
               void coordinator.guard(async () => showSettings())
             }
-            onRemove={(project) => void projectActions.remove(project)}
+            onRemove={(project, deleteSidequestData) =>
+              void projectActions.remove(project, deleteSidequestData)
+            }
             onReveal={(path) => void projectActions.reveal(path)}
             onSelect={(project) => void projectActions.select(project)}
             projects={state.projects}

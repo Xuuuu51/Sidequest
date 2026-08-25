@@ -20,9 +20,12 @@ import { cn } from "../../shared/lib/utils";
 import type { ProjectDto } from "../../shared/tauri/types";
 import { Button } from "../../shared/ui/button";
 import { ResizeHandle } from "../../shared/ui/resize-handle";
+import { ShortcutHint } from "../../shared/ui/shortcut-hint";
+import { Tooltip } from "../../shared/ui/tooltip";
 import { useMainWindowStore } from "../../store/main-window/store";
 import { DropdownMenu as Menu } from "../../shared/ui/dropdown-menu";
 import { Sheet } from "../../shared/ui/sheet";
+import { ProjectRemoveDialog } from "./project-remove-dialog";
 
 const PREVIEW_OPEN_DELAY_MS = 120;
 const PREVIEW_CLOSE_DELAY_MS = 180;
@@ -35,7 +38,7 @@ interface ProjectSidebarProps {
   onSelect: (project: ProjectDto) => void;
   onLocate: (project: ProjectDto) => void;
   onReveal: (path: string) => void;
-  onRemove: (project: ProjectDto) => void;
+  onRemove: (project: ProjectDto, deleteSidequestData: boolean) => void;
   onPersistPreferences: () => void;
   onSettings: () => void;
   settingsSelected: boolean;
@@ -56,6 +59,9 @@ export function ProjectSidebar({
 }: ProjectSidebarProps) {
   const { t } = useTranslation(["main-window", "common"]);
   const [overlayOpen, setOverlayOpen] = useState(false);
+  const [removeCandidate, setRemoveCandidate] = useState<ProjectDto | null>(
+    null,
+  );
   const triggerRef = useRef<HTMLButtonElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const openTimerRef = useRef<number | null>(null);
@@ -87,7 +93,7 @@ export function ProjectSidebar({
     onSelect,
     onLocate,
     onReveal,
-    onRemove,
+    onRemove: setRemoveCandidate,
     onPersistPreferences,
     onSettings,
     settingsSelected,
@@ -187,24 +193,25 @@ export function ProjectSidebar({
   return (
     <>
       <div className="absolute left-[78px] top-0 z-[60] flex h-12 w-12 items-center justify-center">
-        <Button
-          aria-label={t(collapsed ? "sidebar.expand" : "sidebar.collapse")}
-          aria-expanded={!collapsed || overlayOpen}
-          aria-haspopup={collapsed ? "dialog" : undefined}
-          onBlur={collapsed ? handlePreviewBlur : undefined}
-          onClick={toggleSidebar}
-          onFocus={collapsed ? openOverlay : undefined}
-          onPointerEnter={collapsed ? scheduleOverlayOpen : undefined}
-          onPointerLeave={collapsed ? handlePreviewPointerLeave : undefined}
-          onPointerMove={collapsed ? scheduleOverlayOpen : undefined}
-          ref={triggerRef}
-          size="icon"
-          title={t(collapsed ? "sidebar.expand" : "sidebar.collapse")}
-          type="button"
-          variant="ghost"
-        >
-          <PanelLeft aria-hidden="true" size={17} strokeWidth={1.8} />
-        </Button>
+        <Tooltip content={t(collapsed ? "sidebar.expand" : "sidebar.collapse")}>
+          <Button
+            aria-label={t(collapsed ? "sidebar.expand" : "sidebar.collapse")}
+            aria-expanded={!collapsed || overlayOpen}
+            aria-haspopup={collapsed ? "dialog" : undefined}
+            onBlur={collapsed ? handlePreviewBlur : undefined}
+            onClick={toggleSidebar}
+            onFocus={collapsed ? openOverlay : undefined}
+            onPointerEnter={collapsed ? scheduleOverlayOpen : undefined}
+            onPointerLeave={collapsed ? handlePreviewPointerLeave : undefined}
+            onPointerMove={collapsed ? scheduleOverlayOpen : undefined}
+            ref={triggerRef}
+            size="icon"
+            type="button"
+            variant="ghost"
+          >
+            <PanelLeft aria-hidden="true" size={17} strokeWidth={1.8} />
+          </Button>
+        </Tooltip>
       </div>
       <div
         aria-hidden={collapsed}
@@ -261,15 +268,27 @@ export function ProjectSidebar({
           </Sheet.Portal>
         </Sheet.Root>
       )}
+      {removeCandidate !== null && (
+        <ProjectRemoveDialog
+          onCancel={() => setRemoveCandidate(null)}
+          onConfirm={(deleteSidequestData) => {
+            const project = removeCandidate;
+            setRemoveCandidate(null);
+            onRemove(project, deleteSidequestData);
+          }}
+          project={removeCandidate}
+        />
+      )}
     </>
   );
 }
 
-interface SidebarPanelProps extends ProjectSidebarProps {
+interface SidebarPanelProps extends Omit<ProjectSidebarProps, "onRemove"> {
   sidebarWidth: number;
   menuPath: string | null;
   setSidebarWidth: (width: number) => void;
   setMenuPath: (path: string | null) => void;
+  onRemove: (project: ProjectDto) => void;
   overlay?: boolean;
 }
 
@@ -307,15 +326,17 @@ function SidebarPanel({
         <span className="px-1 text-[11px] font-medium tracking-wide text-muted-foreground">
           {t("sidebar.projects")}
         </span>
-        <Button
-          aria-label={t("sidebar.addProject")}
-          disabled={addPending}
-          onClick={onAdd}
-          size="icon"
-          variant="ghost"
-        >
-          <Plus aria-hidden="true" size={15} />
-        </Button>
+        <Tooltip content={t("sidebar.addProject")}>
+          <Button
+            aria-label={t("sidebar.addProject")}
+            disabled={addPending}
+            onClick={onAdd}
+            size="icon"
+            variant="ghost"
+          >
+            <Plus aria-hidden="true" size={15} />
+          </Button>
+        </Tooltip>
       </div>
 
       <nav
@@ -360,7 +381,13 @@ function SidebarPanel({
           type="button"
         >
           <Settings aria-hidden="true" size={16} />
-          <span>{t("sidebar.settings")}</span>
+          <span className="min-w-0 flex-1 text-left">
+            {t("sidebar.settings")}
+          </span>
+          <ShortcutHint
+            density="compact"
+            shortcut={t("sidebar.settingsShortcut")}
+          />
         </button>
       </div>
 
@@ -397,12 +424,16 @@ function ProjectMenu({
     "flex h-8 cursor-default items-center rounded-sm px-2 text-[13px] outline-none data-[highlighted]:bg-accent";
   return (
     <Menu.Root onOpenChange={onOpenChange} open={open}>
-      <Menu.Trigger
-        aria-label={t("sidebar.actionsFor", { name: project.name })}
-        className="absolute right-1 inline-flex size-7 items-center justify-center rounded-md border-transparent bg-transparent text-muted-foreground opacity-0 outline-none hover:bg-accent hover:text-foreground focus:opacity-100 focus-visible:ring-2 focus-visible:ring-ring group-hover:opacity-100 data-[popup-open]:opacity-100"
-      >
-        <MoreHorizontal aria-hidden="true" size={16} />
-      </Menu.Trigger>
+      <span className="absolute right-1 inline-flex">
+        <Tooltip content={t("sidebar.actionsFor", { name: project.name })}>
+          <Menu.Trigger
+            aria-label={t("sidebar.actionsFor", { name: project.name })}
+            className="inline-flex size-7 items-center justify-center rounded-md border-transparent bg-transparent text-muted-foreground opacity-0 outline-none hover:bg-accent hover:text-foreground focus:opacity-100 focus-visible:ring-2 focus-visible:ring-ring group-hover:opacity-100 data-[popup-open]:opacity-100"
+          >
+            <MoreHorizontal aria-hidden="true" size={16} />
+          </Menu.Trigger>
+        </Tooltip>
+      </span>
       <Menu.Portal>
         <Menu.Positioner
           align="end"

@@ -6,6 +6,7 @@
     "integrations": "集成",
     "tools": "工具",
     "codingAgents": "编程 Agent",
+    "agentSkillsSetup": "安装 Sidequest Skill",
     "commandLine": "命令行工具",
     "about": "关于"
   },
@@ -85,6 +86,9 @@
     "needsAttention": "需要处理",
     "notInstalled": "未安装",
     "loading": "正在载入…",
+    "agentSkillInstalled": "Sidequest Skill 已安装",
+    "agentSkillNotInstalled": "Sidequest Skill 尚未安装",
+    "agentSkillNeedsAttention": "Sidequest Skill 需要处理",
     "removeManaged": "Sidequest 将移除以下受管理文件：",
     "confirmUninstall": "卸载 {{name}}？"
   }

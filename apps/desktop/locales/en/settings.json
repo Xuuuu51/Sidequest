@@ -6,6 +6,7 @@
     "integrations": "Integrations",
     "tools": "Tools",
     "codingAgents": "Coding Agents",
+    "agentSkillsSetup": "Install Sidequest Skill",
     "commandLine": "Command Line Tool",
     "about": "About"
   },
@@ -85,6 +86,9 @@
     "needsAttention": "Needs Attention",
     "notInstalled": "Not Installed",
     "loading": "Loading…",
+    "agentSkillInstalled": "Sidequest Skill installed",
+    "agentSkillNotInstalled": "Sidequest Skill not installed",
+    "agentSkillNeedsAttention": "Sidequest Skill needs attention",
     "removeManaged": "Sidequest will remove the managed file at:",
     "confirmUninstall": "Uninstall {{name}}?"
   }

@@ -5,7 +5,10 @@ import {
   hideMainWindow,
   saveMainWindowGeometry,
 } from "../../shared/tauri/commands";
-import { listenForAppQuitRequest } from "../../shared/tauri/events";
+import {
+  listenForAppQuitRequest,
+  listenForHideMainWindowRequest,
+} from "../../shared/tauri/events";
 import type { NavigationIntent } from "../../store/main-window/types";
 import { logFrontendError } from "../../shared/diagnostics/logger";
 import {
@@ -41,20 +44,22 @@ export function useWindowGeometryPersistence(
         void saveMainWindowGeometry();
       }, SAVE_DELAY_MS);
     };
+    const requestHide = () => {
+      if (timeout !== null) {
+        clearTimeout(timeout);
+        timeout = null;
+      }
+      void guard(async () => {
+        await saveMainWindowGeometry();
+        await hideMainWindow();
+      }, "hide");
+    };
 
     const subscriptions = Promise.all([
       listenForCurrentWindowMove(scheduleSave),
       listenForCurrentWindowResize(scheduleSave),
-      listenForCurrentWindowClose(() => {
-        if (timeout !== null) {
-          clearTimeout(timeout);
-          timeout = null;
-        }
-        void guard(async () => {
-          await saveMainWindowGeometry();
-          await hideMainWindow();
-        }, "hide");
-      }),
+      listenForCurrentWindowClose(requestHide),
+      listenForHideMainWindowRequest(requestHide),
       listenForAppQuitRequest(() => {
         void guard(completeAppQuit, "quit");
       }),

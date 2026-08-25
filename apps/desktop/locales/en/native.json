@@ -29,5 +29,9 @@
     "openDevTools": "Open DevTools",
     "reloadActiveWindow": "Reload Active Window",
     "openLogs": "Open Logs"
+  },
+  "statusItem": {
+    "showMainWindow": "Show Main Window",
+    "hideMainWindow": "Hide Main Window"
   }
 }

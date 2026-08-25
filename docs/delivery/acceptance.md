@@ -15,6 +15,7 @@
 - [ ] 默认移除项目不影响项目中的 Sidequest 数据。
 - [ ] 显式删除 Sidequest 数据绝不作用于项目根目录。
 - [ ] 移除最后一个项目后进入 Onboarding。
+- [ ] 首次 Onboarding 与 Main Window 使用相同窗口尺寸且无需滚动；右上角显示品牌，左栏完成 Add Project 并提示 Quick Capture 快捷键，右栏可管理 CLI 与 Coding Agents，添加项目后才允许完成。
 - [ ] CLI 可以从 Workspace 子目录解析根目录。
 
 ## Quest 与 Storage
@@ -110,7 +111,8 @@
 - [ ] Release build 不接受隔离 Profile override，也不包含 Debug 菜单。
 - [ ] `desktop:isolated:reset` 只删除精确的仓库内 debug profile，不跟随 symlink。
 - [ ] 隔离 Profile 中 CLI 与 Agent Skill 操作不接触真实 Home；Launch at Login 不可修改。
-- [ ] 红色关闭、Dock/menu reopen、跨组拖拽与 watcher event storm 回归通过。
+- [ ] 红色关闭与菜单栏隐藏经过相同写入保护；菜单栏显示和 system reopen、跨组拖拽与 watcher event storm 回归通过。
+- [ ] macOS 菜单栏状态项在 Light/Dark 下正确显示，Dock 与 `⌘Tab` 中不出现 Sidequest，左右键菜单、动态显示/隐藏、locale 与快捷键提示同步正确。
 
 ## 多语言
 

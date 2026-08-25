@@ -62,6 +62,7 @@ export function QuickCaptureApp() {
   const projectSelectorRef = useRef<HTMLDivElement>(null);
   const projectSelectorTriggerRef = useRef<HTMLButtonElement>(null);
   const hideTimerRef = useRef<number | null>(null);
+  const syncedProjectPathRef = useRef<string | null | undefined>(undefined);
   const [projectMenuOpen, setProjectMenuOpen] = useState(false);
   const refetchAppState = appState.refetch;
 
@@ -85,9 +86,14 @@ export function QuickCaptureApp() {
     const currentStillExists = appState.data.projects.some(
       (project) => project.path === selectedProjectPath,
     );
-    if (!currentStillExists) {
-      setSelectedProjectPath(appState.data.quickCapture.lastProjectPath);
+    const preferredProjectPath = appState.data.quickCapture.lastProjectPath;
+    if (
+      !currentStillExists ||
+      syncedProjectPathRef.current !== preferredProjectPath
+    ) {
+      setSelectedProjectPath(preferredProjectPath);
     }
+    syncedProjectPathRef.current = preferredProjectPath;
   }, [appState.data, selectedProjectPath, setSelectedProjectPath]);
 
   const focusInput = useCallback(() => {

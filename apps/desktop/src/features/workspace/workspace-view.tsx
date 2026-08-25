@@ -274,8 +274,21 @@ export function WorkspaceView({
           data-tauri-drag-region="false"
         >
           <Tooltip
-            content={t("statusControl.readOnly")}
-            disabled={workspace.data?.access !== "readOnly"}
+            content={
+              workspace.data?.access === "readOnly" ? (
+                t("statusControl.readOnly")
+              ) : (
+                <span className="flex items-center gap-2">
+                  <span>{t("toolbar.newQuest")}</span>
+                  {settings.data?.shortcutRegistration === "active" && (
+                    <ShortcutHint
+                      density="compact"
+                      shortcut={settings.data.shortcut.display}
+                    />
+                  )}
+                </span>
+              )
+            }
           >
             <Button
               disabled={workspace.data?.access === "readOnly"}
@@ -291,13 +304,6 @@ export function WorkspaceView({
                 <Plus aria-hidden="true" size={15} strokeWidth={2.2} />
                 {t("toolbar.newQuest")}
               </span>
-              {settings.data?.shortcutRegistration === "active" && (
-                <ShortcutHint
-                  density="compact"
-                  shortcut={settings.data.shortcut.display}
-                  tone="brand"
-                />
-              )}
             </Button>
           </Tooltip>
         </div>

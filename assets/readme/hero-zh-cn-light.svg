@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="430" viewBox="0 0 1200 430" role="img" aria-labelledby="title desc">
+  <title id="title">Sidequest——专注主线，不丢旁支</title>
+  <desc id="desc">为 AI Coding 打造的项目记忆。不中断当前工作也能记下旁支，让 coding agent 在你准备好时接手。</desc>
+
+  <rect x="1" y="1" width="1198" height="428" rx="28" fill="#F7F7F4" stroke="#D4D6D2"/>
+
+  <g id="title-block" transform="translate(64 57)">
+    <text fill="#527ACD" font-family="ui-monospace, SFMono-Regular, Menlo, 'PingFang SC', monospace" font-size="18" font-weight="650" letter-spacing="1.5">为 AI CODING 打造的项目记忆</text>
+    <text y="91" fill="#202124" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="76" font-weight="730" letter-spacing="-3">Side</text>
+    <text x="164" y="91" fill="#202124" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="70" font-weight="700" letter-spacing="-4">quest</text>
+    <text y="148" fill="#2F3337" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="31" font-weight="650">专注主线，不丢旁支。</text>
+    <text y="190" fill="#64696F" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="22">现在记下旁支，准备好时再让</text>
+    <text y="222" fill="#64696F" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="22">coding agent 接手。</text>
+  </g>
+
+  <g id="project-flow" transform="translate(626 48)">
+    <text x="18" y="20" fill="#777C82" font-family="ui-monospace, SFMono-Regular, Menlo, 'PingFang SC', monospace" font-size="18" font-weight="600" letter-spacing="1.2">保持专注 · 记住旁支</text>
+
+    <path d="M40 76 C40 130 438 112 438 180 C438 247 48 221 48 308 C48 332 67 344 100 344 H460" fill="none" stroke="#527ACD" stroke-width="12" stroke-linecap="round"/>
+    <circle cx="40" cy="76" r="10" fill="#527ACD"/>
+    <circle cx="460" cy="344" r="10" fill="#527ACD"/>
+
+    <path d="M205 123 C205 176 248 176 248 221 C248 264 302 272 348 272" fill="none" stroke="#A66F28" stroke-width="12" stroke-linecap="round"/>
+    <circle cx="205" cy="123" r="10" fill="#A66F28"/>
+    <circle cx="348" cy="272" r="10" fill="#A66F28"/>
+
+    <g transform="translate(58 62)">
+      <rect width="181" height="70" rx="14" fill="#FFFFFF" stroke="#D2D5D1"/>
+      <text x="18" y="28" fill="#777C82" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">AI CODING</text>
+      <text x="18" y="54" fill="#202124" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="20" font-weight="650">当前主线</text>
+    </g>
+
+    <g transform="translate(232 146)">
+      <rect width="270" height="76" rx="14" fill="#FFF9F0" stroke="#D6B27D"/>
+      <text x="18" y="29" fill="#A66F28" font-family="ui-monospace, SFMono-Regular, Menlo, 'PingFang SC', monospace" font-size="18" font-weight="650">⌘⇧SPACE · 记录</text>
+      <text x="18" y="57" fill="#363A3E" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="20">保存这条旁支</text>
+    </g>
+
+    <g transform="translate(112 238)">
+      <rect width="267" height="76" rx="14" fill="#FFFFFF" stroke="#D2D5D1"/>
+      <text x="18" y="29" fill="#A66F28" font-family="ui-monospace, SFMono-Regular, Menlo, 'PingFang SC', monospace" font-size="18" font-weight="650">项目记忆</text>
+      <text x="18" y="57" fill="#53585E" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="19">.sidequest/quests/…md</text>
+    </g>
+
+    <g transform="translate(306 304)">
+      <rect width="218" height="72" rx="14" fill="#EEF3FF" stroke="#AFC3ED"/>
+      <text x="18" y="28" fill="#527ACD" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="650">CODING AGENT</text>
+      <text x="18" y="55" fill="#2F3337" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="20" font-weight="650">稍后接手</text>
+    </g>
+  </g>
+</svg>

@@ -4,8 +4,8 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./assets/readme/hero-dark.svg">
-    <img src="./assets/readme/hero-light.svg" width="100%" alt="Sidequest——为 AI Coding 打造的项目记忆：现在记下旁支，稍后让 coding agent 接手">
+    <source media="(prefers-color-scheme: dark)" srcset="./assets/readme/hero-zh-cn-dark.svg">
+    <img src="./assets/readme/hero-zh-cn-light.svg" width="100%" alt="Sidequest——为 AI Coding 打造的项目记忆：现在记下旁支，稍后让 coding agent 接手">
   </picture>
 </p>
 
@@ -40,12 +40,18 @@ AI Coding 总会暴露出一些值得处理、却不属于当前 prompt 的工�
 通过 Desktop 管理的 Codex 与 Claude Skill，自然语言回忆现在已经可用。Sidequest 为 agent 提供稳定的项目记忆查询与管理方式；它不会自动调度 agent，也不会自动执行 Quest。
 
 <p align="center">
-  <img src="./assets/readme/workflow.svg" width="100%" alt="AI Coding 中发现的旁支通过快速记录保存为项目内 Markdown，稍后由 coding agent 查询并接手">
+  <img src="./assets/readme/workflow-zh-cn.svg" width="100%" alt="AI Coding 中发现的旁支通过快速记录保存为项目内 Markdown，稍后由 coding agent 查询并接手">
 </p>
 
 ## 看见项目，而不是又一个任务管理器
 
-![Sidequest macOS 应用：左侧为多个项目，中间为 Inbox、Ready 和 Done 看板，右侧为可编辑的 Quest 详情抽屉](./docs/assets/sidequest-application-shell-dark-v6.png)
+![Sidequest 最新版 macOS 主窗口：左侧为项目列表，右侧为收件箱、就绪和已完成看板](./assets/readme/sidequest-main-window-zh-cn.png)
+
+<p align="center">
+  <img src="./assets/readme/quick-capture-context-zh-cn.png" width="100%" alt="AI Coding 进行过程中，通过快捷键唤起 Sidequest 快速记录，提交后焦点返回原应用">
+</p>
+
+<p align="center"><sub>在任意应用上方唤起快速记录，保存后立即回到当前工作。</sub></p>
 
 Sidequest 刻意只处理项目级开发意图：
 

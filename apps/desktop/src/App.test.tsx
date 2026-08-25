@@ -44,6 +44,7 @@ const mocks = vi.hoisted(() => ({
   getIntegrationStatus: vi.fn(),
   setGlobalShortcut: vi.fn(),
   setLaunchAtLogin: vi.fn(),
+  setOnboardingStep: vi.fn(),
   setLocalePreference: vi.fn(),
   setThemePreference: vi.fn(),
   installCli: vi.fn(),
@@ -94,6 +95,11 @@ const projectState: AppStateDto = {
   quickCapture: { lastProjectPath: "/project", position: null },
   onboardingStep: "complete",
   recoveryWarning: null,
+};
+
+const onboardingProjectState: AppStateDto = {
+  ...projectState,
+  onboardingStep: "quickCapture",
 };
 
 const workspace: WorkspaceSnapshotDto = {
@@ -150,7 +156,7 @@ describe("App", () => {
       navigationIntent: null,
     });
     mocks.getAppState.mockReset().mockResolvedValue(emptyState);
-    mocks.addProject.mockReset().mockResolvedValue(projectState);
+    mocks.addProject.mockReset().mockResolvedValue(onboardingProjectState);
     mocks.removeProject.mockReset().mockResolvedValue(emptyState);
     mocks.setLastSelectedProject.mockReset().mockResolvedValue(projectState);
     mocks.loadWorkspace.mockReset().mockResolvedValue(workspace);
@@ -228,27 +234,100 @@ describe("App", () => {
       preference: "system",
     });
     mocks.getIntegrationStatus.mockReset().mockResolvedValue([]);
+    mocks.setOnboardingStep.mockReset().mockResolvedValue(projectState);
   });
 
   it("shows_onboarding_when_no_projects_are_registered", async () => {
     renderApp();
 
     expect(
-      await screen.findByRole("heading", { name: "Add your first project" }),
+      await screen.findByRole("heading", {
+        name: "Add a project to get started",
+      }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Quick Capture" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "CLI and Sidequest Skill" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Command Line Tool" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: "Install Sidequest Skill",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("main")).toHaveClass("overflow-hidden");
+    expect(
+      screen.queryByRole("button", { name: "Enter Sidequest" }),
+    ).toBeNull();
   });
 
-  it("adds_a_project_and_loads_the_real_workspace_route", async () => {
+  it("installs_the_cli_from_onboarding", async () => {
+    const integrations = [
+      {
+        id: "cli",
+        state: "notInstalled",
+        path: "/home/.local/bin/sq",
+        installedVersion: null,
+        bundledVersion: "0.1.0",
+        message: null,
+      },
+      {
+        id: "codex",
+        state: "notInstalled",
+        path: "/home/.codex/skills/sidequest/SKILL.md",
+        installedVersion: null,
+        bundledVersion: "0.1.0",
+        message: null,
+      },
+      {
+        id: "claude",
+        state: "notInstalled",
+        path: "/home/.claude/skills/sidequest/SKILL.md",
+        installedVersion: null,
+        bundledVersion: "0.1.0",
+        message: null,
+      },
+    ];
+    mocks.getIntegrationStatus.mockResolvedValue(integrations);
+    mocks.installCli.mockResolvedValue(integrations);
+
+    renderApp();
+    const cliLabel = await screen.findByText("sq CLI");
+    expect(screen.getAllByText("Sidequest Skill not installed")).toHaveLength(
+      2,
+    );
+    const cliRow = cliLabel.closest<HTMLDivElement>("div.grid");
+    expect(cliRow).not.toBeNull();
+    fireEvent.click(within(cliRow!).getByRole("button", { name: "Install" }));
+
+    await waitFor(() => expect(mocks.installCli).toHaveBeenCalledTimes(1));
+  });
+
+  it("stays_on_onboarding_after_adding_a_project_until_setup_is_finished", async () => {
     renderApp();
     fireEvent.click(
-      await screen.findByRole("button", { name: "Choose Folder…" }),
+      await screen.findByRole("button", { name: "Choose Project Folder…" }),
     );
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "project is ready for Sidequest",
+      }),
+    ).toBeInTheDocument();
+    expect(mocks.loadWorkspace).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Enter Sidequest" }));
 
     expect(await screen.findAllByText("No quests")).toHaveLength(3);
     expect(mocks.addProject).toHaveBeenCalledWith(
       "/project",
       expect.anything(),
     );
+    expect(mocks.setOnboardingStep).toHaveBeenCalledWith("complete");
     expect(mocks.loadWorkspace).toHaveBeenCalledWith("/project");
   });
 
@@ -384,9 +463,10 @@ describe("App", () => {
       name: "New Quest",
     });
     expect(newQuestButtons).toHaveLength(1);
-    expect(
-      await within(newQuestButtons[0]).findByText("Space"),
-    ).toBeInTheDocument();
+    expect(within(newQuestButtons[0]).queryByText("Space")).toBeNull();
+    expect(newQuestButtons[0].parentElement).toHaveAttribute(
+      "data-base-ui-tooltip-trigger",
+    );
     expect(screen.getAllByText("No quests")).toHaveLength(3);
   });
 
@@ -496,6 +576,8 @@ describe("App", () => {
       name: "Settings",
     });
     expect(settingsButton).toBeEnabled();
+    expect(within(settingsButton).getByText("⌘")).toBeInTheDocument();
+    expect(within(settingsButton).getByText(",")).toBeInTheDocument();
     fireEvent.click(settingsButton);
 
     expect(
@@ -526,7 +608,7 @@ describe("App", () => {
     expect(screen.getByRole("heading", { name: "Inbox" })).toBeInTheDocument();
   });
 
-  it("removes_a_project_from_its_context_menu_without_deleting_data", async () => {
+  it("confirms_project_removal_without_deleting_quests_by_default", async () => {
     mocks.getAppState.mockResolvedValue(projectState);
     renderApp();
     await screen.findByRole("heading", { name: "Inbox" });
@@ -536,8 +618,48 @@ describe("App", () => {
     );
     fireEvent.click(screen.getByRole("menuitem", { name: "Remove Project" }));
 
+    const dialog = screen.getByRole("alertdialog", {
+      name: "Remove “project”?",
+    });
+    const deleteQuests = within(dialog).getByRole("checkbox", {
+      name: /Remove all Quests/,
+    });
+    expect(deleteQuests).not.toBeChecked();
+    expect(within(dialog).getByText("/project")).toBeInTheDocument();
+    expect(within(dialog).getByText(/0 valid Quests/)).toBeInTheDocument();
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Remove Project" }),
+    );
+
     await waitFor(() =>
-      expect(mocks.removeProject).toHaveBeenCalledWith("/project"),
+      expect(mocks.removeProject).toHaveBeenCalledWith("/project", false),
+    );
+  });
+
+  it("deletes_sidequest_data_only_when_the_removal_option_is_checked", async () => {
+    mocks.getAppState.mockResolvedValue(projectState);
+    renderApp();
+    await screen.findByRole("heading", { name: "Inbox" });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Project actions for project" }),
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "Remove Project" }));
+
+    const dialog = screen.getByRole("alertdialog", {
+      name: "Remove “project”?",
+    });
+    const deleteQuests = within(dialog).getByRole("checkbox", {
+      name: /Remove all Quests/,
+    });
+    fireEvent.click(deleteQuests);
+    expect(deleteQuests).toBeChecked();
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Remove Project" }),
+    );
+
+    await waitFor(() =>
+      expect(mocks.removeProject).toHaveBeenCalledWith("/project", true),
     );
   });
 

@@ -27,6 +27,7 @@ const mocks = vi.hoisted(() => ({
   listenForCurrentWindowMove: vi.fn(),
   setCurrentWindowTitle: vi.fn(),
   shortcutCloseHandler: null as (() => void) | null,
+  appStateInvalidatedHandler: null as (() => void) | null,
   debugReloadHandler: null as (() => void) | null,
 }));
 
@@ -101,6 +102,11 @@ describe("QuickCaptureApp", () => {
         return () => undefined;
       },
     );
+    mocks.appStateInvalidatedHandler = null;
+    mocks.listenForAppStateInvalidation.mockImplementation(async (handler) => {
+      mocks.appStateInvalidatedHandler = handler;
+      return () => undefined;
+    });
     mocks.debugReloadHandler = null;
     mocks.listenForDebugReloadRequest.mockImplementation(async (handler) => {
       mocks.debugReloadHandler = handler;
@@ -123,8 +129,9 @@ describe("QuickCaptureApp", () => {
     const heading = screen.getByRole("heading", { name: "快速记录" });
     expect(heading).toHaveAttribute("data-tauri-drag-region");
     expect(heading.closest("header")).not.toHaveClass("border-b");
-    expect(screen.getByRole("button", { name: "提交" }).closest("footer"))
-      .not.toHaveClass("border-t");
+    expect(
+      screen.getByRole("button", { name: "提交" }).closest("footer"),
+    ).not.toHaveClass("border-t");
     expect(document.title).toBe("快速记录");
     expect(mocks.setCurrentWindowTitle).toHaveBeenCalledWith("快速记录");
   });
@@ -205,6 +212,23 @@ describe("QuickCaptureApp", () => {
     await waitFor(() => expect(mocks.hideQuickCapture).toHaveBeenCalled(), {
       timeout: 1_000,
     });
+  });
+
+  it("follows_the_project_selected_in_the_main_window", async () => {
+    renderQuickCapture();
+    expect(await screen.findByText("Active")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(mocks.appStateInvalidatedHandler).not.toBeNull(),
+    );
+    mocks.getAppState.mockResolvedValue({
+      ...appState,
+      lastSelectedProject: "/readonly",
+      quickCapture: { ...appState.quickCapture, lastProjectPath: "/readonly" },
+    });
+
+    mocks.appStateInvalidatedHandler?.();
+
+    expect(await screen.findByText("Readonly")).toBeInTheDocument();
   });
 
   it("retains_the_draft_after_failure_and_retries", async () => {

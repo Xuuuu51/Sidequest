@@ -70,8 +70,8 @@
 
 ## 7. Onboarding
 
-- 使用同一 token、shared primitives 与 Lucide 重写三个步骤。
-- 保持 Add Project、Quick Capture 和 Coding Agents 的既有恢复与跳过语义。
+- 使用同一 token、shared primitives、品牌 App Icon 与 Lucide 构建无需滚动的单页界面。
+- Add Project 作为唯一完成条件；左栏展示 Quick Capture 快捷键提示，右栏复用真实 Integration 状态与安装操作。
 
 完成门槛：首次启动和移除最后项目后的两条 onboarding 路径可完成；错误恢复、键盘操作和 Light/Dark 均通过验收。
 

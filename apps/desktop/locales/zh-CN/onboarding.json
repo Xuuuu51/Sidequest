@@ -1,19 +1,24 @@
 {
+  "brand": "Sidequest",
+  "welcome": {
+    "title": "添加项目，就可以开始",
+    "description": "Sidequest 会把暂时不做、但值得记住的开发意图，保存在项目自己的 .sidequest 目录中。"
+  },
   "addProject": {
-    "title": "添加第一个项目",
-    "description": "选择一个文件夹。Sidequest 会在这个文件夹中创建本地 .sidequest 目录来保存 Quest。",
-    "chooseFolder": "选择文件夹…",
-    "adding": "正在添加…"
+    "chooseFolder": "选择项目文件夹…",
+    "adding": "正在添加…",
+    "ready": "{{name}} 已准备好使用 Sidequest",
+    "readyDescription": "现在可以为这个项目记录 Quest。"
   },
   "quickCapture": {
-    "title": "设置快速记录",
-    "description": "无需打断当前工作，即可从任意应用记录 Quest。之后仍可在设置中修改。",
-    "skip": "暂时跳过"
+    "title": "快速记录",
+    "description": "在任意应用中按下快捷键，记录一条 Quest，然后继续手头的工作。"
   },
-  "agents": {
-    "title": "连接编程 Agent",
-    "description": "为使用的编程 Agent 安装 Sidequest Skill。受管理的 sq CLI 会自动安装。",
-    "finish": "完成"
+  "tools": {
+    "title": "CLI 与 Sidequest Skill",
+    "description": "安装 sq 以便从终端使用，并将 Sidequest Skill 安装到 Codex 或 Claude。"
   },
-  "progress": "第 {{current}} 步，共 3 步"
+  "finish": {
+    "action": "进入 Sidequest"
+  }
 }

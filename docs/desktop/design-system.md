@@ -37,8 +37,10 @@ Sidequest Desktop 采用克制、专业、轻量卡片化的桌面生产力工�
 └──────────────┴───────────────────────────────────────────────────┘
 ```
 
-- 默认窗口：`1280 × 800`。
-- 最小窗口：`1024 × 640`。
+- 默认窗口：`1360 × 840` logical pixels。
+- 最小窗口：`1200 × 760` logical pixels。
+- 原生窗口恢复必须按显示器 scale factor 将 logical size 转换为 physical size，确保 Retina 与非 Retina 屏上的视觉尺寸一致。
+- Onboarding 在最小窗口内完整一屏展示，不产生页面滚动；右上角使用 App Icon + Sidequest lockup。左栏承载 Add Project 与 Quick Capture 快捷键提示，右栏承载 CLI 与 Agent Skill 的快捷安装。Onboarding hero 是 Application Shell 常规字号上限的唯一例外，标题使用 `32px`。
 - Titlebar 高度：`48px`；macOS traffic lights 使用 native logical inset 与右侧 titlebar 图标垂直居中，配置变化需重启原生窗口进程。
 - Sidebar 与主列表之间使用 `1px` divider；可拖动分隔条的实际命中区为 `5px`。
 - 主界面主要依靠背景层级和分隔线；Quest Card 使用常驻柔和阴影，modal、menu、tooltip 与 drag overlay 使用更强的 overlay 阴影。
@@ -61,7 +63,8 @@ Sidequest Desktop 采用克制、专业、轻量卡片化的桌面生产力工�
 - `Projects` 是纯文字 section heading，不带文件夹图标；右侧保留添加项目图标。
 - 项目行高 `30px`，图标 `15px`，文字 `13px`。
 - 当前项目使用白色/石墨 surface、柔和阴影和 `2px` 品牌色左侧标记；不使用大型圆角胶囊。
-- `Settings` 固定在底部并保留文字，其上方 divider 左右贴齐 Sidebar 边缘。
+- `Settings` 固定在底部并保留文字，右侧显示 `⌘,` 快捷键，其上方 divider 左右贴齐 Sidebar 边缘。
+- Add Project、Sidebar 展开/收起与项目操作等图标按钮使用统一 Tooltip，不依赖原生 `title` 提示。
 
 ### 2.3 Titlebar 与 Toolbar
 
@@ -69,7 +72,7 @@ Sidequest Desktop 采用克制、专业、轻量卡片化的桌面生产力工�
 - Sidebar 收起时，项目名称为 macOS traffic lights 与展开热区保留左侧安全间距。
 - Main Window 整条 `48px` titlebar 的非交互区域都是 Tauri native drag region；按钮、搜索框等控件必须位于可交互层并保持正常点击。
 - Search 是可直接输入的 `240–320px` 紧凑搜索框，在 Titlebar 可用区域内保持几何居中，不受项目名或右侧动作宽度影响；rest 状态使用填充 muted surface，focus 切换到 surface 并显示中性 ring。
-- Toolbar 右侧提供 `32px` 高的 `New Quest`，使用品牌浅色 surface、克制的 brand 边界与 `brand-foreground` 文字，并以无分隔线的紧凑 keycap 显示当前已注册的全局快捷键；打开 Quick Capture Window。Quest 删除等上下文动作不进入全局 toolbar。
+- Toolbar 右侧提供 `32px` 高的 `New Quest`，使用品牌浅色 surface、克制的 brand 边界与 `brand-foreground` 文字；当前已注册的全局快捷键显示在按钮 Tooltip 中，不占用按钮宽度。点击打开 Quick Capture Window。Quest 删除等上下文动作不进入全局 toolbar。
 - 图标默认 `14–16px`，命中区域 `28px`。
 - 图标按钮使用 tooltip，并具备清晰 hover、pressed、focus 状态。
 

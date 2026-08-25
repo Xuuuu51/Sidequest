@@ -13,6 +13,8 @@ mod native_events;
 mod quick_capture_window;
 mod runtime_paths;
 mod shortcut;
+#[cfg(target_os = "macos")]
+mod status_item;
 mod theme;
 mod watcher;
 mod window_state;
@@ -69,10 +71,32 @@ pub fn run() -> tauri::Result<()> {
             let store = AppStateStore::load(paths.app_data_directory())?;
             let locale = store.language_preference().effective();
             app.set_menu(app_menu::build_for_locale(app.handle(), locale)?)?;
+            #[cfg(target_os = "macos")]
+            {
+                app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+                status_item::install(app, locale, store.shortcut()).map_err(|error| {
+                    tauri::Error::Setup(Box::<dyn std::error::Error>::from(error).into())
+                })?;
+            }
             let window = app
                 .get_webview_window("main")
                 .ok_or_else(|| tauri::Error::WindowNotFound)?;
             restore_main_window(&window, store.main_window_geometry())?;
+            #[cfg(target_os = "macos")]
+            {
+                let app_handle = app.handle().clone();
+                let observed_window = window.clone();
+                window.on_window_event(move |event| {
+                    if let tauri::WindowEvent::Focused(focused) = event {
+                        let visible = observed_window.is_visible().unwrap_or(false);
+                        if let Err(error) =
+                            status_item::update_main_window_state(&app_handle, visible, *focused)
+                        {
+                            log::warn!("status item could not track Main Window focus: {error}");
+                        }
+                    }
+                });
+            }
             let quick_capture = app
                 .get_webview_window(QUICK_CAPTURE_WINDOW_LABEL)
                 .ok_or_else(|| tauri::Error::WindowNotFound)?;
@@ -89,9 +113,16 @@ pub fn run() -> tauri::Result<()> {
                 log::warn!("automatic CLI maintenance failed during startup: {error}");
             }
             if !is_hidden_startup(std::env::args_os()) {
-                window.show()?;
-                if let Err(error) = window.set_focus() {
-                    log::warn!("Main Window could not receive startup focus: {error}");
+                #[cfg(target_os = "macos")]
+                status_item::show_main_window(app.handle(), &window).map_err(|error| {
+                    tauri::Error::Setup(Box::<dyn std::error::Error>::from(error).into())
+                })?;
+                #[cfg(not(target_os = "macos"))]
+                {
+                    window.show()?;
+                    if let Err(error) = window.set_focus() {
+                        log::warn!("Main Window could not receive startup focus: {error}");
+                    }
                 }
                 log::info!("Main Window shown at startup");
             } else {
@@ -175,21 +206,13 @@ pub fn run() -> tauri::Result<()> {
             }
         }
         #[cfg(target_os = "macos")]
-        tauri::RunEvent::Reopen {
-            has_visible_windows,
-            ..
-        } => {
-            if !has_visible_windows && let Some(window) = app_handle.get_webview_window("main") {
-                if let Err(error) = window.show() {
-                    log::error!("could not show Main Window on Dock reopen: {error}");
+        tauri::RunEvent::Reopen { .. } => {
+            if let Some(window) = app_handle.get_webview_window("main") {
+                if let Err(error) = status_item::show_main_window(app_handle, &window) {
+                    log::error!("could not show Main Window on system reopen: {error}");
+                } else {
+                    log::info!("Main Window restored from system reopen");
                 }
-                if let Err(error) = window.unminimize() {
-                    log::warn!("could not unminimize Main Window on Dock reopen: {error}");
-                }
-                if let Err(error) = window.set_focus() {
-                    log::warn!("could not focus Main Window on Dock reopen: {error}");
-                }
-                log::info!("Main Window restored from Dock reopen");
             }
         }
         _ => {}

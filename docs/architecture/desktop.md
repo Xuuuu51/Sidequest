@@ -183,10 +183,12 @@ React 使用编译时打包的 `i18next` / `react-i18next` JSON resources，不�
 
 ## 9. Main Window 生命周期
 
-- 红色关闭按钮由 React 拦截：先 flush pending content 与窗口几何，再隐藏而不是销毁 Main Window。
-- macOS Dock Reopen 由 native `RunEvent::Reopen` 重新显示并聚焦 Main Window。
+- macOS 使用 `Accessory` activation policy：应用常驻菜单栏，不显示 Dock，也不进入 `⌘Tab`；显示 Main Window 时保持 Accessory policy，并继续提供完整 native application menu。
+- 红色关闭按钮与菜单栏 Hide Main Window 都由 React 写入协调器处理：先 flush pending content 与窗口几何，再隐藏而不是销毁 Main Window；失败时阻止隐藏。
+- 菜单栏 Show Main Window 与 native `RunEvent::Reopen` 都重新显示、unminimize、激活并聚焦 Main Window。状态项在 Main Window 可见且聚焦时显示 Hide，否则显示 Show。
 - native 退出请求先被阻止并发送 `app-quit-requested`；React 完成 flush 或用户明确放弃本地草稿后调用 `complete_app_quit` 进行一次性退出审批。
 - `app-quit-requested` 与其他 native event 一样，只能通过集中式 typed wrapper 订阅。
+- status item 使用现有 macOS template icon，左右键打开相同菜单。Quick Capture、Settings 与 Quit 使用 native accelerator column 拉开菜单宽度，并由 macOS 以右对齐、低强调样式展示；Quick Capture accelerator 在设置或 locale 变化后随菜单重建。
 
 ## 10. 多窗口
 

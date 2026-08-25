@@ -28,10 +28,10 @@ pub(crate) const MAX_SIDEBAR_WIDTH: u16 = 320;
 pub(crate) const DEFAULT_DRAWER_WIDTH: u16 = 480;
 pub(crate) const MIN_DRAWER_WIDTH: u16 = 420;
 pub(crate) const MAX_DRAWER_WIDTH: u16 = 560;
-pub(crate) const DEFAULT_WINDOW_WIDTH: u32 = 1280;
-pub(crate) const DEFAULT_WINDOW_HEIGHT: u32 = 800;
-pub(crate) const MIN_WINDOW_WIDTH: u32 = 1024;
-pub(crate) const MIN_WINDOW_HEIGHT: u32 = 640;
+pub(crate) const DEFAULT_WINDOW_WIDTH: u32 = 1360;
+pub(crate) const DEFAULT_WINDOW_HEIGHT: u32 = 840;
+pub(crate) const MIN_WINDOW_WIDTH: u32 = 1200;
+pub(crate) const MIN_WINDOW_HEIGHT: u32 = 760;
 
 pub(crate) struct DesktopState {
     pub(crate) app_state: Mutex<AppStateStore>,
@@ -290,7 +290,8 @@ impl AppStateStore {
             next.onboarding_step = OnboardingStep::QuickCapture;
         }
         mark_recent(&mut next, &path);
-        next.last_selected_project = Some(path);
+        next.last_selected_project = Some(path.clone());
+        next.quick_capture.last_project_path = Some(path);
         self.persist(next)?;
         Ok(self.snapshot())
     }
@@ -310,6 +311,7 @@ impl AppStateStore {
         let mut next = self.state.clone();
         mark_recent(&mut next, path);
         next.last_selected_project = Some(path.to_path_buf());
+        next.quick_capture.last_project_path = Some(path.to_path_buf());
         self.persist(next)?;
         Ok(self.snapshot())
     }
@@ -333,7 +335,8 @@ impl AppStateStore {
 
         if replacement == current_path {
             mark_recent(&mut next, &replacement);
-            next.last_selected_project = Some(replacement);
+            next.last_selected_project = Some(replacement.clone());
+            next.quick_capture.last_project_path = Some(replacement);
             self.persist(next)?;
             return Ok(self.snapshot());
         }
@@ -356,11 +359,13 @@ impl AppStateStore {
             };
             let selected = next.project_paths[adjusted_index].clone();
             mark_recent(&mut next, &selected);
-            next.last_selected_project = Some(selected);
+            next.last_selected_project = Some(selected.clone());
+            next.quick_capture.last_project_path = Some(selected);
         } else {
             next.project_paths[current_index] = replacement.clone();
             mark_recent(&mut next, &replacement);
-            next.last_selected_project = Some(replacement);
+            next.last_selected_project = Some(replacement.clone());
+            next.quick_capture.last_project_path = Some(replacement);
         }
 
         self.persist(next)?;
@@ -548,12 +553,14 @@ impl AppStateStore {
             next.quick_capture.last_project_path = None;
         }
         if next.last_selected_project.as_deref() == Some(path) {
-            next.last_selected_project = next
+            let selected = next
                 .recent_project_paths
                 .iter()
                 .find(|recent| next.project_paths.contains(recent))
                 .cloned()
                 .or_else(|| next.project_paths.first().cloned());
+            next.last_selected_project = selected.clone();
+            next.quick_capture.last_project_path = selected;
         }
         self.persist(next)?;
         Ok(self.snapshot())
@@ -916,6 +923,26 @@ mod tests {
         assert_eq!(
             restored.quick_capture.position,
             Some(crate::dto::QuickCapturePositionDto { x: 80, y: 640 })
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn selecting_a_main_window_project_should_update_quick_capture() -> TestResult {
+        let data = TempDir::new()?;
+        let first = TempDir::new()?;
+        let second = TempDir::new()?;
+        let mut store = AppStateStore::load(data.path())?;
+        let first_path = fs::canonicalize(first.path())?;
+        let second_path = fs::canonicalize(second.path())?;
+        store.add_project(&first_path)?;
+        store.add_project(&second_path)?;
+
+        let state = store.set_last_selected_project(&first_path)?;
+
+        assert_eq!(
+            state.quick_capture.last_project_path,
+            Some(first_path.to_string_lossy().into_owned())
         );
         Ok(())
     }

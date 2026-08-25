@@ -70,6 +70,33 @@ pub(crate) fn set_locale_preference(
             message: error.to_string(),
         }));
     }
+    #[cfg(target_os = "macos")]
+    if let Err(error) = crate::status_item::update_locale(&app_handle, effective_locale) {
+        if let Err(rollback_error) =
+            app_state_lock(&state).and_then(|mut store| store.set_language_preference(previous))
+        {
+            log::error!("could not roll back language preference: {rollback_error}");
+        }
+        match crate::app_menu::build_for_locale(&app_handle, previous.effective()) {
+            Ok(previous_menu) => {
+                if let Err(rollback_error) = app_handle.set_menu(previous_menu) {
+                    log::error!("could not restore application menu locale: {rollback_error}");
+                }
+            }
+            Err(rollback_error) => {
+                log::error!("could not rebuild previous application menu: {rollback_error}");
+            }
+        }
+        if let Err(rollback_error) =
+            crate::status_item::update_locale(&app_handle, previous.effective())
+        {
+            log::error!("could not restore status item locale: {rollback_error}");
+        }
+        return Err(CommandErrorDto::from(DesktopError::Window {
+            operation: "apply localized status item menu",
+            message: error.to_string(),
+        }));
+    }
     let settings = locale_settings(preference);
     log_event_result(
         "notify windows after language update",
@@ -195,11 +222,31 @@ pub(crate) fn set_global_shortcut(
     lock(&state.shortcut)
         .and_then(|mut manager| manager.replace(&app_handle, &candidate))
         .map_err(CommandErrorDto::from)?;
-    if let Err(error) = app_state_lock(&state).and_then(|mut store| store.set_shortcut(candidate)) {
+    if let Err(error) =
+        app_state_lock(&state).and_then(|mut store| store.set_shortcut(candidate.clone()))
+    {
         if let Ok(mut manager) = lock(&state.shortcut) {
             manager.restore(&app_handle, previous);
         }
         return Err(CommandErrorDto::from(error));
+    }
+    #[cfg(target_os = "macos")]
+    if let Err(error) = crate::status_item::update_shortcut(&app_handle, candidate) {
+        if let Err(rollback_error) =
+            app_state_lock(&state).and_then(|mut store| store.set_shortcut(previous.clone()))
+        {
+            log::error!("could not roll back shortcut preference: {rollback_error}");
+        }
+        if let Ok(mut manager) = lock(&state.shortcut) {
+            manager.restore(&app_handle, previous.clone());
+        }
+        if let Err(rollback_error) = crate::status_item::update_shortcut(&app_handle, previous) {
+            log::error!("could not restore status item shortcut: {rollback_error}");
+        }
+        return Err(CommandErrorDto::from(DesktopError::Window {
+            operation: "update status item shortcut",
+            message: error.to_string(),
+        }));
     }
     log_event_result(
         "invalidate settings after shortcut update",
@@ -417,7 +464,7 @@ pub(crate) fn save_main_window_geometry(
 }
 
 #[tauri::command]
-pub(crate) fn hide_main_window(window: WebviewWindow) -> CommandResult<()> {
+pub(crate) fn hide_main_window(app_handle: AppHandle, window: WebviewWindow) -> CommandResult<()> {
     window
         .hide()
         .map_err(|error| DesktopError::Window {
@@ -425,6 +472,10 @@ pub(crate) fn hide_main_window(window: WebviewWindow) -> CommandResult<()> {
             message: error.to_string(),
         })
         .map_err(CommandErrorDto::from)?;
+    #[cfg(target_os = "macos")]
+    if let Err(error) = crate::status_item::update_main_window_state(&app_handle, false, false) {
+        log::warn!("status item could not track Main Window hide: {error}");
+    }
     log::info!("Main Window hidden");
     Ok(())
 }

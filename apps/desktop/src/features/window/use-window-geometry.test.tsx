@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   completeAppQuit: vi.fn(),
   hideMainWindow: vi.fn(),
   listenForAppQuitRequest: vi.fn(),
+  listenForHideMainWindowRequest: vi.fn(),
   onMoved: vi.fn(),
   onResized: vi.fn(),
   onCloseRequested: vi.fn(),
@@ -27,6 +28,7 @@ vi.mock("../../shared/tauri/commands", () => ({
 
 vi.mock("../../shared/tauri/events", () => ({
   listenForAppQuitRequest: mocks.listenForAppQuitRequest,
+  listenForHideMainWindowRequest: mocks.listenForHideMainWindowRequest,
 }));
 
 import { useWindowGeometryPersistence } from "./use-window-geometry";
@@ -42,6 +44,9 @@ describe("useWindowGeometryPersistence", () => {
     mocks.onResized.mockReset().mockImplementation(subscribe);
     mocks.onCloseRequested.mockReset().mockImplementation(subscribe);
     mocks.listenForAppQuitRequest.mockReset().mockImplementation(subscribe);
+    mocks.listenForHideMainWindowRequest
+      .mockReset()
+      .mockImplementation(subscribe);
     mocks.saveMainWindowGeometry.mockReset().mockResolvedValue(undefined);
     mocks.completeAppQuit.mockReset().mockResolvedValue(undefined);
     mocks.hideMainWindow.mockReset().mockResolvedValue(undefined);
@@ -98,5 +103,37 @@ describe("useWindowGeometryPersistence", () => {
 
     expect(guard).toHaveBeenCalled();
     expect(mocks.completeAppQuit).toHaveBeenCalledTimes(1);
+  });
+
+  it("routes_status_item_hide_requests_through_the_navigation_guard", async () => {
+    const guard = vi.fn(
+      async (action: () => void | Promise<void>, intent?: string) => {
+        expect(intent).toBe("hide");
+        await action();
+        return true;
+      },
+    );
+    renderHook(() => useWindowGeometryPersistence(guard));
+    const hide = mocks.listenForHideMainWindowRequest.mock
+      .calls[0][0] as () => void;
+
+    await act(async () => hide());
+
+    expect(guard).toHaveBeenCalledTimes(1);
+    expect(mocks.saveMainWindowGeometry).toHaveBeenCalledTimes(1);
+    expect(mocks.hideMainWindow).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps_the_window_visible_when_the_hide_guard_rejects_navigation", async () => {
+    const guard = vi.fn(async () => false);
+    renderHook(() => useWindowGeometryPersistence(guard));
+    const hide = mocks.listenForHideMainWindowRequest.mock
+      .calls[0][0] as () => void;
+
+    await act(async () => hide());
+
+    expect(guard).toHaveBeenCalledTimes(1);
+    expect(mocks.saveMainWindowGeometry).not.toHaveBeenCalled();
+    expect(mocks.hideMainWindow).not.toHaveBeenCalled();
   });
 });

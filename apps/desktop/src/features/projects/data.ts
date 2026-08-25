@@ -20,8 +20,14 @@ export function useAddProjectMutation() {
 export function useRemoveProjectMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (projectPath: string) => removeProject(projectPath),
-    onSuccess: (appState, projectPath) => {
+    mutationFn: ({
+      projectPath,
+      deleteSidequestData,
+    }: {
+      projectPath: string;
+      deleteSidequestData: boolean;
+    }) => removeProject(projectPath, deleteSidequestData),
+    onSuccess: (appState, { projectPath }) => {
       setAppStateCache(queryClient, appState);
       queryClient.removeQueries({
         queryKey: workspaceKeys.snapshot(projectPath),

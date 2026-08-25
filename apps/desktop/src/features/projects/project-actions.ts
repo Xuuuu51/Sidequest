@@ -38,14 +38,17 @@ export function useProjectActions() {
   const [error, setError] = useState<Error | null>(null);
   const selectedProjectPath = currentProjectPath(view);
 
-  async function add(): Promise<void> {
+  async function add(options?: { openWorkspace?: boolean }): Promise<void> {
     setError(null);
     try {
       const projectPath = await selectProjectDirectory(t("sidebar.addProject"));
       if (projectPath === null) return;
       await coordinator.guard(async () => {
         const nextState = await addProject.mutateAsync(projectPath);
-        if (nextState.lastSelectedProject !== null) {
+        if (
+          options?.openWorkspace !== false &&
+          nextState.lastSelectedProject !== null
+        ) {
           showWorkspace(nextState.lastSelectedProject);
         }
       });
@@ -71,11 +74,17 @@ export function useProjectActions() {
     }
   }
 
-  async function remove(project: ProjectDto): Promise<void> {
+  async function remove(
+    project: ProjectDto,
+    deleteSidequestData: boolean,
+  ): Promise<void> {
     setError(null);
     try {
       const run = async () => {
-        const nextState = await removeProject.mutateAsync(project.path);
+        const nextState = await removeProject.mutateAsync({
+          projectPath: project.path,
+          deleteSidequestData,
+        });
         restoreAppState(nextState);
       };
       if (project.path === selectedProjectPath) await coordinator.guard(run);

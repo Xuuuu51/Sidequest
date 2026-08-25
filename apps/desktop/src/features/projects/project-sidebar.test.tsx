@@ -84,6 +84,16 @@ describe("ProjectSidebar", () => {
     const collapse = screen.getByRole("button", { name: "Collapse sidebar" });
     expect(collapse.closest("div")).toHaveClass("left-[78px]");
     expect(screen.getAllByRole("button", { name: /sidebar/i })).toHaveLength(1);
+    const projectActions = screen.getByRole("button", {
+      name: "Project actions for Project",
+    });
+    expect(projectActions.parentElement).toHaveAttribute(
+      "data-base-ui-tooltip-trigger",
+    );
+    expect(projectActions.parentElement?.parentElement).toHaveClass(
+      "absolute",
+      "right-1",
+    );
 
     fireEvent.pointerEnter(collapse);
     expect(screen.queryByRole("dialog", { name: "Projects" })).toBeNull();

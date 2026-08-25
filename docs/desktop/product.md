@@ -11,19 +11,22 @@
 
 MVP 包含 Main Window 与独立的 Quick Capture Window。
 
-- 关闭 Main Window 只隐藏窗口；Dock 图标重新打开它。
+- Sidequest 是 macOS 菜单栏应用，不显示 Dock 图标，也不出现在 `⌘Tab` 应用切换器中。普通主动启动显示 Main Window；开机启动只显示菜单栏状态项。
+- 关闭 Main Window 只隐藏窗口；菜单栏状态项使用动态的 Show Main Window / Hide Main Window 重新显示或安全隐藏它。显示时恢复原页面状态并激活、聚焦窗口；隐藏时先完成与红色关闭按钮相同的写入保护。
 - `⌘Q` 或 Quit 才退出应用，退出后全局快捷键不可用。
-- 菜单栏提供 Open Sidequest、Quick Capture、Settings… 与 Quit Sidequest。
+- 常驻菜单栏状态项提供 Show/Hide Main Window、Quick Capture、Settings… 与 Quit Sidequest；快捷键在菜单右侧的 native accelerator column 中以低强调样式展示，并显示当前 Quick Capture 全局快捷键。左右键打开同一菜单；应用激活时仍保留完整 macOS 应用菜单。
 - 开机启动默认关闭，可在 onboarding 和 Settings 中开启。
 - 默认 Quick Capture 快捷键为 `⌘⇧Space`；注册冲突不阻止启动，Settings 会显示冲突并允许重新录制。
 
 ## 2. Onboarding
 
-首次启动按顺序展示：
+首次启动使用与 Main Window 相同的默认及最小窗口尺寸，并在不滚动的单页中展示：
 
-1. Add Project：必需；选择并成功打开项目后才继续。
-2. Quick Capture：可跳过；设置快捷键与是否开机启动。
-3. Coding Agents：可跳过；分别安装 Codex 或 Claude Skill。
+1. 右上角固定展示 Sidequest App Icon 与产品名称。
+2. 左栏以 Add Project 为唯一开始条件；成功添加后留在当前页面，并允许进入 Main Window。左栏底部同时展示当前 Quick Capture 全局快捷键与核心工作方式，不模拟 Quick Capture Window，也不在 onboarding 内录制快捷键或修改开机启动。
+3. 右栏集中展示 `sq` CLI、Codex Skill 与 Claude Skill 的真实安装状态，并提供与 Settings 相同的 Install / Repair / Uninstall 能力。
+
+页面不使用步骤切换、进度条或逐步 Continue / Skip，不产生纵向滚动。所有工具与集成操作仍可稍后在 Settings 修改。
 
 CLI 在 onboarding 期间默认安装。安装失败不阻止进入 Main Window，但必须显示可恢复提示。移除最后一个项目后回到无项目 onboarding，只要求重新添加项目。
 
@@ -39,7 +42,7 @@ CLI 在 onboarding 期间默认安装。安装失败不阻止进入 Main Window�
 - Read Only 项目允许浏览、搜索和复制，禁止创建、编辑、拖拽、删除或 Quick Capture 保存；提供 Retry、Reveal in Finder 与 Remove。
 - 项目失败时不静默切换到其他项目。
 
-Remove Project 默认只移除本机列表记录。用户可以选择同时删除 `.sidequest/`，此时确认框展示完整路径、有效 Quest 数与损坏文件数，并再次确认不可撤销。规则由 [Workspace 契约](../contracts/workspace.md)定义。
+Remove Project 始终先显示二次确认。确认框展示完整路径、有效 Quest 数与损坏文件数，并提供默认不勾选的 `Remove all Quests` 选项；未勾选时只移除本机列表记录，勾选后同时删除 `.sidequest/`，并明确提示不可撤销。无法检查项目数据时禁用该选项，只允许移除本机记录。规则由 [Workspace 契约](../contracts/workspace.md)定义。
 
 移除当前项目后选中最近使用的其他可用项目；没有项目时回到 onboarding。
 
@@ -58,6 +61,8 @@ Sidebar 支持 resize/collapse，显示项目状态并独立滚动。traffic lig
 ## 5. Kanban Quest Board
 
 主工作区固定显示 Inbox、Ready、Done 三个 `320px` 宽横向状态列；空间不足时看板整体横向滚动。每列独立纵向滚动，列标题显示状态指示、名称与当前可见数量；空列只保留紧凑的 drop target，创建入口仅位于 Toolbar。每列内 Quest 按创建时间从新到旧排列，不提供用户排序。
+
+中文界面将 Inbox、Ready、Done 分别显示为「待整理」「就绪」「已完成」；这只影响界面文案，不改变内部状态值。
 
 Quest Card 将 content 第一行作为视觉标题、其余内容作为弱化摘要，两部分分别最多两行；这不改变 Quest 数据模型。创建时间为次级信息，不重复显示所在状态。整张卡片可打开 Drawer 并拖拽，不显示拖拽手柄；拖到其他状态列或使用 Drawer 状态操作均可改变状态。拖拽只表达 status 变化，不提供列内自由排序。大量数据的虚拟化、分页和完整键盘拖拽不进入 MVP，但必须保留 Drawer 中的按钮式状态操作。
 
@@ -102,7 +107,7 @@ Quick Capture 是始终置顶的独立 native window。通过全局快捷键唤�
 - 点击窗口外部不关闭；`Esc` 或 Close 只隐藏 Quick Capture 并直接丢弃草稿，不显示或激活 Main Window。
 - Quick Capture 已显示时再次按全局快捷键，执行与 `Esc` 相同的丢弃草稿并隐藏操作；未显示时仍按正常流程打开。
 - `content` 允许多行；`Enter` 换行，`⌘Enter` 保存。
-- Project Selector 记住上次成功保存的项目。
+- Project Selector 默认跟随 Main Window 当前项目；用户仍可在 Quick Capture 中临时切换，成功保存后记住该项目，直到 Main Window 再次切换项目。
 - Project Selector 位于窗口底部左侧；只读或不可用项目保留当前草稿、允许切换项目，但禁止保存。
 - 默认出现在主显示器左下角；用户移动后记住位置，显示器失效时回退到默认位置。
 - 提交按钮按 `提交 → progress → ✓ 已提交`（英文对应 `Submit → progress → ✓ Submitted`）显示轻量反馈；成功态保持约 `500ms`，随后隐藏并把焦点还给原应用。

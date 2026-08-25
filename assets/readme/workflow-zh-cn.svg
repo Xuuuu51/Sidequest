@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="460" viewBox="0 0 1200 460" role="img" aria-labelledby="title desc">
+  <title id="title">现在记下，稍后让 coding agent 接手</title>
+  <desc id="desc">开发者在 AI Coding 时发现旁支，通过 Quick Capture 记录为项目内 Markdown，之后用自然语言让 coding agent 查询并实现。</desc>
+
+  <rect x="1" y="1" width="1198" height="458" rx="26" fill="#151A20" stroke="#363E47"/>
+
+  <text x="56" y="58" fill="#8C929B" font-family="ui-monospace, SFMono-Regular, Menlo, 'PingFang SC', monospace" font-size="18" font-weight="600" letter-spacing="1.4">记录 → 保存 → 回忆 → 交接</text>
+  <text x="56" y="104" fill="#ECECEF" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="34" font-weight="680">想法离开脑海，不会离开项目。</text>
+
+  <path d="M76 278 H1124" fill="none" stroke="#343C45" stroke-width="4" stroke-linecap="round"/>
+  <path d="M76 278 H355" fill="none" stroke="#7AA2F7" stroke-width="8" stroke-linecap="round"/>
+  <path d="M355 278 C390 278 390 335 425 335 H954 C989 335 989 278 1024 278 H1124" fill="none" stroke="#C6944B" stroke-width="8" stroke-linecap="round"/>
+
+  <g id="discover" transform="translate(56 144)">
+    <rect width="250" height="190" rx="18" fill="#20262D" stroke="#3C444E"/>
+    <text x="22" y="36" fill="#7AA2F7" font-family="ui-monospace, SFMono-Regular, Menlo, 'PingFang SC', monospace" font-size="18" font-weight="650">01 · 发现</text>
+    <text x="22" y="76" fill="#ECECEF" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="23" font-weight="650">继续当前</text>
+    <text x="22" y="106" fill="#ECECEF" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="23" font-weight="650">AI Coding 主线</text>
+    <path d="M22 126 H228" stroke="#343C45"/>
+    <text x="22" y="155" fill="#A8AEB6" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="18">开发过程中发现</text>
+    <text x="22" y="180" fill="#A8AEB6" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="18">一条值得处理的旁支。</text>
+  </g>
+
+  <g id="capture" transform="translate(338 144)">
+    <rect width="250" height="190" rx="18" fill="#29241D" stroke="#735A35"/>
+    <text x="22" y="36" fill="#D6A55C" font-family="ui-monospace, SFMono-Regular, Menlo, 'PingFang SC', monospace" font-size="18" font-weight="650">02 · 记录</text>
+    <text x="22" y="76" fill="#ECECEF" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="23" font-weight="650">⌘⇧Space</text>
+    <text x="22" y="106" fill="#ECECEF" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="23" font-weight="650">记下后继续</text>
+    <path d="M22 126 H228" stroke="#4B3E2D"/>
+    <text x="22" y="155" fill="#C8B79E" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="18">不开规划会议，</text>
+    <text x="22" y="180" fill="#C8B79E" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="18">不切换上下文。</text>
+  </g>
+
+  <g id="keep" transform="translate(620 144)">
+    <rect width="250" height="190" rx="18" fill="#20262D" stroke="#3C444E"/>
+    <text x="22" y="36" fill="#D6A55C" font-family="ui-monospace, SFMono-Regular, Menlo, 'PingFang SC', monospace" font-size="18" font-weight="650">03 · 保存</text>
+    <text x="22" y="76" fill="#ECECEF" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="23" font-weight="650">记忆留在</text>
+    <text x="22" y="106" fill="#ECECEF" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="23" font-weight="650">所属项目中</text>
+    <path d="M22 126 H228" stroke="#343C45"/>
+    <text x="22" y="156" fill="#C6944B" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">.sidequest/quests/</text>
+    <text x="22" y="181" fill="#A8AEB6" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">sq_…md</text>
+  </g>
+
+  <g id="handoff" transform="translate(902 144)">
+    <rect width="250" height="190" rx="18" fill="#1D2940" stroke="#506DAB"/>
+    <text x="22" y="36" fill="#7AA2F7" font-family="ui-monospace, SFMono-Regular, Menlo, 'PingFang SC', monospace" font-size="18" font-weight="650">04 · 交接</text>
+    <text x="22" y="76" fill="#ECECEF" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="23" font-weight="650">让 coding agent</text>
+    <text x="22" y="106" fill="#ECECEF" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="23" font-weight="650">查询并接手</text>
+    <path d="M22 126 H228" stroke="#34496F"/>
+    <text x="22" y="155" fill="#B8C9EE" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="18">自然语言回忆，</text>
+    <text x="22" y="180" fill="#B8C9EE" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="18">现在已经可用。</text>
+  </g>
+
+  <circle cx="76" cy="278" r="9" fill="#7AA2F7"/>
+  <circle cx="355" cy="278" r="9" fill="#C6944B"/>
+  <circle cx="425" cy="335" r="9" fill="#C6944B"/>
+  <circle cx="954" cy="335" r="9" fill="#C6944B"/>
+  <circle cx="1024" cy="278" r="9" fill="#7AA2F7"/>
+  <circle cx="1124" cy="278" r="9" fill="#7AA2F7"/>
+
+  <text x="56" y="408" fill="#8C929B" font-family="ui-monospace, SFMono-Regular, Menlo, 'PingFang SC', monospace" font-size="18">主线继续</text>
+  <text x="932" y="408" fill="#7AA2F7" font-family="ui-monospace, SFMono-Regular, Menlo, 'PingFang SC', monospace" font-size="18" font-weight="650">旁支重新加入主线</text>
+</svg>

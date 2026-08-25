@@ -36,6 +36,7 @@ impl LanguagePreference {
 pub(crate) struct NativeTranslations {
     pub(crate) app: NativeAppTranslations,
     pub(crate) menu: NativeMenuTranslations,
+    pub(crate) status_item: NativeStatusItemTranslations,
 }
 
 #[derive(Debug, Deserialize)]
@@ -77,6 +78,13 @@ pub(crate) struct NativeMenuTranslations {
     pub(crate) reload_active_window: String,
     #[cfg(debug_assertions)]
     pub(crate) open_logs: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct NativeStatusItemTranslations {
+    pub(crate) show_main_window: String,
+    pub(crate) hide_main_window: String,
 }
 
 pub(crate) fn native_translations(locale: EffectiveLocale) -> &'static NativeTranslations {
@@ -171,6 +179,18 @@ mod tests {
                 .app
                 .open,
             "打开 Sidequest"
+        );
+        assert_eq!(
+            native_translations(EffectiveLocale::English)
+                .status_item
+                .show_main_window,
+            "Show Main Window"
+        );
+        assert_eq!(
+            native_translations(EffectiveLocale::SimplifiedChinese)
+                .status_item
+                .hide_main_window,
+            "隐藏主窗口"
         );
     }
 }

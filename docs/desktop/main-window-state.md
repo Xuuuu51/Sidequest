@@ -22,7 +22,7 @@ stateDiagram-v2
     [*] --> Restoring
     Restoring --> Onboarding: 没有项目
     Restoring --> ProjectLoading: 有上次项目
-    Onboarding --> ProjectLoading: Add Project
+    Onboarding --> ProjectLoading: Complete setup / re-add project
     ProjectLoading --> ListReady: 加载成功
     ProjectLoading --> ProjectUnavailable: 路径失效
     ProjectLoading --> ProjectFatalError: 无法读取 workspace
@@ -162,7 +162,7 @@ Drawer rest 状态：
 - Created metadata 行左侧依次显示 `Saving…` 和短暂的 `Saved`，创建时间固定右对齐；反馈不得改变布局。
 - 实际写入进行期间 split button 保持可见但暂时禁用；pending 阶段点击状态动作会先触发立即 flush。
 - `⌘S` 只用于立即 flush 当前 pending 内容，不显示保存确认。
-- Close Drawer、Previous / Next、切换项目、进入 Settings、关闭窗口或执行状态修改时，立即 flush pending 内容；成功后自动继续原始动作。
+- Close Drawer、Previous / Next、切换项目、进入 Settings、通过红色关闭按钮或菜单栏状态项隐藏窗口、或执行状态修改时，立即 flush pending 内容；成功后自动继续原始动作，失败时保持窗口显示。
 - `saveError` 保留本地内容，在 Action Bar 上方显示 Retry 和 Discard Local Changes；错误未处理前阻止离开。
 - Read Only 时正文不可编辑，Delete 与状态按钮禁用；仍允许选择和复制正文。
 
