@@ -1,0 +1,18 @@
+Sidequest
+
+Stay on the main quest without losing the sidequests.
+
+别让支线打断主线。
+
+开发者在实现当前目标时，经常发现另一件值得做的事：重构机会、边界情况、体验改进或后续验证。立即处理会打断 flow；不处理又可能遗忘。Sidequest 提供低摩擦的中间层：现在记下，以后按项目重新发现。
+
+本片演示：把已有项目加入 Sidequest；Codex 正在执行主任务时，用 ⌘⇧Space 快速记录额外的优化想法；稍后把 Quest 从待整理移至就绪；新的 Codex 会话通过 Skill 与 sq CLI 找到、实现、验证该 Quest，并将它更新为已完成。
+
+演示 Quest：搜索没有结果时，显示搜索词，并提供清除搜索按钮。
+
+Codex 提示词：看看这个项目有哪些 Ready 的 Sidequest，接手搜索无结果状态那条。实现并验证后，把它标记为完成。
+
+结尾：把旁支留在项目里，继续你的主线。
+
+sidequest.xuzhang3371.chatgpt.site/zh
+下载 macOS 版 →
