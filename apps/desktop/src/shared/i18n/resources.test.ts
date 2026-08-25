@@ -15,6 +15,13 @@ describe("translation resources", () => {
       }
     }
   });
+
+  it("uses_the_product_language_for_the_chinese_inbox_status", () => {
+    expect(resources["zh-CN"].common.status.inbox).toBe("待整理");
+    expect(resources["zh-CN"]["main-window"].statusControl.moveToInbox).toBe(
+      "移至待整理",
+    );
+  });
 });
 
 function flatten(

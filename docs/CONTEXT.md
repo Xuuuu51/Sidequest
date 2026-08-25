@@ -68,7 +68,7 @@ Quest Details Drawer 底部承载删除与状态流转的固定区域。
 |---|---|
 | Projects | 项目 |
 | Workspace | 工作区 |
-| Inbox | 收件箱 |
+| Inbox | 待整理 |
 | Ready | 就绪 |
 | Done | 已完成 |
 | Quick Capture | 快速记录 |
