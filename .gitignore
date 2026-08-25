@@ -13,3 +13,7 @@ apps/desktop/src-tauri/resources/sq
 target/
 
 apps/desktop/src-tauri/gen/schemas/
+
+.obsidian/
+.pnpm-store/
+.sidequest/
