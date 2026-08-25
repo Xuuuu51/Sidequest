@@ -90,6 +90,7 @@
 
 ## 9. macOS 发布与更新
 
+- 社区预发布阶段通过 GitHub Releases 分别提供 Apple Silicon 与 Intel DMG，使用 ad-hoc code signing，明确标注未经过 Apple 公证，并保持 Draft + Prerelease 审核流程；具体操作由 [Community Release](./community-release.md)定义。
 - 通过 GitHub Releases 发布 Universal Apple Silicon + Intel 单包，最低支持 macOS 13。
 - 配置 Developer ID 签名、公证、DMG 与 Tauri Updater。
 - 建立发布 workflow、更新 endpoint、产物校验和干净用户环境发布验收。

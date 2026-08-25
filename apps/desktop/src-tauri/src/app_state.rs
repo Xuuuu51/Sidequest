@@ -30,8 +30,8 @@ pub(crate) const MIN_DRAWER_WIDTH: u16 = 420;
 pub(crate) const MAX_DRAWER_WIDTH: u16 = 560;
 pub(crate) const DEFAULT_WINDOW_WIDTH: u32 = 1360;
 pub(crate) const DEFAULT_WINDOW_HEIGHT: u32 = 840;
-pub(crate) const MIN_WINDOW_WIDTH: u32 = 1200;
-pub(crate) const MIN_WINDOW_HEIGHT: u32 = 760;
+pub(crate) const MIN_WINDOW_WIDTH: u32 = 1024;
+pub(crate) const MIN_WINDOW_HEIGHT: u32 = 580;
 
 pub(crate) struct DesktopState {
     pub(crate) app_state: Mutex<AppStateStore>,

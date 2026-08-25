@@ -113,7 +113,11 @@ The files are portable, inspectable, easy to back up, and Git-friendly when you 
 
 ## Get started
 
-> **Early macOS MVP:** Sidequest currently runs from source. A signed public release and automatic updates are not yet documented as available.
+> **Early macOS MVP:** GitHub prereleases are community builds with ad-hoc code signing and no Apple notarization. Automatic updates are not available yet.
+
+For a packaged build, download the DMG matching your Mac from [GitHub Releases](https://github.com/Xuuuu51/Sidequest/releases): `aarch64` for Apple Silicon or `x64` for Intel. Drag Sidequest to Applications and try to open it once. If macOS blocks it, open **System Settings → Privacy & Security** and choose **Open Anyway**.
+
+Release assets include `SHA256SUMS.txt` so you can verify the downloaded DMG before opening it.
 
 ### Prerequisites
 

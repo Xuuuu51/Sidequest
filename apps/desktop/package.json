@@ -6,6 +6,7 @@
   "scripts": {
     "prepare:integrations:dev": "node scripts/prepare-integration-resources.mjs debug",
     "prepare:integrations:release": "node scripts/prepare-integration-resources.mjs release",
+    "release:check-version": "node scripts/check-release-version.mjs",
     "dev": "vite",
     "build": "pnpm typecheck && vite build",
     "lint": "eslint eslint.config.js vite.config.ts vitest.config.ts src",

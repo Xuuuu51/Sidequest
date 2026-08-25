@@ -10,6 +10,7 @@ import {
 } from "../features/quests/quest-write-coordinator";
 import { WorkspaceView } from "../features/workspace/workspace-view";
 import { useProjectActions } from "../features/projects/project-actions";
+import { useSettingsQuery } from "../features/settings/data";
 import { useWorkspaceWatcher } from "../features/workspace/data";
 import { localizedError } from "../shared/i18n/errors";
 import { Button } from "../shared/ui/button";
@@ -41,6 +42,7 @@ function MainWindowContent() {
   useMainWindowRuntime();
   const coordinator = useQuestWriteCoordinator();
   const appState = useAppStateQuery();
+  const settings = useSettingsQuery();
   const projectActions = useProjectActions();
   const view = useMainWindowStore((state) => state.view);
   const recoveryDismissed = useMainWindowStore(
@@ -120,6 +122,7 @@ function MainWindowContent() {
       ) : (
         <>
           <ProjectSidebar
+            appVersion={settings.data?.appVersion ?? null}
             addPending={projectActions.addPending}
             onAdd={() => void projectActions.add()}
             onLocate={(project) => void projectActions.locate(project)}

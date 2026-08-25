@@ -119,7 +119,11 @@ Quest 详情应该支持键盘导航。
 
 ## 开始使用
 
-> **早期 macOS MVP：** Sidequest 目前需要从源码运行，尚未确认提供签名公开版本与自动更新。
+> **早期 macOS MVP：** GitHub 预发布版本使用 ad-hoc 代码签名，尚未经过 Apple 公证，也暂不支持自动更新。
+
+如需安装包，请从 [GitHub Releases](https://github.com/Xuuuu51/Sidequest/releases) 下载与你的 Mac 匹配的 DMG：Apple Silicon 选择 `aarch64`，Intel 选择 `x64`。将 Sidequest 拖入“应用程序”后尝试打开一次；如果被 macOS 拦截，请前往“系统设置 → 隐私与安全性”，点击“仍要打开”。
+
+Release 同时提供 `SHA256SUMS.txt`，可在打开前校验下载的 DMG。
 
 ### 环境要求
 

@@ -1,0 +1,211 @@
+name: Community Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag, for example v0.1.0
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: community-release-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+
+jobs:
+  quality:
+    name: Release gate
+    runs-on: macos-latest
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.98.0
+          components: clippy, rustfmt
+
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate release version
+        run: node apps/desktop/scripts/check-release-version.mjs "$RELEASE_TAG"
+
+      - name: Check formatting
+        run: pnpm format:check
+
+      - name: Prepare desktop integration resources
+        run: pnpm --filter @sidequest/desktop prepare:integrations:dev
+
+      - name: Lint Rust
+        run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+
+      - name: Test Rust
+        run: cargo test --workspace --locked
+
+      - name: Lint frontend
+        run: pnpm lint
+
+      - name: Typecheck frontend
+        run: pnpm typecheck
+
+      - name: Test frontend
+        run: pnpm test
+
+      - name: Build frontend
+        run: pnpm build
+
+  build-macos:
+    name: macOS ${{ matrix.arch }} DMG
+    needs: quality
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            arch: aarch64
+            fileArch: arm64
+          - target: x86_64-apple-darwin
+            arch: x64
+            fileArch: x86_64
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install Rust target
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.98.0
+          targets: ${{ matrix.target }}
+
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: release-${{ matrix.target }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build ad-hoc signed DMG
+        env:
+          APPLE_SIGNING_IDENTITY: "-"
+          SIDEQUEST_BUILD_TARGET: ${{ matrix.target }}
+        run: >-
+          pnpm --filter @sidequest/desktop tauri build
+          --target ${{ matrix.target }}
+          --bundles dmg
+
+      - name: Verify app bundle and bundled CLI
+        env:
+          EXPECTED_FILE_ARCH: ${{ matrix.fileArch }}
+          TARGET_TRIPLE: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          DMG_PATH="$(find "target/$TARGET_TRIPLE/release/bundle/dmg" -maxdepth 1 -name '*.dmg' -type f -print -quit)"
+          MOUNT_POINT="$RUNNER_TEMP/sidequest-$TARGET_TRIPLE"
+          test -n "$DMG_PATH"
+          mkdir -p "$MOUNT_POINT"
+          hdiutil attach "$DMG_PATH" -readonly -nobrowse -mountpoint "$MOUNT_POINT"
+          trap 'hdiutil detach "$MOUNT_POINT"' EXIT
+          APP_PATH="$(find "$MOUNT_POINT" -maxdepth 1 -name '*.app' -type d -print -quit)"
+          test -n "$APP_PATH"
+          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+          file "$APP_PATH/Contents/MacOS/sidequest-desktop" | grep -q "$EXPECTED_FILE_ARCH"
+          file "$APP_PATH/Contents/Resources/sq" | grep -q "$EXPECTED_FILE_ARCH"
+
+      - name: Normalize release asset name
+        env:
+          RELEASE_ARCH: ${{ matrix.arch }}
+          TARGET_TRIPLE: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          VERSION="${RELEASE_TAG#v}"
+          DMG_PATH="$(find "target/$TARGET_TRIPLE/release/bundle/dmg" -maxdepth 1 -name '*.dmg' -type f -print -quit)"
+          test -n "$DMG_PATH"
+          mkdir -p release-assets
+          cp "$DMG_PATH" "release-assets/Sidequest_${VERSION}_${RELEASE_ARCH}.dmg"
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sidequest-macos-${{ matrix.arch }}
+          path: release-assets/*.dmg
+          if-no-files-found: error
+          retention-days: 14
+
+  publish-release:
+    name: Create draft prerelease
+    needs: build-macos
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+
+      - name: Download DMG artifacts
+        uses: actions/download-artifact@v5
+        with:
+          pattern: sidequest-macos-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Generate SHA-256 checksums
+        working-directory: release-assets
+        run: sha256sum *.dmg > SHA256SUMS.txt
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_NOTES: |
+            ## macOS community build
+
+            This build uses ad-hoc code signing and has not been notarized by Apple.
+
+            Download the DMG matching your Mac: `aarch64` for Apple Silicon or `x64` for Intel. After copying Sidequest to Applications, try to open it once. If macOS blocks it, open System Settings → Privacy & Security and choose Open Anyway.
+
+            此版本使用 ad-hoc 代码签名，尚未经过 Apple 公证。Apple Silicon 请下载 `aarch64`，Intel Mac 请下载 `x64`。将 Sidequest 拖入“应用程序”并尝试打开一次；如果被 macOS 拦截，请前往“系统设置 → 隐私与安全性”，点击“仍要打开”。
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release edit "$RELEASE_TAG" --draft --prerelease --title "Sidequest $RELEASE_TAG" --notes "$RELEASE_NOTES"
+            gh release upload "$RELEASE_TAG" release-assets/* --clobber
+          else
+            gh release create "$RELEASE_TAG" release-assets/* --verify-tag --draft --prerelease --title "Sidequest $RELEASE_TAG" --notes "$RELEASE_NOTES" --generate-notes
+          fi

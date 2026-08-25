@@ -25,6 +25,7 @@ describe("ProjectSidebar", () => {
 
     render(
       <ProjectSidebar
+        appVersion="0.1.0"
         addPending={false}
         onAdd={vi.fn()}
         onLocate={vi.fn()}
@@ -75,8 +76,10 @@ describe("ProjectSidebar", () => {
       expect(screen.queryByRole("dialog", { name: "Projects" })).toBeNull();
     });
     expect(useMainWindowStore.getState().sidebarCollapsed).toBe(false);
-    expect(screen.getByRole("complementary")).toBeInTheDocument();
-    expect(screen.getByRole("complementary").parentElement).toHaveStyle({
+    const sidebar = screen.getByRole("complementary");
+    expect(within(sidebar).getByText("Sidequest")).toBeInTheDocument();
+    expect(within(sidebar).getByText("v0.1.0")).toBeInTheDocument();
+    expect(sidebar.parentElement).toHaveStyle({
       width: "224px",
     });
     expect(persistPreferences).toHaveBeenCalledOnce();

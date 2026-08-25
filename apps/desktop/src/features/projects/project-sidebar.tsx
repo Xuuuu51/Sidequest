@@ -26,11 +26,13 @@ import { useMainWindowStore } from "../../store/main-window/store";
 import { DropdownMenu as Menu } from "../../shared/ui/dropdown-menu";
 import { Sheet } from "../../shared/ui/sheet";
 import { ProjectRemoveDialog } from "./project-remove-dialog";
+import sidequestMark from "../../../src-tauri/icons/brand/SidequestMark@2x.png";
 
 const PREVIEW_OPEN_DELAY_MS = 120;
 const PREVIEW_CLOSE_DELAY_MS = 180;
 
 interface ProjectSidebarProps {
+  appVersion: string | null;
   projects: ProjectDto[];
   selectedProjectPath: string | null;
   addPending: boolean;
@@ -45,6 +47,7 @@ interface ProjectSidebarProps {
 }
 
 export function ProjectSidebar({
+  appVersion,
   projects,
   selectedProjectPath,
   addPending,
@@ -86,6 +89,7 @@ export function ProjectSidebar({
   );
 
   const sharedProps = {
+    appVersion,
     projects,
     selectedProjectPath,
     addPending,
@@ -293,6 +297,7 @@ interface SidebarPanelProps extends Omit<ProjectSidebarProps, "onRemove"> {
 }
 
 function SidebarPanel({
+  appVersion,
   projects,
   selectedProjectPath,
   addPending,
@@ -321,6 +326,23 @@ function SidebarPanel({
       style={{ width: sidebarWidth }}
     >
       <div className="h-12 shrink-0" data-tauri-drag-region="deep" />
+
+      <div className="flex h-12 shrink-0 items-center gap-2.5 px-2.5">
+        <img
+          alt=""
+          aria-hidden="true"
+          className="size-7 shrink-0 object-contain"
+          src={sidequestMark}
+        />
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className="truncate text-sm font-semibold tracking-[-0.01em] text-foreground">
+            {t("sidebar.appName")}
+          </span>
+          <span className="shrink-0 rounded-[4px] bg-muted px-1.5 py-0.5 text-[9px]/[12px] font-semibold text-muted-foreground ring-1 ring-inset ring-border/70">
+            {t("sidebar.appVersion", { version: appVersion ?? "—" })}
+          </span>
+        </div>
+      </div>
 
       <div className="flex h-9 items-center justify-between px-2">
         <span className="px-1 text-[11px] font-medium tracking-wide text-muted-foreground">

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44">
+  <defs>
+    <mask id="sidequest-cutout" maskUnits="userSpaceOnUse">
+      <rect width="44" height="44" fill="black" />
+      <rect x="2" y="2" width="40" height="40" rx="8.888889" fill="white" />
+      <path
+        d="M30 11.5C20 11.5 12.5 15 12.5 20.5C12.5 27 31.5 19 31.5 26.5C31.5 32 22.5 35.5 13.5 35.5"
+        fill="none"
+        stroke="black"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="6"
+        transform="translate(22 22) scale(1.111111) translate(-22 -22)"
+      />
+    </mask>
+  </defs>
+  <rect
+    x="2"
+    y="2"
+    width="40"
+    height="40"
+    rx="8.888889"
+    fill="white"
+    mask="url(#sidequest-cutout)"
+  />
+</svg>
