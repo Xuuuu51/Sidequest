@@ -1,5 +1,7 @@
 {
   "sidebar": {
+    "appName": "Sidequest",
+    "appVersion": "v{{version}}",
     "projects": "Projects",
     "addProject": "Add Project",
     "expand": "Expand sidebar",

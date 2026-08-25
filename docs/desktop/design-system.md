@@ -38,7 +38,7 @@ Sidequest Desktop 采用克制、专业、轻量卡片化的桌面生产力工�
 ```
 
 - 默认窗口：`1360 × 840` logical pixels。
-- 最小窗口：`1200 × 760` logical pixels。
+- 最小窗口：`1024 × 580` logical pixels。
 - 原生窗口恢复必须按显示器 scale factor 将 logical size 转换为 physical size，确保 Retina 与非 Retina 屏上的视觉尺寸一致。
 - Onboarding 在最小窗口内完整一屏展示，不产生页面滚动；右上角使用 App Icon + Sidequest lockup。左栏承载 Add Project 与 Quick Capture 快捷键提示，右栏承载 CLI 与 Agent Skill 的快捷安装。Onboarding hero 是 Application Shell 常规字号上限的唯一例外，标题使用 `32px`。
 - Titlebar 高度：`48px`；macOS traffic lights 使用 native logical inset 与右侧 titlebar 图标垂直居中，配置变化需重启原生窗口进程。
@@ -60,6 +60,7 @@ Sidequest Desktop 采用克制、专业、轻量卡片化的桌面生产力工�
 - 展开、收起与 hover 预览入口始终使用同一个 `PanelLeft` 图标。
 - `PanelLeft` 使用与 Add Project 相同的 ghost icon-button 外观、`28px` 命中区和 focus ring，不增加独立描边、常驻底色或阴影。
 - 常驻 Sidebar 展开/收起使用 `--motion-panel` 的宽度与透明度过渡，使主工作区连续跟随；hover modal 使用同一时长的轻微横向位移与透明度过渡。`prefers-reduced-motion` 下禁用位移和布局过渡。
+- Titlebar 安全区下方显示紧凑的品牌 lockup：`28px` 透明底彩色品牌标记与 `Sidequest` 标题靠左排列并上下居中，版本号以低对比小型 Tag 紧跟标题。品牌标记复用桌面 App Icon 的蓝金色轨迹但移除深色底板；品牌区不使用独立卡片背景、边框、阴影或交互状态。
 - `Projects` 是纯文字 section heading，不带文件夹图标；右侧保留添加项目图标。
 - 项目行高 `30px`，图标 `15px`，文字 `13px`。
 - 当前项目使用白色/石墨 surface、柔和阴影和 `2px` 品牌色左侧标记；不使用大型圆角胶囊。

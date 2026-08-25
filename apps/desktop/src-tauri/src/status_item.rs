@@ -54,7 +54,9 @@ pub(crate) fn install(
         main_window_action: MainWindowAction::Show,
     };
     let menu = build_menu(app.handle(), &presentation)?;
-    let icon = Image::from_bytes(include_bytes!("../icons/menu-bar/SidequestTemplate.png"))?;
+    let icon = Image::from_bytes(include_bytes!(
+        "../icons/menu-bar/SidequestInverseTemplate.png"
+    ))?;
     TrayIconBuilder::with_id(STATUS_ITEM_ID)
         .icon(icon)
         .icon_as_template(true)

@@ -1,5 +1,7 @@
 {
   "sidebar": {
+    "appName": "Sidequest",
+    "appVersion": "v{{version}}",
     "projects": "项目",
     "addProject": "添加项目",
     "expand": "展开侧边栏",

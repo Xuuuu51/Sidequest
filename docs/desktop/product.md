@@ -14,7 +14,7 @@ MVP 包含 Main Window 与独立的 Quick Capture Window。
 - Sidequest 是 macOS 菜单栏应用，不显示 Dock 图标，也不出现在 `⌘Tab` 应用切换器中。普通主动启动显示 Main Window；开机启动只显示菜单栏状态项。
 - 关闭 Main Window 只隐藏窗口；菜单栏状态项使用动态的 Show Main Window / Hide Main Window 重新显示或安全隐藏它。显示时恢复原页面状态并激活、聚焦窗口；隐藏时先完成与红色关闭按钮相同的写入保护。
 - `⌘Q` 或 Quit 才退出应用，退出后全局快捷键不可用。
-- 常驻菜单栏状态项提供 Show/Hide Main Window、Quick Capture、Settings… 与 Quit Sidequest；快捷键在菜单右侧的 native accelerator column 中以低强调样式展示，并显示当前 Quick Capture 全局快捷键。左右键打开同一菜单；应用激活时仍保留完整 macOS 应用菜单。
+- 常驻菜单栏状态项使用实心模板轮廓与透明 `S` 镂空组成的反相图标，并由 macOS Template Image 自动适配菜单栏明暗。菜单提供 Show/Hide Main Window、Quick Capture、Settings… 与 Quit Sidequest；快捷键在菜单右侧的 native accelerator column 中以低强调样式展示，并显示当前 Quick Capture 全局快捷键。左右键打开同一菜单；应用激活时仍保留完整 macOS 应用菜单。
 - 开机启动默认关闭，可在 onboarding 和 Settings 中开启。
 - 默认 Quick Capture 快捷键为 `⌘⇧Space`；注册冲突不阻止启动，Settings 会显示冲突并允许重新录制。
 
@@ -56,7 +56,7 @@ Remove Project 始终先显示二次确认。确认框展示完整路径、有�
 Projects Sidebar | Kanban Quest Board | modal Quest Details Drawer
 ```
 
-Sidebar 支持 resize/collapse，显示项目状态并独立滚动。traffic lights 右侧常驻唯一的 ghost `PanelLeft`：展开时点击收起；收起后不保留窄栏，短暂 hover intent 后或 focus 图标时无背板显示可操作的左侧 modal Sidebar，指针移出图标与 Sidebar 后延迟隐藏，点击图标则以连续动画恢复常驻 Sidebar。`Projects` 标题右侧是同规格的 icon-only Add Project；Settings 以 gear icon + `Settings` 固定在底部。项目上下文菜单承载 Locate、Reveal 与 Remove。Toolbar 常驻 Search，并提供 `New Quest`；`New Quest` 打开现有 Quick Capture Window 并聚焦输入，不在 Main Window 维护第二套创建表单。
+Sidebar 支持 resize/collapse，显示项目状态并独立滚动。traffic lights 右侧常驻唯一的 ghost `PanelLeft`：展开时点击收起；收起后不保留窄栏，短暂 hover intent 后或 focus 图标时无背板显示可操作的左侧 modal Sidebar，指针移出图标与 Sidebar 后延迟隐藏，点击图标则以连续动画恢复常驻 Sidebar。Sidebar 顶部在 titlebar 安全区下方显示靠左且上下居中的透明底蓝金品牌标记、Sidequest 名称与紧随标题的版本 Tag。`Projects` 标题右侧是同规格的 icon-only Add Project；Settings 以 gear icon + `Settings` 固定在底部。项目上下文菜单承载 Locate、Reveal 与 Remove。Toolbar 常驻 Search，并提供 `New Quest`；`New Quest` 打开现有 Quick Capture Window 并聚焦输入，不在 Main Window 维护第二套创建表单。
 
 ## 5. Kanban Quest Board
 
