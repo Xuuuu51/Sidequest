@@ -45,7 +45,13 @@ Natural-language recall is available today through the managed Codex and Claude 
 
 ## See the project, not another task manager
 
-![Sidequest for macOS showing multiple projects, the Inbox, Ready, and Done board, and an editable Quest details drawer](./docs/assets/sidequest-application-shell-dark-v6.png)
+![The latest Sidequest for macOS main window, shown in Chinese, with the project list and Inbox, Ready, and Done board](./assets/readme/sidequest-main-window-zh-cn.png)
+
+<p align="center">
+  <img src="./assets/readme/quick-capture-context-zh-cn.png" width="100%" alt="During an AI coding session, Sidequest Quick Capture opens above the current app and returns focus after submission">
+</p>
+
+<p align="center"><sub>Open Quick Capture above any app, save the sidequest, and return immediately to the work in progress.</sub></p>
 
 Sidequest is deliberately scoped to project-level development intent:
 
