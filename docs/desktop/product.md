@@ -57,15 +57,14 @@ Sidebar 支持 resize/collapse，显示项目状态并独立滚动。traffic lig
 
 ## 5. Kanban Quest Board
 
-主工作区固定显示 Inbox、Ready、Done 三个横向状态列。每列独立纵向滚动，列标题显示状态色点、名称与当前可见数量；空列保留紧凑的 drop target。每列内 Quest 按创建时间从新到旧排列，不提供用户排序。
+主工作区固定显示 Inbox、Ready、Done 三个 `320px` 宽横向状态列；空间不足时看板整体横向滚动。每列独立纵向滚动，列标题显示状态指示、名称与当前可见数量；空列只保留紧凑的 drop target，创建入口仅位于 Toolbar。每列内 Quest 按创建时间从新到旧排列，不提供用户排序。
 
-Quest Card 以最多四行的 content 摘要为主信息，创建时间为次级信息，不重复显示所在状态。整张卡片可选择并拖拽，hover/focus 时显示拖拽手柄；拖到其他状态列或使用 Drawer 状态操作均可改变状态。拖拽只表达 status 变化，不提供列内自由排序。大量数据的虚拟化、分页和完整键盘拖拽不进入 MVP，但必须保留 Drawer 中的按钮式状态操作。
+Quest Card 将 content 第一行作为视觉标题、其余内容作为弱化摘要，两部分分别最多两行；这不改变 Quest 数据模型。创建时间为次级信息，不重复显示所在状态。整张卡片可打开 Drawer 并拖拽，不显示拖拽手柄；拖到其他状态列或使用 Drawer 状态操作均可改变状态。拖拽只表达 status 变化，不提供列内自由排序。大量数据的虚拟化、分页和完整键盘拖拽不进入 MVP，但必须保留 Drawer 中的按钮式状态操作。
 
-空项目提示：
+三个空列都使用低强调提示：
 
 ```text
-No quests yet
-Use ⌘⇧Space to capture one.
+No quests
 ```
 
 ## 6. Quest Details Drawer
@@ -74,9 +73,9 @@ Use ⌘⇧Space to capture one.
 
 Drawer Header 提供上一项与下一项，顺序跟随当前搜索过滤后的分组列表与固定组内排序；首尾不循环。关闭、上一项、下一项或其他离开动作都遵守同一套 flush 规则，保存失败时保持 Drawer 打开并阻止切换。
 
-Drawer 不显示 Quest ID 和 Content 标题。正文是首要信息；创建时间以 `Created …` 单独展示。正文点击后原位进入多行编辑，修改自动保存，不提供 Save/Cancel。精确 pending、saving、失败、冲突与离开规则见 [Main Window 状态机](./main-window-state.md)。
+Drawer 不显示 Quest ID 和 Content 标题。正文是首要信息：阅读态安全渲染 GitHub Flavored Markdown，原始 HTML 不执行，链接与图片不触发导航或远程加载；点击阅读区后原位进入原始 Markdown 多行编辑，修改自动保存，不提供 Save/Cancel。编辑器顶部只显示轻量 Markdown 标识和 `⌘S` 提示。创建时间以 `Created …` 放在正文 metadata 行右下角。精确 pending、saving、失败、冲突与离开规则见 [Main Window 状态机](./main-window-state.md)。
 
-底部固定 Action Bar：左侧 Delete，右侧状态 split button。
+底部固定 Action Bar：左侧 Delete，右侧状态 split button。split button 使用其默认流转目标的状态色，替代菜单项以同色状态点辅助识别；文字标签始终保留，不能只靠颜色传达目标状态。
 
 | 当前状态 | 主按钮 | 菜单项 |
 |---|---|---|

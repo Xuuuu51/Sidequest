@@ -7,7 +7,7 @@
 
 ## 1. 目标
 
-Sidequest Desktop 采用克制、专业、轻量卡片化的桌面生产力工具视觉语言。浅色模式以冷灰白工作区、白色任务表面和细边框为基线；深色模式使用石墨色表面保持相同层级。
+Sidequest Desktop 采用克制、专业、轻量卡片化的桌面生产力工具视觉语言。浅色模式以暖灰状态列、白色任务表面和细边框为基线；深色模式使用石墨色表面保持相同层级。
 
 本基线参考 Codex Desktop、Linear、Cursor 和 VS Code 的信息组织方式，但只借鉴视觉语言与桌面端交互原则，不引入聊天、代码编辑器、Agent 面板等 Sidequest 产品范围之外的功能。
 
@@ -68,20 +68,20 @@ Sidequest Desktop 采用克制、专业、轻量卡片化的桌面生产力工�
 - 当前项目名称位于 Sidebar divider 右侧的主工作区 Titlebar。
 - Sidebar 收起时，项目名称为 macOS traffic lights 与展开热区保留左侧安全间距。
 - Main Window 整条 `48px` titlebar 的非交互区域都是 Tauri native drag region；按钮、搜索框等控件必须位于可交互层并保持正常点击。
-- Search 是可直接输入的紧凑搜索框，rest 状态使用填充 muted surface 和弱边界，focus 才显示中性 ring。
-- Toolbar 右侧提供 `New Quest`，打开 Quick Capture Window；Quest 删除等上下文动作不进入全局 toolbar。
+- Search 是可直接输入的 `240–320px` 紧凑搜索框，在 Titlebar 可用区域内保持几何居中，不受项目名或右侧动作宽度影响；rest 状态使用填充 muted surface，focus 切换到 surface 并显示中性 ring。
+- Toolbar 右侧提供 `32px` 高的 `New Quest`，使用品牌浅色 surface、克制的 brand 边界与 `brand-foreground` 文字，并以无分隔线的紧凑 keycap 显示当前已注册的全局快捷键；打开 Quick Capture Window。Quest 删除等上下文动作不进入全局 toolbar。
 - 图标默认 `14–16px`，命中区域 `28px`。
 - 图标按钮使用 tooltip，并具备清晰 hover、pressed、focus 状态。
 
 ### 2.4 Kanban Quest Board
 
-- 主工作区是连续的冷灰看板表面，与更深的 Sidebar 形成克制但明确的层级差异。
-- Inbox、Ready、Done 横向组成三个等宽状态列，每列独立纵向滚动，不折叠。
-- Status Lane Header 高度 `40px`，包含状态色点、名称与当前可见数量；不放置排序或创建菜单。
-- 空列保留紧凑的 drop area；drag over 时通过边框与背景变化扩大视觉反馈，不改变其他列的几何位置。
-- Quest Card 高度约 `104–132px`，content 最多四行；创建时间位于底部 metadata 行并右对齐。状态由所属列表达，不在卡片内重复。
-- Quest Card 使用白色/石墨 surface、`10px` 圆角、细冷灰边框与常驻柔和阴影。hover 只增强边框和阴影，不平移、不缩放。
-- 选中 Quest 使用极浅 `brand-subtle` 背景和 `2px` 品牌色左侧标记；focus 使用独立高对比中性 ring，两种状态可同时表达。
+- 主工作区承载相互独立的暖灰/石墨状态列，与 Sidebar 形成克制但明确的层级差异。
+- Inbox、Ready、Done 横向组成三个固定 `320px` 宽状态列，列间距 `16px`；看板不足以容纳全部列时整体横向滚动，每列独立纵向滚动且不折叠。
+- Status Lane Header 高度 `48px`，包含环形状态指示、名称与当前可见数量；不放置排序、创建或列菜单。
+- 空列只保留紧凑的 drop area；创建入口仅存在于 Toolbar。drag over 时整个状态列（包括 Header）改变背景并显示内描边，不改变其他列的几何位置。
+- Quest Card 高度由内容驱动且不低于 `108px`。content 第一行形成最多两行的视觉标题，其余内容形成最多两行的弱化摘要；这只是同一字段的展示层级，不新增 title。创建时间位于底部并右对齐。
+- Quest Card 使用白色/石墨 surface、`10px` 圆角、细边框与常驻柔和阴影。hover 只增强边框和阴影，不平移、不缩放，也不显示拖拽图标。
+- Quest selection 只用于 Drawer 导航和关闭后的焦点恢复，不显示持久选中样式；键盘 `focus-visible` 使用独立高对比中性 ring，鼠标点击不显示。
 - 状态颜色只用于列标题色点、drag target 等小面积识别，不铺满状态列或 Quest Card。
 - 组内排序继续遵守已确认的创建时间规则；insertion indicator 必须显示系统计算出的最终位置，不能暗示自由排序。
 
@@ -95,14 +95,14 @@ Sidequest Desktop 采用克制、专业、轻量卡片化的桌面生产力工�
 - Header 高度 `44px`，标题为 `Quest details`，提供 Previous、Next 与关闭动作。
 - Header 下方 divider 横向贴齐 Drawer 两侧边缘，不使用 inset。
 - Drawer 不分配 ID 展示行。
-- Content 紧接 Header，是 Drawer 的主要信息；不显示 `Content` label。
-- 多行 editor 在 rest 状态直接融入 Drawer 表面，不显示独立背景、边框或圆角容器；仅在 focus 状态显示必要的 focus indicator。
-- 创建时间作为 editor 下方的单行 muted metadata，例如 `Created May 12, 2025 at 9:41 AM`。
+- Content 紧接 Header，是 Drawer 的主要信息；不显示 `Content` label。阅读态渲染安全 Markdown，并以轻微 hover surface 和编辑图标表达可编辑性。
+- 编辑态使用 `8px` 圆角、细边框的低对比 surface；顶部是紧凑 Markdown 工具条和 `⌘S` 键帽，正文以 monospace 展示原始 Markdown。容器用 `focus-within` ring 表达焦点，不改变正文位置。
+- 创建时间作为 editor 下方单行 muted metadata 的右侧内容，例如 `Created May 12, 2025 at 9:41 AM`。
 - Drawer 底部固定 `64px` Action Bar，顶部 divider 横向贴齐 Drawer 两侧。
 - Action Bar 左侧是 `Delete` destructive ghost action；点击后仍进入已确认的删除确认流程。
 - Action Bar 右侧是状态 split button：主按钮执行高频状态流转，独立 chevron 打开其他状态菜单。
 - 自动保存时 Action Bar 始终保持 Delete 与状态 split button；保存节奏由状态机定义。
-- Created metadata 行右侧使用低干扰 `Saving…` / `Saved` 表达自动保存状态，不显示 Save confirmation。
+- Created metadata 行左侧使用低干扰 `Saving…` / `Saved` 表达自动保存状态，右侧固定创建时间，不显示 Save confirmation。
 - 点击 backdrop、关闭图标或按 `Esc` 请求关闭 drawer，不取消列表中的 Quest selection。
 
 状态 split button 的动作映射见 [Desktop 产品设计](./product.md)。
@@ -127,7 +127,8 @@ Theme value → Semantic token → Component usage
 | `background` | `#151517` | `#F7F7F8` | native app canvas |
 | `foreground` | `#F1F1F3` | `#1D1D21` | primary text / Inbox indicator |
 | `sidebar` | `#111113` | `#F7F7F9` | sidebar surface |
-| `workspace` | `#18181B` | `#FCFCFD` | toolbar / Kanban surface |
+| `workspace` | `#18181B` | `#FCFCFD` | toolbar / Kanban canvas |
+| `lane` | `#1E1E22` | `#F5F4F2` | status lane surface |
 | `surface` | `#202024` | `#FFFFFF` | Quest Card / resting control |
 | `surface-foreground` | `#F1F1F3` | `#1D1D21` | surface text |
 | `elevated` | `#25252A` | `#FFFFFF` | drawer / dialog / popover |
@@ -142,31 +143,28 @@ Theme value → Semantic token → Component usage
 | `accent-foreground` | `#F4F4F5` | `#1D1D21` | neutral hover text |
 | `brand` | `#C6944B` | `#C6944B` | sparse brand / active marker |
 | `brand-foreground` | `#E5BD7B` | `#87591F` | brand icon / text |
-| `brand-subtle` | `#302719` | `#FBF5E9` | selected Quest tint |
+| `brand-subtle` | `#302719` | `#FBF5E9` | drag target tint |
 | `destructive` | `#DF6A6A` | `#C94F4F` | delete / error |
 | `destructive-foreground` | `#FFFFFF` | `#FFFFFF` | destructive text |
 | `warning` | `#E78938` | `#D97727` | warning independent from brand |
 | `border` | `#35353B` | `#E6E6E9` | default divider / border |
 | `input` | `#3D3D45` | `#D8D8DD` | input border |
 | `ring` | `#D4D4D8` | `#3F3F46` | neutral focus-visible ring |
-| `status-inbox` | `foreground` | `foreground` | Inbox indicator |
-| `status-ready` | `#6B9DE8` | `#3978D4` | Ready indicator |
+| `status-inbox` | `#8F8F98` | `#85858C` | Inbox indicator |
+| `status-ready` | `#D5A62E` | `#D5A20F` | Ready indicator |
 | `status-done` | `#5DB57A` | `#32925D` | Done indicator |
 
-`brand`、`warning`、Quest status 和 `ring` 相互独立。Selected Quest 使用 `brand-subtle` 与 `brand` 左侧标记；focused 使用独立 `2px` 中性 ring，二者必须可同时出现。品牌色只在当前项目、selected Quest 与少量品牌图标中出现。
+`brand`、`warning`、Quest status 和 `ring` 相互独立。Quest Card 只在键盘 `focus-visible` 时使用独立 `2px` 中性 ring；`brand-subtle` 只用于拖拽目标列等瞬时反馈。
 
 ### 3.2 Component Mapping
 
 ```text
 questRow.background        → surface
 questRow.backgroundHover   → surface
-questRow.backgroundSelected → brand-subtle
 questRow.border            → border
-questRow.selectionMarker   → brand / 2px left
 questRow.focusRing         → ring
 questRow.radius            → radius.10
-questRow.minHeight         → size.72
-questRow.maxHeight         → size.96
+questRow.minHeight         → size.108
 questRow.shadow            → shadow.card
 questRow.shadowHover       → shadow.cardHover
 questRow.contentColor      → foreground
@@ -244,11 +242,11 @@ Light 模式通过柔和投影表达 Quest Card 的边界，Dark 模式以 surfa
 | Component | Metric |
 |---|---|
 | Titlebar | `44px` 高 |
-| Panel header / Status Lane Header | `40px` 高 |
+| Panel header / Status Lane Header | `40px` / `48px` 高 |
 | Sidebar row | `30px` 高 |
 | Compact control | `28px` 高 |
 | Search / text input | `30px` 高 |
-| Quest Card | `104–132px`，`12–16px` padding，`10px` radius |
+| Quest Card | 最低 `108px`、内容驱动，`14–16px` padding，`10px` radius |
 | Quest Drawer | 默认 `480px`，范围 `420–560px` |
 | Drawer Action Bar | `64px` 高，固定底部 |
 | Status split button | `32px` 高 |
@@ -271,28 +269,29 @@ Light 模式通过柔和投影表达 Quest Card 的边界，Dark 模式以 surfa
 - ToolbarButton 可以是单图标；必须有 tooltip 与 accessibility label。
 - SearchField 是受控输入，支持 `⌘F` 聚焦和 Escape 清除/退出搜索。
 - 不用 pill 形状。
+- Search、`New Quest` 与 Quick Capture `Submit` 的快捷键统一使用 `ShortcutHint`：默认 keycap 为 `18px`，Toolbar action 可使用低对比 `16px` compact density；每个物理键仍独立显示，组合键允许紧凑 glyph 或空格分隔输入。提示不进入按钮的 accessibility name。
 
 ### 7.3 StatusLaneHeader 与 QuestCard
 
 - StatusLaneHeader 不浮起、不加阴影；状态色点始终与文字并列。
-- QuestCard 是可独立选择和拖拽的任务对象，使用 `104–132px` 高度和 `10px` radius。
-- content 是唯一主信息，最多四行，使用 `13/18px` 和 `foreground`；不得从 content 中人为拆出 title。
+- QuestCard 是可打开 Drawer 和拖拽的任务对象，使用内容驱动高度、`108px` 最小高度和 `10px` radius。
+- content 是唯一主信息；第一行以 `14/20px` medium 形成最多两行的视觉标题，其余内容以 `13/18px` muted 形成最多两行的摘要。该拆分不产生独立字段。
 - Created metadata 右对齐，使用 `11–12px`、regular weight 和 `muted-foreground`。
 - 不增加 title、tag、priority、assignee 等字段，也不常驻显示删除或状态按钮。
-- hover 只增强边框与柔和阴影，不移动卡片；selected 使用 `brand-subtle` 与 `brand` 左侧标记，focused 使用独立中性 ring。
-- hover/focus 时显示 Lucide drag handle；Pointer 移动达到激活距离后整行均可拖。
-- 拖拽时使用细描边、目标组 surface 与最终排序位置 indicator，不放大或旋转 Quest。
+- hover 只增强边框与柔和阴影，不移动卡片，也不显示 drag handle；focused 使用独立中性 ring。
+- Pointer 移动达到激活距离后整卡均可拖。
+- 拖拽时 overlay 轻微旋转并增强阴影；原卡淡出，整个目标列切换到品牌浅色 surface，最终排序位置显示明确 indicator。Reduce Motion 下取消旋转。
 
 ### 7.4 Quest Details Drawer
 
 - Drawer 覆盖主列表，并通过 backdrop、左侧边缘和阴影表达 modal 层级。
 - Header 包含标题、Previous、Next 和关闭图标；不展示 ID，也不放置删除动作。
-- Content inline editor 是 Drawer 主体，不显示标题；rest 状态为透明背景、无边框、无圆角容器。
-- 进入键盘或鼠标编辑状态时使用 focus indicator 表明可编辑区域，但不得改变正文位置。
-- Created metadata 独立放在 editor 下方，不使用字段表格。
+- Content inline editor 是 Drawer 主体，不显示标题；阅读态安全渲染 Markdown，hover/focus 时才显露编辑 affordance。
+- 编辑态用低对比圆角 surface、细边框和紧凑工具条区分原始 Markdown；`focus-within` indicator 不得改变正文位置。
+- Created metadata 独立放在 editor 下方，不使用字段表格；保存反馈居左，创建时间居右。
 - 底部 Action Bar 始终固定，正文滚动时仍可见；顶部使用 edge-to-edge divider。
 - Delete 位于左侧，默认采用 destructive ghost 样式；点击后打开确认对话框。
-- 状态 split button 位于右侧：主按钮执行表格定义的默认流转，chevron 只负责打开替代状态菜单。
+- 状态 split button 位于右侧：主按钮执行表格定义的默认流转并使用目标状态色，chevron 只负责打开替代状态菜单；菜单项通过同色状态点标识替代目标。
 - split button 两段必须共享 focus group，同时允许分别通过键盘聚焦和触发。
 - 自动保存 pending 或 saving 时 split button 保持可见；触发状态修改前必须先成功 flush content。
 - 自动保存失败时在 Action Bar 上方显示紧凑错误与 Retry / Discard Local Changes，不在正常流程显示确认。
@@ -305,18 +304,18 @@ Light 模式通过柔和投影表达 Quest Card 的边界，Dark 模式以 surfa
 
 ## 8. Interaction States
 
-每个交互组件至少定义：
+每个交互组件按适用语义定义：
 
 ```text
 rest → hover → pressed
 rest → focused
-rest → selected
+rest → selected（仅具有持久选择视觉的组件）
 rest → disabled
 rest → loading
 rest → error
 ```
 
-- hover 不等同 selected。
+- hover 不等同 selected；Quest Card 不显示持久 selected 视觉。
 - active 表示正在执行或当前视图，pressed 只表示指针按下瞬间。
 - focus 使用 `2px` ring，不能只靠颜色深浅。
 - 状态信息不得只靠颜色；状态色点始终与文字并列。
@@ -334,7 +333,7 @@ rest → error
 - Loading：使用局部小型 progress indicator，不铺满 skeleton cards。
 - Warning/Error：使用 workspace 顶部 compact banner；详情按需展开。
 - Disabled：动作保持可辨识，通过对比度、cursor 与 tooltip 共同表达原因。
-- Selected：Quest Card 使用 `brand-subtle` surface 与 `2px` brand 左侧标记，不改变几何尺寸；中性 focus ring 可同时出现。
+- Selected：Quest 的内部 selection 不显示持久视觉；Drawer 关闭后仅通过键盘 `focus-visible` ring 恢复位置感知。
 - Conflict：提示靠近编辑区域，不使用阻断全屏错误页。
 
 ## 11. Quick Capture 与 Settings 的 Shell 一致性

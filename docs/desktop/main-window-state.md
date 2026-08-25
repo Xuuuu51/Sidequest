@@ -114,7 +114,7 @@ stateDiagram-v2
     ListReady --> Settings: Open Settings
 ```
 
-`Close Drawer` 只关闭 Drawer，不清除 `selection.quest(id)`；列表行继续保持 selected 样式并恢复焦点。Drawer 是 modal，打开期间背景列表不可交互；连续浏览通过 Previous / Next 完成。
+`Close Drawer` 只关闭 Drawer，不清除 `selection.quest(id)`；列表行不显示持久 selected 样式，但仍作为焦点恢复目标。Drawer 是 modal，打开期间背景列表不可交互；连续浏览通过 Previous / Next 完成。
 
 ## 5. Quest Details Drawer 状态机
 
@@ -157,8 +157,9 @@ Drawer rest 状态：
 规则：
 
 - Content 修改后进入 `autoSavePending`，最后一次输入后 `500ms` 自动保存。
+- `viewing` 安全渲染 Markdown；进入 `editing` 后显示原始 Markdown 文本。两者只改变展示方式，不改变 content 数据与保存状态机。
 - 待保存与保存期间，Action Bar 保持 Delete + Status Split Button，不显示 Save、Cancel 或离开确认。
-- Created metadata 行右侧依次显示 `Saving…` 和短暂的 `Saved`；反馈不得改变布局。
+- Created metadata 行左侧依次显示 `Saving…` 和短暂的 `Saved`，创建时间固定右对齐；反馈不得改变布局。
 - 实际写入进行期间 split button 保持可见但暂时禁用；pending 阶段点击状态动作会先触发立即 flush。
 - `⌘S` 只用于立即 flush 当前 pending 内容，不显示保存确认。
 - Close Drawer、Previous / Next、切换项目、进入 Settings、关闭窗口或执行状态修改时，立即 flush pending 内容；成功后自动继续原始动作。
@@ -186,6 +187,7 @@ Drawer rest 状态：
 - `viewing` 或无 pending 内容的 `editing` 状态下点击后立即调用 Core 写入 status。
 - 如果存在 `autoSavePending`，先 flush content；只有保存成功才继续写入 status。
 - 写入期间禁用 split button，并在按钮内显示小型 progress。
+- split button 使用主操作目标状态的色彩；菜单项显示替代目标的同色状态点，动作文字仍是状态信息的主要表达。
 - 成功后 Quest 移动到目标状态组，Drawer 保持打开，selection 保持同一个 ID。
 - 失败时 Quest 留在原状态组，Drawer 保持打开，并在 Action Bar 上方显示可重试错误。
 - 菜单打开时按 `Esc` 只关闭菜单，不关闭 Drawer。
@@ -206,10 +208,10 @@ Drawer rest 状态：
 
 拖拽视觉：
 
-- Pointer 移动约 `6px` 后才激活拖拽；整行可拖，hover/focus 时显示手柄作为 affordance。
-- 原行保留低透明度占位，目标状态组高亮。
+- Pointer 移动约 `6px` 后才激活拖拽；整卡可拖，不显示常驻或 hover 手柄。
+- 原行保留低透明度占位，整个目标状态组（包括 Header）高亮。
 - 目标位置显示 `2px` insertion indicator；位置由目标组的固定排序规则计算，不由 pointer 的纵向位置决定。
-- Drag overlay 不旋转、不缩放，不使用弹跳动画。
+- Drag overlay 轻微旋转并增强阴影，不缩放、不使用弹跳动画；Reduce Motion 下取消旋转。
 - 搜索过滤期间保持相同分组与拖拽语义。
 - 按 `Esc` 取消拖拽。
 - Resize 与 native window movement 不进入 Quest drag state。
@@ -249,7 +251,7 @@ stateDiagram-v2
 ### 8.2 Empty Project
 
 - 保留三个 status lane header 与空列 drop target。
-- Inbox 显示产品定义的主要空状态文案和打开 Quick Capture 的 `New Quest` 动作；Ready、Done 使用更弱的单行 empty label。
+- 三列显示相同的低强调单行 empty label 并保持可拖放；`New Quest` 只保留在 Toolbar。
 
 ### 8.3 Read Only
 
