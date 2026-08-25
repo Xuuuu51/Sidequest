@@ -244,7 +244,7 @@ describe("App", () => {
       await screen.findByRole("button", { name: "Choose Folder…" }),
     );
 
-    expect(await screen.findByText("No quests yet")).toBeInTheDocument();
+    expect(await screen.findAllByText("No quests")).toHaveLength(3);
     expect(mocks.addProject).toHaveBeenCalledWith(
       "/project",
       expect.anything(),
@@ -274,7 +274,7 @@ describe("App", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders_three_groups_and_keeps_selection_when_the_drawer_closes", async () => {
+  it("renders_three_groups_and_reopens_a_quest_after_the_drawer_closes", async () => {
     mocks.getAppState.mockResolvedValue(projectState);
     mocks.loadWorkspace.mockResolvedValue(populatedWorkspace);
 
@@ -299,9 +299,6 @@ describe("App", () => {
     expect(
       screen.queryByRole("heading", { name: "Quest details" }),
     ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /Inbox quest content/ }),
-    ).toHaveAttribute("aria-pressed", "true");
     fireEvent.click(
       screen.getByRole("button", { name: /Inbox quest content/ }),
     );
@@ -353,6 +350,44 @@ describe("App", () => {
     expect(board.querySelector('[data-status="inbox"]')).toBeInTheDocument();
     expect(board.querySelector('[data-status="ready"]')).toBeInTheDocument();
     expect(board.querySelector('[data-status="done"]')).toBeInTheDocument();
+  });
+
+  it("renders_the_first_content_line_as_the_card_title", async () => {
+    mocks.getAppState.mockResolvedValue(projectState);
+    mocks.loadWorkspace.mockResolvedValue({
+      ...populatedWorkspace,
+      quests: [
+        {
+          ...populatedWorkspace.quests[0],
+          content: "Refine the board\nKeep the Quest model unchanged",
+        },
+      ],
+    });
+    renderApp();
+
+    const card = await screen.findByRole("button", {
+      name: /Refine the board/,
+    });
+    expect(within(card).getByText("Refine the board")).toBeInTheDocument();
+    expect(
+      within(card).getByText("Keep the Quest model unchanged"),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps_creation_in_the_toolbar_when_the_board_is_empty", async () => {
+    mocks.getAppState.mockResolvedValue(projectState);
+    mocks.loadWorkspace.mockResolvedValue(workspace);
+    renderApp();
+
+    await screen.findByRole("heading", { name: "Inbox" });
+    const newQuestButtons = screen.getAllByRole("button", {
+      name: "New Quest",
+    });
+    expect(newQuestButtons).toHaveLength(1);
+    expect(
+      await within(newQuestButtons[0]).findByText("Space"),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("No quests")).toHaveLength(3);
   });
 
   it("shows_read_only_and_corrupt_file_banners_without_hiding_valid_quests", async () => {

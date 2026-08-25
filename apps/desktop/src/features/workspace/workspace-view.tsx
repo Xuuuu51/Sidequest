@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { useSearchQuery, useWorkspaceQuery } from "./data";
+import { useSettingsQuery } from "../settings/data";
 import type {
   ProjectDto,
   QuestDto,
@@ -21,6 +22,7 @@ import { showQuickCapture } from "../../shared/tauri/commands";
 import { Button } from "../../shared/ui/button";
 import { Input } from "../../shared/ui/input";
 import { Tooltip } from "../../shared/ui/tooltip";
+import { ShortcutHint } from "../../shared/ui/shortcut-hint";
 import { useMainWindowStore } from "../../store/main-window/store";
 import { QuestBoard } from "../quests/quest-board";
 import { visibleQuestOrder } from "../quests/quest-order";
@@ -78,6 +80,7 @@ export function WorkspaceView({
   const availablePath = project.state === "unavailable" ? null : project.path;
   const workspace = useWorkspaceQuery(availablePath);
   const search = useSearchQuery(availablePath, deferredSearch);
+  const settings = useSettingsQuery();
 
   useEffect(() => {
     if (project.state === "unavailable") {
@@ -229,16 +232,17 @@ export function WorkspaceView({
     <section className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-workspace">
       <header
         className={cn(
-          "relative flex h-12 shrink-0 items-center gap-3 border-b border-border/70 bg-workspace pr-4",
+          "relative grid h-12 shrink-0 grid-cols-[minmax(0,1fr)_minmax(240px,320px)_minmax(0,1fr)] items-center gap-3 border-b border-border/70 bg-workspace pr-4",
           sidebarCollapsed ? "pl-[126px]" : "pl-4",
         )}
+        data-toolbar-layout="centered-search"
         data-tauri-drag-region="deep"
       >
-        <h1 className="relative z-10 min-w-0 flex-1 truncate text-sm font-semibold">
+        <h1 className="relative z-10 min-w-0 truncate text-sm font-semibold">
           {project.name}
         </h1>
         <label
-          className="relative z-10 flex h-8 w-[min(320px,36vw)] items-center gap-2 rounded-md border border-transparent bg-muted px-2 text-muted-foreground transition-shadow focus-within:ring-2 focus-within:ring-ring"
+          className="relative z-10 flex h-8 w-full items-center gap-2 rounded-md border border-transparent bg-muted px-2.5 text-muted-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.035)] transition-[background-color,box-shadow] duration-[var(--motion-fast)] focus-within:bg-surface focus-within:ring-2 focus-within:ring-ring"
           data-tauri-drag-region="false"
         >
           <Search aria-hidden="true" size={14} />
@@ -252,9 +256,7 @@ export function WorkspaceView({
             value={searchQuery}
           />
           {searchQuery === "" ? (
-            <kbd className="text-[10px] text-muted-foreground">
-              {t("toolbar.searchShortcut")}
-            </kbd>
+            <ShortcutHint shortcut={t("toolbar.searchShortcut")} />
           ) : (
             <button
               aria-label={t("toolbar.clearSearch")}
@@ -267,22 +269,35 @@ export function WorkspaceView({
             </button>
           )}
         </label>
-        <div className="relative z-10" data-tauri-drag-region="false">
+        <div
+          className="relative z-10 justify-self-end"
+          data-tauri-drag-region="false"
+        >
           <Tooltip
             content={t("statusControl.readOnly")}
             disabled={workspace.data?.access !== "readOnly"}
           >
             <Button
               disabled={workspace.data?.access === "readOnly"}
+              className="h-8 gap-2 border-brand/25 bg-brand-subtle px-2.5 text-brand-foreground shadow-control hover:border-brand/45 hover:bg-brand-subtle hover:brightness-[0.98] focus-visible:ring-brand focus-visible:ring-offset-workspace"
               onClick={() =>
                 void showQuickCapture().catch(() =>
                   toast.error(t("toolbar.newQuestFailed")),
                 )
               }
-              size="sm"
+              size="default"
             >
-              <Plus aria-hidden="true" size={14} />
-              {t("toolbar.newQuest")}
+              <span className="inline-flex items-center gap-1.5">
+                <Plus aria-hidden="true" size={15} strokeWidth={2.2} />
+                {t("toolbar.newQuest")}
+              </span>
+              {settings.data?.shortcutRegistration === "active" && (
+                <ShortcutHint
+                  density="compact"
+                  shortcut={settings.data.shortcut.display}
+                  tone="brand"
+                />
+              )}
             </Button>
           </Tooltip>
         </div>
@@ -358,11 +373,6 @@ export function WorkspaceView({
             <QuestBoard
               drawerOpen={drawerOpen}
               listRef={listRef}
-              onNewQuest={() =>
-                void showQuickCapture().catch(() =>
-                  toast.error(t("toolbar.newQuestFailed")),
-                )
-              }
               onRegisterRow={(questId, element) => {
                 if (element === null) rowRefs.current.delete(questId);
                 else rowRefs.current.set(questId, element);
@@ -372,7 +382,6 @@ export function WorkspaceView({
               quests={visibleQuests}
               searchActive={searchActive}
               searching={searchSettling}
-              selectedQuestId={selectedQuestId}
               writable={workspace.data.access === "writable"}
             />
           </>

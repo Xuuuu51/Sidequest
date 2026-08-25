@@ -33,6 +33,7 @@ import {
 import { IconButton } from "../../shared/ui/icon-button";
 import { Button } from "../../shared/ui/button";
 import { Textarea } from "../../shared/ui/textarea";
+import { ShortcutHint } from "../../shared/ui/shortcut-hint";
 import { cn } from "../../shared/lib/utils";
 import { useQuickCaptureStore } from "../../store/quick-capture";
 
@@ -489,21 +490,7 @@ export function QuickCaptureApp() {
           ) : (
             <>
               <span>{t("capture")}</span>
-              <span
-                className="flex items-center gap-1 border-l border-brand-foreground/20 pl-2"
-                aria-hidden="true"
-              >
-                {t("shortcutHint")
-                  .split(" ")
-                  .map((key) => (
-                    <kbd
-                      className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-[4px] bg-brand-foreground/10 px-1 text-[9px] font-medium leading-none text-brand-foreground/80 ring-1 ring-inset ring-brand-foreground/15"
-                      key={key}
-                    >
-                      {key}
-                    </kbd>
-                  ))}
-              </span>
+              <ShortcutHint divided shortcut={t("shortcutHint")} tone="brand" />
             </>
           )}
         </Button>

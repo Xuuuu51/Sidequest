@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { i18n } from "../../shared/i18n/i18n";
-import { formatCreatedAt, statusLabel } from "./quest-format";
+import {
+  formatCreatedAt,
+  splitQuestContent,
+  statusLabel,
+} from "./quest-format";
 
 describe("localized Quest formatting", () => {
   afterEach(async () => {
@@ -24,5 +28,20 @@ describe("localized Quest formatting", () => {
     await i18n.changeLanguage("en");
 
     expect(formatCreatedAt("2026-08-01T12:00:00Z")).toContain("Aug 1, 2026");
+  });
+
+  it("splits_the_first_line_from_the_remaining_preview", () => {
+    expect(
+      splitQuestContent(
+        "Ship the board\nPolish drag feedback\nKeep data honest",
+      ),
+    ).toEqual({
+      title: "Ship the board",
+      summary: "Polish drag feedback\nKeep data honest",
+    });
+    expect(splitQuestContent("Single line Quest")).toEqual({
+      title: "Single line Quest",
+      summary: null,
+    });
   });
 });

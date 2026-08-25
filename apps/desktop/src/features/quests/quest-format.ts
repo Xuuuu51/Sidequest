@@ -1,6 +1,21 @@
 import type { QuestStatus } from "../../shared/tauri/types";
 import { i18n } from "../../shared/i18n/i18n";
 
+export interface QuestContentPreview {
+  title: string;
+  summary: string | null;
+}
+
+export function splitQuestContent(content: string): QuestContentPreview {
+  const [title, ...summaryLines] = content.trim().split(/\r?\n/);
+  const summary = summaryLines.join("\n").trim();
+
+  return {
+    title: title ?? "",
+    summary: summary.length > 0 ? summary : null,
+  };
+}
+
 export function formatCreatedAt(createdAt: string): string {
   const created = new Date(createdAt);
   if (Number.isNaN(created.getTime())) {

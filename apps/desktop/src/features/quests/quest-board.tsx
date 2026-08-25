@@ -5,7 +5,6 @@ import {
   useDraggable,
   useDroppable,
 } from "@dnd-kit/react";
-import { GripVertical, Plus } from "lucide-react";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -13,11 +12,10 @@ import { toast } from "sonner";
 import { useSetDraggedQuestStatusMutation } from "@/features/quests/data";
 import { cn } from "@/shared/lib/utils";
 import type { QuestDto, QuestStatus } from "@/shared/tauri/types";
-import { Button } from "@/shared/ui/button";
 import { useMainWindowStore } from "@/store/main-window/store";
 import { laneScrollKey } from "@/store/main-window/types";
 
-import { formatCreatedAt } from "./quest-format";
+import { formatCreatedAt, splitQuestContent } from "./quest-format";
 import { compareQuest, sortedInsertionIndex } from "./quest-order";
 
 const STATUSES: readonly QuestStatus[] = ["inbox", "ready", "done"];
@@ -38,12 +36,10 @@ const sensors = [
 interface QuestBoardProps {
   projectPath: string;
   quests: QuestDto[];
-  selectedQuestId: string | null;
   writable: boolean;
   drawerOpen: boolean;
   searchActive: boolean;
   searching: boolean;
-  onNewQuest: () => void;
   onSelectQuest: (questId: string) => void;
   onRegisterRow: (questId: string, element: HTMLButtonElement | null) => void;
   listRef: React.RefObject<HTMLDivElement | null>;
@@ -52,12 +48,10 @@ interface QuestBoardProps {
 export function QuestBoard({
   projectPath,
   quests,
-  selectedQuestId,
   writable,
   drawerOpen,
   searchActive,
   searching,
-  onNewQuest,
   onSelectQuest,
   onRegisterRow,
   listRef,
@@ -110,7 +104,7 @@ export function QuestBoard({
       <div
         aria-busy={searching}
         aria-label={t("board.label")}
-        className="relative grid min-h-0 flex-1 grid-cols-3 divide-x overflow-hidden bg-workspace outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+        className="relative flex min-h-0 flex-1 gap-4 overflow-x-auto overflow-y-hidden bg-workspace p-4 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
         data-layout="kanban"
         ref={listRef}
         tabIndex={-1}
@@ -130,15 +124,12 @@ export function QuestBoard({
             activeQuest={activeQuest}
             drawerOpen={drawerOpen}
             key={status}
-            onNewQuest={onNewQuest}
             onRegisterRow={onRegisterRow}
             onSelectQuest={onSelectQuest}
             projectPath={projectPath}
             pendingQuestIds={pendingQuestIds}
             quests={grouped[status]}
             searchActive={searchActive}
-            showNewQuest={!searchActive && quests.length === 0}
-            selectedQuestId={selectedQuestId}
             status={status}
             writable={writable}
           />
@@ -159,13 +150,10 @@ function QuestGroup({
   quests,
   projectPath,
   pendingQuestIds,
-  selectedQuestId,
   writable,
   drawerOpen,
   onSelectQuest,
-  onNewQuest,
   onRegisterRow,
-  showNewQuest,
   searchActive,
 }: {
   activeQuest: QuestDto | undefined;
@@ -173,13 +161,10 @@ function QuestGroup({
   quests: QuestDto[];
   projectPath: string;
   pendingQuestIds: Set<string>;
-  selectedQuestId: string | null;
   writable: boolean;
   drawerOpen: boolean;
   onSelectQuest: (questId: string) => void;
-  onNewQuest: () => void;
   onRegisterRow: (questId: string, element: HTMLButtonElement | null) => void;
-  showNewQuest: boolean;
   searchActive: boolean;
 }) {
   const { t } = useTranslation(["main-window", "common"]);
@@ -211,35 +196,27 @@ function QuestGroup({
   return (
     <section
       className={cn(
-        "relative flex min-h-0 min-w-0 flex-col",
-        isDropTarget && "bg-accent/30 ring-1 ring-inset ring-border",
+        "relative flex h-full min-h-0 w-80 shrink-0 flex-col overflow-hidden rounded-xl bg-lane transition-[background-color,box-shadow] duration-[var(--motion-normal)]",
+        isDropTarget && "bg-brand-subtle ring-1 ring-inset ring-brand/35",
       )}
       data-status={status}
       ref={ref}
     >
-      <header className="z-20 flex h-10 shrink-0 items-center gap-2 border-b bg-workspace px-3">
-        <span
-          aria-hidden="true"
-          className={cn(
-            "size-2 rounded-full",
-            status === "inbox" && "bg-status-inbox",
-            status === "ready" && "bg-status-ready",
-            status === "done" && "bg-status-done",
-          )}
-        />
-        <h2 className="text-xs font-semibold tracking-wide text-foreground">
+      <header className="z-20 flex h-12 shrink-0 items-center gap-2 bg-transparent px-4 transition-colors duration-[var(--motion-normal)]">
+        <StatusIndicator status={status} />
+        <h2 className="text-[13px] font-semibold tracking-[-0.01em] text-foreground">
           {t(`status.${status}`, { ns: "common" })}
         </h2>
         <span
           aria-label={t("board.questCount", { count: quests.length })}
-          className="text-xs tabular-nums text-muted-foreground"
+          className="text-[12px] tabular-nums text-muted-foreground"
         >
           {quests.length}
         </span>
       </header>
 
       <div
-        className="relative min-h-0 flex-1 space-y-2 overflow-y-auto p-3"
+        className="quest-lane-scroll relative min-h-0 flex-1 space-y-2.5 overflow-y-auto px-3 pb-3"
         onScroll={(event) => {
           if (!searchActive) {
             setLaneScrollPosition(
@@ -262,30 +239,14 @@ function QuestGroup({
               onSelect={() => onSelectQuest(quest.id)}
               projectPath={projectPath}
               quest={quest}
-              selected={selectedQuestId === quest.id}
               writable={writable && !pendingQuestIds.has(quest.id)}
             />
           </div>
         ))}
         {insertionIndex === quests.length && <DropIndicator />}
         {quests.length === 0 && (
-          <div className="flex min-h-24 items-center justify-between rounded-lg border border-dashed bg-surface/30 px-3 text-xs text-muted-foreground">
-            <span>
-              {status === "inbox"
-                ? t("board.noQuestsYet")
-                : t("board.noQuests")}
-            </span>
-            {status === "inbox" && writable && showNewQuest && (
-              <Button
-                data-no-drag
-                onClick={onNewQuest}
-                size="sm"
-                variant="outline"
-              >
-                <Plus aria-hidden="true" size={14} />
-                {t("toolbar.newQuest")}
-              </Button>
-            )}
+          <div className="flex min-h-24 items-center justify-center rounded-lg border border-dashed border-border/70 bg-surface/25 px-3 text-xs text-muted-foreground">
+            <span>{t("board.noQuests")}</span>
           </div>
         )}
       </div>
@@ -295,7 +256,6 @@ function QuestGroup({
 
 function QuestRow({
   quest,
-  selected,
   writable,
   projectPath,
   drawerOpen,
@@ -303,7 +263,6 @@ function QuestRow({
   onRegisterRow,
 }: {
   quest: QuestDto;
-  selected: boolean;
   writable: boolean;
   projectPath: string;
   drawerOpen: boolean;
@@ -327,11 +286,8 @@ function QuestRow({
 
   return (
     <button
-      aria-pressed={selected}
       className={cn(
-        "group relative flex min-h-[104px] max-h-[132px] w-full items-stretch overflow-hidden rounded-lg border bg-surface px-4 py-3 text-left shadow-card outline-none transition-[background-color,border-color,box-shadow] duration-[var(--motion-normal)] hover:border-input hover:shadow-card-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-workspace",
-        selected &&
-          "border-border bg-brand-subtle text-foreground before:absolute before:inset-y-2.5 before:left-0 before:w-0.5 before:rounded-r-full before:bg-brand",
+        "relative flex min-h-[108px] w-full items-stretch overflow-hidden rounded-lg border border-border/80 bg-surface px-4 py-3.5 text-left shadow-card outline-none transition-[background-color,border-color,box-shadow] duration-[var(--motion-normal)] hover:border-input hover:shadow-card-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-lane",
         isDragging && "opacity-35",
       )}
       onClick={onSelect}
@@ -346,11 +302,6 @@ function QuestRow({
       }
       type="button"
     >
-      <GripVertical
-        aria-hidden="true"
-        className="absolute left-1 top-1/2 -translate-y-1/2 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-60 group-focus-visible:opacity-60"
-        size={14}
-      />
       <QuestRowVisual quest={quest} />
     </button>
   );
@@ -358,7 +309,30 @@ function QuestRow({
 
 function DropIndicator() {
   return (
-    <span className="pointer-events-none absolute inset-x-2 -top-[5px] z-10 h-0.5 rounded-full bg-ring" />
+    <span className="pointer-events-none absolute inset-x-1 -top-[6px] z-10 h-0.5 rounded-full bg-brand shadow-[0_0_0_3px_var(--brand-subtle)] before:absolute before:-left-0.5 before:top-1/2 before:size-1.5 before:-translate-y-1/2 before:rounded-full before:bg-brand after:absolute after:-right-0.5 after:top-1/2 after:size-1.5 after:-translate-y-1/2 after:rounded-full after:bg-brand" />
+  );
+}
+
+function StatusIndicator({ status }: { status: QuestStatus }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "relative grid size-[18px] place-items-center rounded-full border",
+        status === "inbox" && "border-status-inbox/70",
+        status === "ready" && "border-status-ready/70",
+        status === "done" && "border-status-done/70",
+      )}
+    >
+      <span
+        className={cn(
+          "size-1.5 rounded-full",
+          status === "inbox" && "bg-status-inbox",
+          status === "ready" && "bg-status-ready",
+          status === "done" && "bg-status-done",
+        )}
+      />
+    </span>
   );
 }
 
@@ -369,18 +343,25 @@ function QuestRowVisual({
   quest: QuestDto;
   overlay?: boolean;
 }) {
+  const { title, summary } = splitQuestContent(quest.content);
+
   return (
     <span
       className={cn(
-        "flex min-w-0 flex-1 flex-col justify-between gap-1",
+        "flex min-w-0 flex-1 flex-col",
         overlay &&
-          "min-h-[104px] w-[min(340px,34vw)] rounded-lg border bg-elevated px-4 py-3 shadow-overlay",
+          "min-h-[108px] w-[296px] rotate-[-1.5deg] rounded-lg border border-border/80 bg-elevated px-4 py-3.5 shadow-overlay motion-reduce:rotate-0",
       )}
     >
-      <span className="line-clamp-4 min-w-0 flex-1 whitespace-pre-wrap text-[13px] leading-[18px] text-foreground [overflow-wrap:anywhere]">
-        {quest.content}
+      <span className="line-clamp-2 min-w-0 whitespace-pre-wrap text-[14px] font-medium leading-5 tracking-[-0.01em] text-foreground [overflow-wrap:anywhere]">
+        {title}
       </span>
-      <time className="self-end shrink-0 text-[11px] tabular-nums text-muted-foreground">
+      {summary !== null && (
+        <span className="mt-1 line-clamp-2 min-w-0 whitespace-pre-wrap text-[13px] leading-[18px] text-muted-foreground [overflow-wrap:anywhere]">
+          {summary}
+        </span>
+      )}
+      <time className="mt-auto self-end pt-3 text-[11px] tabular-nums text-muted-foreground">
         {formatCreatedAt(quest.createdAt)}
       </time>
     </span>

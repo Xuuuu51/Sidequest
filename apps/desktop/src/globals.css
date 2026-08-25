@@ -25,6 +25,7 @@
   --color-ring: var(--ring);
   --color-sidebar: var(--sidebar);
   --color-workspace: var(--workspace);
+  --color-lane: var(--lane);
   --color-surface: var(--surface);
   --color-surface-foreground: var(--surface-foreground);
   --color-elevated: var(--elevated);
@@ -63,6 +64,7 @@
   --foreground: #f1f1f3;
   --sidebar: #111113;
   --workspace: #18181b;
+  --lane: #1e1e22;
   --surface: #202024;
   --surface-foreground: #f1f1f3;
   --elevated: #25252a;
@@ -88,8 +90,8 @@
   --border: #35353b;
   --input: #3d3d45;
   --ring: #d4d4d8;
-  --status-inbox: var(--foreground);
-  --status-ready: #6b9de8;
+  --status-inbox: #8f8f98;
+  --status-ready: #d5a62e;
   --status-done: #5db57a;
   --elevation-card: 0 1px 1px rgb(0 0 0 / 20%), 0 4px 10px rgb(0 0 0 / 10%);
   --elevation-card-hover:
@@ -109,6 +111,7 @@
   --foreground: #1d1d21;
   --sidebar: #f7f7f9;
   --workspace: #fcfcfd;
+  --lane: #f5f4f2;
   --surface: #ffffff;
   --surface-foreground: #1d1d21;
   --elevated: #ffffff;
@@ -134,8 +137,8 @@
   --border: #e6e6e9;
   --input: #d8d8dd;
   --ring: #3f3f46;
-  --status-inbox: var(--foreground);
-  --status-ready: #3978d4;
+  --status-inbox: #85858c;
+  --status-ready: #d5a20f;
   --status-done: #32925d;
   --elevation-card: 0 1px 2px rgb(31 35 48 / 5%), 0 3px 8px rgb(31 35 48 / 3%);
   --elevation-card-hover:
@@ -193,6 +196,16 @@
   ::selection {
     color: var(--foreground);
     background: var(--brand-subtle);
+  }
+
+  .quest-lane-scroll {
+    scrollbar-color: color-mix(
+        in srgb,
+        var(--muted-foreground) 35%,
+        transparent
+      )
+      transparent;
+    scrollbar-width: thin;
   }
 
   .quest-markdown {
