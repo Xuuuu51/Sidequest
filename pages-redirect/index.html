@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Sidequest is local-first project memory for AI coding."
+    />
+    <meta
+      http-equiv="refresh"
+      content="0; url=https://sidequest.xuzhang3371.chatgpt.site/"
+    />
+    <link rel="canonical" href="https://sidequest.xuzhang3371.chatgpt.site/" />
+    <meta
+      property="og:title"
+      content="Sidequest — Project memory for AI coding"
+    />
+    <meta
+      property="og:description"
+      content="Stay on the main quest without losing the sidequests."
+    />
+    <meta
+      property="og:url"
+      content="https://sidequest.xuzhang3371.chatgpt.site/"
+    />
+    <title>Sidequest — Opening the official site</title>
+    <script>
+      (() => {
+        const englishSite = "https://sidequest.xuzhang3371.chatgpt.site/";
+        const chineseSite = "https://sidequest.xuzhang3371.chatgpt.site/zh";
+        const languages = navigator.languages || [navigator.language || "en"];
+        const prefersChinese = languages.some((language) =>
+          /^zh(?:-|$)/i.test(language),
+        );
+        const destination = new URL(prefersChinese ? chineseSite : englishSite);
+        destination.search = window.location.search;
+        destination.hash = window.location.hash;
+        window.location.replace(destination.href);
+      })();
+    </script>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family:
+          Inter,
+          ui-sans-serif,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        background: #090c09;
+        color: #f2f5f1;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background:
+          radial-gradient(
+            circle at 50% 35%,
+            rgb(84 192 96 / 14%),
+            transparent 38%
+          ),
+          #090c09;
+      }
+
+      main {
+        width: min(520px, 100%);
+        padding: 40px;
+        border: 1px solid rgb(232 242 234 / 12%);
+        border-radius: 16px;
+        background: rgb(17 22 17 / 88%);
+        box-shadow: 0 32px 90px rgb(0 0 0 / 35%);
+        text-align: center;
+      }
+
+      .mark {
+        width: 48px;
+        height: 48px;
+        margin: 0 auto 22px;
+        display: grid;
+        place-items: center;
+        border-radius: 12px;
+        background: #9ef1a7;
+        color: #071108;
+        font-weight: 800;
+        box-shadow: 0 0 40px rgb(126 231 137 / 18%);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(30px, 7vw, 44px);
+        letter-spacing: -0.05em;
+      }
+
+      p {
+        margin: 14px 0 26px;
+        color: #9ca79e;
+        line-height: 1.6;
+      }
+
+      a {
+        min-height: 48px;
+        padding: 0 18px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 9px;
+        background: #9ef1a7;
+        color: #071108;
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      a:focus-visible {
+        outline: 2px solid #f2f5f1;
+        outline-offset: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <main aria-live="polite">
+      <div class="mark" aria-hidden="true">S</div>
+      <h1>Opening Sidequest</h1>
+      <p>You are being redirected to the official Sidequest website.</p>
+      <a href="https://sidequest.xuzhang3371.chatgpt.site/">
+        Visit the official site
+      </a>
+    </main>
+  </body>
+</html>
