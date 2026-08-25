@@ -115,11 +115,12 @@ Quick Capture 是始终置顶的独立 native window。通过全局快捷键唤�
 
 Settings 是 Main Window 内的全屏页面状态，不是独立窗口。从 Projects Sidebar、`⌘,` 或菜单进入后，Settings 自己的 Sidebar 与内容面板替换 Projects Sidebar 和 Quest Board。traffic lights 下方的返回项退出 Settings；`Esc` 不退出。返回后恢复项目、搜索和分组列表滚动位置，但不自动重开 Quest Details Drawer。设置即时保存，无全局 Save/Cancel。
 
-Settings Sidebar 固定显示带图标的 General、Integrations、Tools、About。每次进入默认选择 General，切换后右侧只显示当前分类；切离 General 时取消正在进行的 Quick Capture 快捷键录制。设置操作可以在后台继续，分类切换不被阻止。
+Settings Sidebar 固定显示带图标的 General、Keyboard Shortcuts、Integrations、Tools、About。每次进入默认选择 General，切换后右侧只显示当前分类；切离 General 时取消正在进行的 Quick Capture 快捷键录制。设置操作可以在后台继续，分类切换不被阻止。
 
 Settings 只包含：
 
-- General：Appearance、Language、`Shortcut` 与 Launch at Login。Appearance 使用 `System / Light / Dark` 三段式单选，默认 System；更改成功保存后立即作用于所有窗口与原生窗口外观，不重置当前操作状态。Language 默认为跟随系统，也可固定为 English 或简体中文；更改成功保存后立即作用于两个窗口和原生菜单。点击 Shortcut 后直接录制组合键；必须包含修饰键，`Esc` 取消，冲突不替换旧值，可 Restore Default。
+- General：Appearance、Language、`Shortcut` 与 Launch at Login。Appearance 使用 `System / Light / Dark` 三段式单选，默认 System；更改成功保存后立即作用于所有窗口与原生窗口外观，不重置当前操作状态。Language 默认为跟随系统，也可固定为 English 或简体中文；更改成功保存后立即作用于两个窗口和原生菜单。点击 Shortcut 后直接录制组合键；必须包含 Command、Control 或 Option，并使用字母、数字、Space、方向键或 F1–F12。前端按物理按键归一化 Option/Shift 产生的字符；无效组合保留录制状态并就地提示，不调用 backend。录制期间无论焦点位于 Settings 的哪个控件，`Esc` 都取消录制但不退出 Settings；注册冲突不替换旧值，可 Restore Default。
+- Keyboard Shortcuts：只读展示 Sidequest 当前明确支持的产品级快捷键，并按 Global、Main Window、Quick Capture 与 Settings 分组；当前 Quick Capture 全局快捷键读取已保存值。此分类不提供录制、恢复默认或任何修改入口，也不罗列系统通用的文本编辑、窗口与辅助功能键盘操作。
 - Integrations：Codex、Claude 两行，只显示 Ready、Not Installed、Needs Attention 与对应 Install/Repair/Uninstall。
 - Tools：`sq` CLI，只显示 Installed、Not Installed、Needs Attention 与对应 Install/Repair/Uninstall。
 - About：Desktop version、Licenses 与 Diagnostics。Diagnostics 提供 Copy Diagnostics 和 Reveal Logs；摘要不包含 Quest 内容、搜索内容、用户名或项目绝对路径。

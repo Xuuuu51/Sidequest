@@ -2,6 +2,7 @@
   "title": "Settings",
   "sections": {
     "general": "General",
+    "shortcuts": "Keyboard Shortcuts",
     "integrations": "Integrations",
     "tools": "Tools",
     "codingAgents": "Coding Agents",
@@ -27,12 +28,44 @@
     "description": "Open Quick Capture from any app.",
     "unavailable": "Shortcut is currently unavailable",
     "restoreDefault": "Restore Default",
-    "recording": "Type shortcut…"
+    "recording": "Type shortcut…",
+    "modifierRequired": "Include Command, Control, or Option.",
+    "unsupportedKey": "Use a letter, number, Space, arrow key, or F1–F12."
   },
   "launchAtLogin": {
     "label": "Launch at Login",
     "description": "Start Sidequest hidden and keep Quick Capture available.",
     "isolated": "Unavailable while using an isolated debug profile."
+  },
+  "shortcutReference": {
+    "groups": {
+      "global": "Global",
+      "mainWindow": "Main Window",
+      "quickCapture": "Quick Capture",
+      "settings": "Settings"
+    },
+    "quickCapture": {
+      "label": "Open Quick Capture",
+      "description": "Uses the currently configured global shortcut from any app."
+    },
+    "openSettings": "Open Settings",
+    "quit": "Quit Sidequest",
+    "focusSearch": "Focus Search",
+    "dismissMainWindow": {
+      "label": "Clear Search or Close Project Menu",
+      "description": "Performs the first action available in the current context."
+    },
+    "saveQuest": {
+      "label": "Save Quest Changes Now",
+      "description": "Available while editing Quest content."
+    },
+    "closeQuestDetails": "Close Quest Details",
+    "submitQuickCapture": "Submit Quest",
+    "discardQuickCapture": {
+      "label": "Close Quick Capture",
+      "description": "Closes the window and discards the current draft."
+    },
+    "cancelRecording": "Cancel Shortcut Recording"
   },
   "about": {
     "application": "Desktop application",

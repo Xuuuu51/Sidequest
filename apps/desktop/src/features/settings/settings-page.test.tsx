@@ -130,9 +130,32 @@ describe("SettingsPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows_all_product_shortcuts_in_a_read_only_reference", async () => {
+    renderSettings();
+    const shortcuts = await screen.findByRole("button", {
+      name: "Keyboard Shortcuts",
+    });
+
+    fireEvent.click(shortcuts);
+
+    expect(shortcuts).toHaveAttribute("aria-current", "page");
+    expect(
+      screen.getByRole("heading", { name: "Keyboard Shortcuts", level: 1 }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Open Quick Capture")).toBeInTheDocument();
+    expect(screen.getByText("⌘⇧Space")).toBeInTheDocument();
+    expect(screen.getByText("Focus Search")).toBeInTheDocument();
+    expect(screen.getByText("Submit Quest")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "⌘⇧Space" })).toBeNull();
+    expect(mocks.setGlobalShortcut).not.toHaveBeenCalled();
+  });
+
   it("records_a_supported_shortcut_and_keeps_backend_validation_authoritative", async () => {
     renderSettings();
     const recorder = await screen.findByRole("button", { name: "⌘⇧Space" });
+
+    expect(recorder.querySelectorAll("kbd")).toHaveLength(3);
+    expect(recorder.querySelector("svg")).toBeNull();
 
     fireEvent.click(recorder);
     fireEvent.keyDown(recorder, { key: "k", metaKey: true, shiftKey: true });
@@ -140,10 +163,64 @@ describe("SettingsPage", () => {
     await waitFor(() =>
       expect(mocks.setGlobalShortcut).toHaveBeenCalledWith({
         modifiers: ["command", "shift"],
-        key: "k",
-        display: "",
+        key: "K",
+        display: "⌘⇧K",
       }),
     );
+  });
+
+  it("cancels_shortcut_recording_with_escape_even_after_focus_moves", async () => {
+    renderSettings();
+    const recorder = await screen.findByRole("button", { name: "⌘⇧Space" });
+
+    fireEvent.click(recorder);
+    expect(recorder).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    expect(recorder).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "⌘⇧Space" })).toBe(recorder);
+    expect(mocks.setGlobalShortcut).not.toHaveBeenCalled();
+  });
+
+  it("records_the_physical_key_for_option_shortcuts", async () => {
+    renderSettings();
+    const recorder = await screen.findByRole("button", { name: "⌘⇧Space" });
+
+    fireEvent.click(recorder);
+    fireEvent.keyDown(recorder, {
+      altKey: true,
+      code: "KeyK",
+      key: "˚",
+    });
+
+    await waitFor(() =>
+      expect(mocks.setGlobalShortcut).toHaveBeenCalledWith({
+        modifiers: ["option"],
+        key: "K",
+        display: "⌥K",
+      }),
+    );
+  });
+
+  it("keeps_recording_and_explains_invalid_shortcut_combinations", async () => {
+    renderSettings();
+    const recorder = await screen.findByRole("button", { name: "⌘⇧Space" });
+
+    fireEvent.click(recorder);
+    fireEvent.keyDown(recorder, { code: "KeyK", key: "k", shiftKey: true });
+
+    expect(mocks.setGlobalShortcut).not.toHaveBeenCalled();
+    expect(
+      screen.getByText("Include Command, Control, or Option."),
+    ).toBeInTheDocument();
+    expect(recorder).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.keyDown(recorder, { code: "Enter", key: "Enter", metaKey: true });
+    expect(mocks.setGlobalShortcut).not.toHaveBeenCalled();
+    expect(
+      screen.getByText("Use a letter, number, Space, arrow key, or F1–F12."),
+    ).toBeInTheDocument();
   });
 
   it("persists_a_manual_language_preference", async () => {

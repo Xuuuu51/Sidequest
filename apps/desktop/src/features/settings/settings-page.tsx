@@ -5,6 +5,7 @@ import {
   Command,
   Copy,
   Info,
+  Keyboard,
   SlidersHorizontal,
   SquareTerminal,
   TriangleAlert,
@@ -46,6 +47,7 @@ import { localizedError } from "../../shared/i18n/errors";
 import { cn } from "../../shared/lib/utils";
 import { Button } from "../../shared/ui/button";
 import { IconButton } from "../../shared/ui/icon-button";
+import { ShortcutHint } from "../../shared/ui/shortcut-hint";
 import { Switch } from "../../shared/ui/switch";
 
 interface SettingsPageProps {
@@ -53,7 +55,8 @@ interface SettingsPageProps {
   compact?: "quickCapture" | "codingAgents";
 }
 
-type SettingsSectionId = "general" | "integrations" | "tools" | "about";
+type SettingsSectionId =
+  "general" | "shortcuts" | "integrations" | "tools" | "about";
 
 const SUCCESS_TOAST_DURATION = 3_000;
 const ERROR_TOAST_DURATION = 8_000;
@@ -63,11 +66,13 @@ const SETTINGS_SECTIONS: Array<{
   icon: LucideIcon;
   labelKey:
     | "sections.general"
+    | "sections.shortcuts"
     | "sections.integrations"
     | "sections.tools"
     | "sections.about";
 }> = [
   { id: "general", icon: SlidersHorizontal, labelKey: "sections.general" },
+  { id: "shortcuts", icon: Keyboard, labelKey: "sections.shortcuts" },
   { id: "integrations", icon: Blocks, labelKey: "sections.integrations" },
   { id: "tools", icon: Wrench, labelKey: "sections.tools" },
   { id: "about", icon: Info, labelKey: "sections.about" },
@@ -323,6 +328,63 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
     />
   );
 
+  const shortcutReference = (
+    <>
+      <SettingsSection title={t("shortcutReference.groups.global")}>
+        <ShortcutReferenceRow
+          description={t("shortcutReference.quickCapture.description")}
+          shortcut={settings.data?.shortcut.display ?? "—"}
+          label={t("shortcutReference.quickCapture.label")}
+        />
+        <ShortcutReferenceRow
+          shortcut="⌘ ,"
+          label={t("shortcutReference.openSettings")}
+        />
+        <ShortcutReferenceRow
+          shortcut="⌘Q"
+          label={t("shortcutReference.quit")}
+        />
+      </SettingsSection>
+      <SettingsSection title={t("shortcutReference.groups.mainWindow")}>
+        <ShortcutReferenceRow
+          shortcut="⌘F"
+          label={t("shortcutReference.focusSearch")}
+        />
+        <ShortcutReferenceRow
+          description={t("shortcutReference.dismissMainWindow.description")}
+          shortcut="Esc"
+          label={t("shortcutReference.dismissMainWindow.label")}
+        />
+        <ShortcutReferenceRow
+          description={t("shortcutReference.saveQuest.description")}
+          shortcut="⌘S"
+          label={t("shortcutReference.saveQuest.label")}
+        />
+        <ShortcutReferenceRow
+          shortcut="Esc"
+          label={t("shortcutReference.closeQuestDetails")}
+        />
+      </SettingsSection>
+      <SettingsSection title={t("shortcutReference.groups.quickCapture")}>
+        <ShortcutReferenceRow
+          shortcut="⌘↵"
+          label={t("shortcutReference.submitQuickCapture")}
+        />
+        <ShortcutReferenceRow
+          description={t("shortcutReference.discardQuickCapture.description")}
+          shortcut="Esc"
+          label={t("shortcutReference.discardQuickCapture.label")}
+        />
+      </SettingsSection>
+      <SettingsSection title={t("shortcutReference.groups.settings")}>
+        <ShortcutReferenceRow
+          shortcut="Esc"
+          label={t("shortcutReference.cancelRecording")}
+        />
+      </SettingsSection>
+    </>
+  );
+
   const aboutRows = (
     <>
       <SettingRow description={t("about.application")} label="Sidequest">
@@ -362,11 +424,17 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
     </>
   );
 
-  function activeRows(): ReactNode {
-    if (activeSection === "general") return generalRows;
-    if (activeSection === "integrations") return integrationRows;
-    if (activeSection === "tools") return toolRows;
-    return aboutRows;
+  function activeContent(): ReactNode {
+    if (activeSection === "shortcuts") return shortcutReference;
+    const rows =
+      activeSection === "general"
+        ? generalRows
+        : activeSection === "integrations"
+          ? integrationRows
+          : activeSection === "tools"
+            ? toolRows
+            : aboutRows;
+    return <SettingsSection>{rows}</SettingsSection>;
   }
 
   return (
@@ -452,9 +520,7 @@ export function SettingsPage({ onBack, compact }: SettingsPageProps) {
               </h1>
             </header>
             <div className="min-h-0 flex-1 overflow-y-auto">
-              <div className="w-full max-w-[760px] px-7 pb-12 pt-6">
-                <SettingsSection>{activeRows()}</SettingsSection>
-              </div>
+              <div className="w-full px-7 pb-12 pt-6">{activeContent()}</div>
             </div>
           </div>
         </>
@@ -541,13 +607,13 @@ function SettingsSection({
   children: ReactNode;
 }) {
   return (
-    <section className="mb-[26px] w-full">
+    <section className="mb-8 w-full">
       {title !== undefined ? (
-        <h2 className="mb-2 text-xs font-semibold text-muted-foreground">
+        <h2 className="mb-2.5 px-1 text-xs font-semibold text-muted-foreground">
           {title}
         </h2>
       ) : null}
-      <div className="border-t">{children}</div>
+      <div className="flex flex-col gap-2">{children}</div>
     </section>
   );
 }
@@ -562,15 +628,44 @@ function SettingRow({
   children: ReactNode;
 }) {
   return (
-    <div className="flex min-h-[58px] flex-wrap items-center gap-3 border-b px-0.5 py-2.5">
-      <div className="flex min-w-[260px] flex-1 flex-col gap-px">
-        <strong className="text-[13px] font-medium">{label}</strong>
-        <span className="text-pretty text-[11px] leading-4 text-muted-foreground">
+    <div className="grid min-h-[68px] grid-cols-[minmax(260px,1fr)_auto] items-center gap-x-8 gap-y-3 rounded-lg bg-surface/45 px-4 py-3.5">
+      <div className="flex min-w-0 flex-col gap-1">
+        <strong className="text-[13px] font-semibold leading-[18px]">
+          {label}
+        </strong>
+        <span className="max-w-[46ch] text-pretty text-xs leading-[18px] text-muted-foreground">
           {description}
         </span>
       </div>
-      <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+      <div className="flex min-w-[240px] flex-wrap items-center justify-end gap-2">
         {children}
+      </div>
+    </div>
+  );
+}
+
+function ShortcutReferenceRow({
+  label,
+  description,
+  shortcut,
+}: {
+  label: string;
+  description?: string;
+  shortcut: string;
+}) {
+  return (
+    <div className="grid min-h-[60px] grid-cols-[minmax(260px,1fr)_auto] items-center gap-x-8 gap-y-3 rounded-lg bg-surface/45 px-4 py-3">
+      <div className="flex min-w-0 flex-col gap-1">
+        <span className="text-[13px] font-medium leading-[18px]">{label}</span>
+        {description === undefined ? null : (
+          <span className="max-w-[52ch] text-pretty text-xs leading-[18px] text-muted-foreground">
+            {description}
+          </span>
+        )}
+      </div>
+      <div className="flex items-center justify-end">
+        <ShortcutHint shortcut={shortcut} />
+        <span className="sr-only">{shortcut}</span>
       </div>
     </div>
   );
@@ -630,46 +725,122 @@ function ShortcutRecorder({
   onRecord: (shortcut: ShortcutSpecDto) => void;
 }) {
   const { t } = useTranslation("settings");
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!recording) return;
+
+    function cancelRecording(event: globalThis.KeyboardEvent): void {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      setValidationError(null);
+      onCancel();
+    }
+
+    window.addEventListener("keydown", cancelRecording, { capture: true });
+    return () =>
+      window.removeEventListener("keydown", cancelRecording, {
+        capture: true,
+      });
+  }, [onCancel, recording]);
+
   function handleKeyDown(event: KeyboardEvent<HTMLButtonElement>): void {
     if (!recording) return;
     event.preventDefault();
     event.stopPropagation();
     if (event.key === "Escape") {
+      setValidationError(null);
       onCancel();
       return;
     }
     if (["Meta", "Control", "Alt", "Shift"].includes(event.key)) return;
+
     const modifiers: ShortcutModifier[] = [];
     if (event.metaKey) modifiers.push("command");
     if (event.ctrlKey) modifiers.push("control");
     if (event.altKey) modifiers.push("option");
     if (event.shiftKey) modifiers.push("shift");
+
+    if (
+      !modifiers.some((modifier) =>
+        ["command", "control", "option"].includes(modifier),
+      )
+    ) {
+      setValidationError(t("shortcut.modifierRequired"));
+      return;
+    }
+
+    const key = shortcutKeyFromEvent(event);
+    if (key === null) {
+      setValidationError(t("shortcut.unsupportedKey"));
+      return;
+    }
+
+    setValidationError(null);
     onRecord({
       modifiers,
-      key: event.key === " " ? "Space" : event.key,
-      display: "",
+      key,
+      display: shortcutDisplay(modifiers, key),
     });
   }
   return (
     <div className="flex flex-col items-end">
       <Button
         aria-pressed={recording}
-        className={cn(
-          "min-w-[116px] font-mono",
-          recording && "ring-2 ring-ring",
-        )}
-        onClick={startRecording}
+        className={cn("min-w-[116px]", recording && "ring-2 ring-ring")}
+        onClick={() => {
+          setValidationError(null);
+          startRecording();
+        }}
         onKeyDown={handleKeyDown}
         variant="outline"
       >
-        <Command aria-hidden="true" size={14} />
-        {recording ? t("shortcut.recording") : shortcut.display}
+        {recording ? (
+          t("shortcut.recording")
+        ) : (
+          <>
+            <ShortcutHint shortcut={shortcut.display} />
+            <span className="sr-only">{shortcut.display}</span>
+          </>
+        )}
       </Button>
-      {error !== null ? (
-        <span className="text-[11px] text-destructive">{error}</span>
+      {validationError !== null || error !== null ? (
+        <span className="max-w-[240px] text-right text-[11px] leading-4 text-destructive">
+          {validationError ?? error}
+        </span>
       ) : null}
     </div>
   );
+}
+
+function shortcutKeyFromEvent(
+  event: KeyboardEvent<HTMLButtonElement>,
+): string | null {
+  if (/^Key[A-Z]$/.test(event.code)) return event.code.slice(3);
+  if (/^Digit[0-9]$/.test(event.code)) return event.code.slice(5);
+  if (event.code === "Space") return "Space";
+  if (/^Arrow(Up|Down|Left|Right)$/.test(event.code)) return event.code;
+  if (/^F([1-9]|1[0-2])$/.test(event.code)) return event.code;
+
+  if (/^[a-z0-9]$/i.test(event.key)) return event.key.toUpperCase();
+  return null;
+}
+
+function shortcutDisplay(modifiers: ShortcutModifier[], key: string): string {
+  const modifierDisplay: Record<ShortcutModifier, string> = {
+    command: "⌘",
+    control: "⌃",
+    option: "⌥",
+    shift: "⇧",
+  };
+  const keyDisplay: Record<string, string> = {
+    ArrowUp: "↑",
+    ArrowDown: "↓",
+    ArrowLeft: "←",
+    ArrowRight: "→",
+  };
+  return `${modifiers.map((modifier) => modifierDisplay[modifier]).join("")}${keyDisplay[key] ?? key}`;
 }
 
 function IntegrationRow({
@@ -704,8 +875,8 @@ function IntegrationRow({
           ? t("actions.repair", { ns: "common" })
           : t("actions.install", { ns: "common" });
   return (
-    <div className="flex min-h-[52px] flex-wrap items-center gap-3 border-b px-0.5 py-2.5">
-      <div className="inline-flex size-[26px] items-center justify-center rounded-md border bg-elevated text-muted-foreground">
+    <div className="grid min-h-[64px] grid-cols-[auto_minmax(180px,1fr)_auto_auto] items-center gap-x-3 gap-y-2 rounded-lg bg-surface/45 px-4 py-3">
+      <div className="inline-flex size-8 items-center justify-center rounded-md bg-background/45 text-muted-foreground">
         {id === "cli" ? (
           <SquareTerminal aria-hidden="true" size={15} />
         ) : id === "codex" ? (
@@ -714,11 +885,11 @@ function IntegrationRow({
           <Command aria-hidden="true" size={15} />
         )}
       </div>
-      <div className="flex min-w-[180px] flex-1 flex-col gap-px">
-        <strong className="text-[13px] font-medium">
+      <div className="flex min-w-0 flex-col gap-1">
+        <strong className="text-[13px] font-semibold leading-[18px]">
           {integrationName(id)}
         </strong>
-        <span className="overflow-hidden text-ellipsis text-[11px] leading-4 text-muted-foreground">
+        <span className="overflow-hidden text-ellipsis text-xs leading-[18px] text-muted-foreground">
           {item === undefined
             ? t("integration.loading", { ns: "settings" })
             : integrationDescription(
@@ -731,7 +902,7 @@ function IntegrationRow({
       </div>
       <span
         className={cn(
-          "inline-flex min-w-[82px] items-center justify-end gap-1 text-[11px] text-muted-foreground",
+          "inline-flex min-w-[88px] items-center justify-end gap-1.5 text-xs text-muted-foreground",
           needsAttention && "text-warning",
         )}
       >

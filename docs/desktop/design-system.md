@@ -352,11 +352,13 @@ rest → error
 ### Settings
 
 - Settings 替换 Main Window 的 Projects Sidebar 与 Quest Board，使用固定 `216px` Settings Sidebar + settings content panel 的连续结构；Sidebar 不支持 resize 或 collapse。
-- Sidebar 顶部先保留完整 `48px` traffic lights 安全区；Back 位于其下方，与分类项同宽并共享尺寸、间距、hover 与 focus 样式。Back 下方使用轻量 Settings 小标题组织分类；General、Integrations、Tools、About 使用 Lucide 图标 + 文字，active 状态采用同一中性 accent surface，不改变几何尺寸。
-- content panel 顶部只显示当前分类标题；内容列最大宽度 `760px`，靠左对齐。切换分类只替换右侧内容，不使用页内滚动锚点。
-- section 依赖 divider 与标题层级，不堆叠 settings cards。窄窗口下 Sidebar 保持固定，设置行允许从左右布局自然换行为上下布局。
-- 行布局保持左侧 label/description、右侧 compact control/status 的一致网格。
+- Sidebar 顶部先保留完整 `48px` traffic lights 安全区；Back 位于其下方，与分类项同宽并共享尺寸、间距、hover 与 focus 样式。Back 下方使用轻量 Settings 小标题组织分类；General、Keyboard Shortcuts、Integrations、Tools、About 使用 Lucide 图标 + 文字，active 状态采用同一中性 accent surface，不改变几何尺寸。
+- content panel 顶部只显示当前分类标题；设置项铺满内容面板的可用宽度，并保留统一的 `28px` 水平页边距。切换分类只替换右侧内容，不使用页内滚动锚点。
+- section 依赖标题层级、`8px` 行间距与低对比 surface 组织内容，不使用横向 divider。每个设置项使用无边框、无阴影的 `8px` 圆角平面，不表现为独立浮起 card。
+- 行布局保持左侧 label/description、右侧 compact control/status 的一致两列网格；左侧说明限制阅读宽度，右侧动作共享右边线。窄窗口下 Sidebar 保持固定，设置行允许从左右布局自然换行为上下布局。
+- Keyboard Shortcuts 分类沿用全宽、无 divider 的设置行，但右侧只使用紧凑 `kbd` 键帽展示，不出现 button、switch 或编辑 affordance；分组标题用于区分快捷键生效范围。
 - Appearance 使用 Radio Group 语义和三段式视觉，选项为 System、Light、Dark。
+- General 的 Shortcut 控件在静止状态复用 `ShortcutHint` 键帽，不额外叠加 Command 图标或重复显示修饰键；录制状态只显示录制提示与 focus ring。
 - Settings 的全局成功与错误反馈复用 Sonner 右下角 toast，不新增第二套通知组件。
 
 ## 12. 产品与架构边界
