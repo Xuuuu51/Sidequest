@@ -122,6 +122,11 @@ describe("QuickCaptureApp", () => {
       await screen.findByRole("textbox", { name: "内容" }),
     ).toHaveAttribute("placeholder", "有什么需要之后处理？");
     expect(screen.getByRole("button", { name: "提交" })).toBeInTheDocument();
+    expect(
+      screen
+        .getByRole("button", { name: "缩小快速记录" })
+        .querySelector(".lucide-minimize-2"),
+    ).toBeInTheDocument();
     expect(screen.getByText("⌘")).toBeInTheDocument();
     expect(screen.getByText("Enter")).toBeInTheDocument();
     expect(screen.getByRole("main")).toHaveClass("rounded-2xl");
@@ -147,7 +152,7 @@ describe("QuickCaptureApp", () => {
 
     expect(
       await screen.findByText(
-        "Capture or close this draft before reloading Quick Capture.",
+        "Submit or clear this draft before reloading Quick Capture.",
       ),
     ).toBeInTheDocument();
   });
@@ -164,17 +169,32 @@ describe("QuickCaptureApp", () => {
     await waitFor(() => expect(editor).toHaveFocus());
   });
 
-  it("discards_and_hides_when_the_global_shortcut_requests_close", async () => {
+  it("retains_the_draft_and_hides_when_the_global_shortcut_requests_close", async () => {
     renderQuickCapture();
     const editor = await screen.findByRole("textbox", {
       name: "Quest content",
     });
-    fireEvent.change(editor, { target: { value: "Discard by shortcut" } });
+    fireEvent.change(editor, { target: { value: "Keep by shortcut" } });
     await waitFor(() => expect(mocks.shortcutCloseHandler).not.toBeNull());
 
     mocks.shortcutCloseHandler?.();
 
-    expect(useQuickCaptureStore.getState().draft).toBe("");
+    expect(useQuickCaptureStore.getState().draft).toBe("Keep by shortcut");
+    expect(mocks.hideQuickCapture).toHaveBeenCalled();
+  });
+
+  it("retains_the_draft_when_the_minimize_button_is_clicked", async () => {
+    renderQuickCapture();
+    const editor = await screen.findByRole("textbox", {
+      name: "Quest content",
+    });
+    fireEvent.change(editor, { target: { value: "Keep on minimize" } });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Minimize Quick Capture" }),
+    );
+
+    expect(useQuickCaptureStore.getState().draft).toBe("Keep on minimize");
     expect(mocks.hideQuickCapture).toHaveBeenCalled();
   });
 
@@ -212,6 +232,7 @@ describe("QuickCaptureApp", () => {
     await waitFor(() => expect(mocks.hideQuickCapture).toHaveBeenCalled(), {
       timeout: 1_000,
     });
+    expect(useQuickCaptureStore.getState().draft).toBe("");
   });
 
   it("follows_the_project_selected_in_the_main_window", async () => {
@@ -278,7 +299,7 @@ describe("QuickCaptureApp", () => {
     ).toBeEnabled();
   });
 
-  it("closes_the_project_menu_before_discarding_the_window", async () => {
+  it("closes_the_project_menu_before_hiding_the_window", async () => {
     renderQuickCapture();
     const selector = await screen.findByRole("combobox", { name: "Project" });
     await waitFor(() => expect(selector).toHaveTextContent("Active"));
@@ -310,15 +331,15 @@ describe("QuickCaptureApp", () => {
     expect(screen.queryByText("Submit failed")).not.toBeInTheDocument();
   });
 
-  it("discards_the_draft_on_escape", async () => {
+  it("retains_the_draft_on_escape", async () => {
     renderQuickCapture();
     const editor = await screen.findByRole("textbox", {
       name: "Quest content",
     });
-    fireEvent.change(editor, { target: { value: "Discard me" } });
+    fireEvent.change(editor, { target: { value: "Keep me" } });
     fireEvent.keyDown(window, { key: "Escape" });
 
-    expect(useQuickCaptureStore.getState().draft).toBe("");
+    expect(useQuickCaptureStore.getState().draft).toBe("Keep me");
     expect(mocks.hideQuickCapture).toHaveBeenCalled();
   });
 });

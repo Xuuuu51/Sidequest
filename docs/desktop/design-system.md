@@ -346,12 +346,12 @@ rest → error
 
 - 使用同一 Light / Dark 语义 token、`30px` 紧凑控件和 `6px` 圆角。
 - 固定为 `520 × 300`，采用一个连续、不透明的 `card` surface；外层使用 `14px` 原生圆角与 macOS 原生阴影表达悬浮层级，不增加外边框。HTML `body` 保持透明，不绘制第二层 canvas；窗口内部不使用 CSS 外围阴影或 editor 异色底板。
-- 顶部 `44px` titlebar 左侧显示本地化窗口标题，使用 Window title 字体；右侧保留关闭按钮，除按钮外的标题与空白区域均可拖动窗口。
+- 顶部 `44px` titlebar 左侧显示本地化窗口标题，使用 Window title 字体；右侧使用缩小图标按钮，除按钮外的标题与空白区域均可拖动窗口。
 - content editor 与 titlebar、footer 共享同一表面，不使用常驻分隔线，依靠留白与布局关系区分区域。
 - footer 高 `48px`；左侧是约 `180px` 的项目 selector，显示项目图标、截断项目名和 chevron，菜单向上展开；完整路径只在 tooltip 中提供。
 - footer 右侧是品牌色 tinted surface 主操作按钮，文案为“提交”（英文 `Submit`）；Dark 使用 `brand-subtle` 背景、克制的 brand 边界与 `brand-foreground` 文字，避免高亮白色块。按钮内将 `⌘` 与 `Enter` 显示为两个紧凑 keycap。submitting 使用小型 progress，成功时原位变为 check + 已提交文案，不缩放或弹跳。
 - 保存失败摘要固定在 editor 右下角，editor 为其预留空间；摘要不带 Retry 动作。只读或不可用项目在 selector 中显示 warning，并通过 tooltip 说明原因。
-- 项目 selector、content editor、关闭与保存反馈采用与 Main Window 相同的状态语言；不添加多余 toolbar 或 panel。
+- 项目 selector、content editor、缩小与保存反馈采用与 Main Window 相同的状态语言；不添加多余 toolbar 或 panel。
 
 ### Settings
 

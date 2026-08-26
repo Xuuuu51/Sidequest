@@ -104,8 +104,8 @@ Quick Capture 是始终置顶的独立 native window。通过全局快捷键唤�
 
 中文界面名称为“快速记录”，主操作按钮使用“提交”；Quick Capture 仍是英文产品术语及代码名称。`Quest` 保持不翻译，但上下文明确时可省略并使用量词“条”。
 
-- 点击窗口外部不关闭；`Esc` 或 Close 只隐藏 Quick Capture 并直接丢弃草稿，不显示或激活 Main Window。
-- Quick Capture 已显示时再次按全局快捷键，执行与 `Esc` 相同的丢弃草稿并隐藏操作；未显示时仍按正常流程打开。
+- 点击窗口外部不关闭；`Esc` 或标题栏 Minimize 只隐藏 Quick Capture 并保留草稿，不显示或激活 Main Window。只有成功提交后才清空草稿。
+- Quick Capture 已显示时再次按全局快捷键，执行与 `Esc` 相同的保留草稿并隐藏操作；未显示时仍按正常流程打开。
 - `content` 允许多行；`Enter` 换行，`⌘Enter` 保存。
 - Project Selector 默认跟随 Main Window 当前项目；用户仍可在 Quick Capture 中临时切换，成功保存后记住该项目，直到 Main Window 再次切换项目。
 - Project Selector 位于窗口底部左侧；只读或不可用项目保留当前草稿、允许切换项目，但禁止保存。

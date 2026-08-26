@@ -4,7 +4,7 @@ import {
   Folder,
   FolderPlus,
   CircleAlert,
-  X,
+  Minimize2,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -135,19 +135,14 @@ export function QuickCaptureApp() {
     };
   }, [focusInput, refetchAppState]);
 
-  const discardAndHide = useCallback(() => {
-    if (hideTimerRef.current !== null) {
-      window.clearTimeout(hideTimerRef.current);
-      hideTimerRef.current = null;
-    }
-    clearDraft();
+  const hideCapture = useCallback(() => {
     void hideQuickCapture();
-  }, [clearDraft]);
+  }, []);
 
   useEffect(() => {
     let active = true;
     let unlisten: (() => void) | undefined;
-    void listenForQuickCaptureCloseRequest(discardAndHide)
+    void listenForQuickCaptureCloseRequest(hideCapture)
       .then((listener) => {
         if (active) unlisten = listener;
         else listener();
@@ -162,7 +157,7 @@ export function QuickCaptureApp() {
       active = false;
       unlisten?.();
     };
-  }, [discardAndHide]);
+  }, [hideCapture]);
 
   useEffect(() => {
     let active = true;
@@ -170,7 +165,7 @@ export function QuickCaptureApp() {
     let unlistenMove: (() => void) | undefined;
     let positionTimer: number | null = null;
 
-    void listenForCurrentWindowClose(discardAndHide)
+    void listenForCurrentWindowClose(hideCapture)
       .then((listener) => {
         if (active) unlistenClose = listener;
         else listener();
@@ -204,7 +199,7 @@ export function QuickCaptureApp() {
       unlistenClose?.();
       unlistenMove?.();
     };
-  }, [discardAndHide]);
+  }, [hideCapture]);
 
   useEffect(() => {
     let active = true;
@@ -238,12 +233,12 @@ export function QuickCaptureApp() {
           projectSelectorTriggerRef.current?.focus();
           return;
         }
-        discardAndHide();
+        hideCapture();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [discardAndHide, projectMenuOpen]);
+  }, [hideCapture, projectMenuOpen]);
 
   useEffect(() => {
     if (!projectMenuOpen) return;
@@ -328,9 +323,9 @@ export function QuickCaptureApp() {
         </h1>
         <div className="h-full min-w-6 flex-1" data-tauri-drag-region />
         <IconButton
-          icon={X}
-          label={t("close")}
-          onClick={discardAndHide}
+          icon={Minimize2}
+          label={t("minimize")}
+          onClick={hideCapture}
           size={15}
         />
       </header>
